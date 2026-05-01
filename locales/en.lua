@@ -22,7 +22,12 @@ Verdant.L = {
     "  /verdant dump          - print rolling buffers to chat",
     "  /verdant save          - append snapshot to SavedVars dumps[]",
     "  /verdant clear         - clear rolling buffers and counters",
+    "  /verdant readout       - print numeric metrics now (eHPS / MPS / EMS / C)",
+    "  /verdant metric <name> - EMS | eHPS_only | MPS_only | eff_ratio",
     "  /verdant help          - show this help",
   },
+  READOUT_LINE   = "[%s] eHPS=%d MPS=%d EMS=%d | %s=%d | C=%.2f (h=%.2f s=%.2f)",
+  METRIC_SET     = "Active metric: %s",
+  METRIC_UNKNOWN = "Unknown metric '%s'. Use: EMS | eHPS_only | MPS_only | eff_ratio",
   LOADED         = "Verdant v%s loaded (Phase 0 probe). Type %s help for commands.",
 }

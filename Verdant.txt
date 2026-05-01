@@ -15,5 +15,11 @@
 locales/en.lua
 core/constants.lua
 core/events.lua
+core/buffer.lua
+core/shield_registry.lua
+core/coverage.lua
+core/mode.lua
+core/metrics.lua
+core/engine.lua
 core/probe.lua
 Verdant.lua
