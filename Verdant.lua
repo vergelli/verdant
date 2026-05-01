@@ -49,6 +49,11 @@ local function on_slash(input)
     Verdant.Probe.print_context()
   elseif cmd == "ping" then
     Verdant.Probe.print_ping()
+  elseif cmd == "tag" then
+    local val = string_match(input, "^%s*%S+%s+(.+)$")
+    if val then val = val:gsub("%s+$", "") end
+    Verdant.Probe.set_tag(val)
+    d("[V] session tag: " .. (val or "(cleared)"))
   elseif cmd == "save" then
     Verdant.Probe.persist_to_savedvars(Verdant.SavedVars)
     d("[V] " .. L.DUMP_SAVED)

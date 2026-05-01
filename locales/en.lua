@@ -18,6 +18,7 @@ Verdant.L = {
     "  /verdant stats         - print event counters",
     "  /verdant context       - print session context (player/zone/bars)",
     "  /verdant ping          - print 'alive' marker with delta counts",
+    "  /verdant tag <name>    - label this session (saved into the snapshot)",
     "  /verdant dump          - print rolling buffers to chat",
     "  /verdant save          - append snapshot to SavedVars dumps[]",
     "  /verdant clear         - clear rolling buffers and counters",

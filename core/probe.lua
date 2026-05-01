@@ -62,6 +62,7 @@ local function new_state()
     context = nil,    -- filled by snapshot_context
     last_ping_stats = nil,
     player_unit_id  = nil,  -- learned lazily from first combat event with source=player
+    session_tag     = nil,  -- user-supplied label for this test run
   }
 end
 
@@ -443,6 +444,8 @@ end
 
 function M.set_enabled(v)        state.enabled = v and true or false end
 function M.set_filter(category)  state.filter = category end
+function M.set_tag(tag)          state.session_tag = tag and tag ~= "" and tag or nil end
+function M.get_tag()             return state.session_tag end
 
 function M.clear()
   for k in pairs(state.buffers) do state.buffers[k] = {} end
@@ -559,6 +562,7 @@ function M.persist_to_savedvars(sv)
   local snapshot = {
     taken_at_ms = now(),
     session_id  = state.session_id,
+    session_tag = state.session_tag,
     in_combat   = state.in_combat,
     context     = deep_copy(state.context),
     stats       = deep_copy(state.stats),
