@@ -1,0 +1,38 @@
+Verdant = Verdant or {}
+local Verdant = Verdant
+
+Verdant.Events = {}
+
+local EVENT_MANAGER = EVENT_MANAGER
+local d             = d
+local pcall         = pcall
+local tostring      = tostring
+
+local M = Verdant.Events
+
+function M.register_addon_loaded(name, callback)
+  EVENT_MANAGER:RegisterForEvent(name, EVENT_ADD_ON_LOADED, function(_, addonName)
+    if addonName == name then
+      EVENT_MANAGER:UnregisterForEvent(name, EVENT_ADD_ON_LOADED)
+      callback()
+    end
+  end)
+end
+
+-- Wrap every handler in pcall so a single bug never silently breaks the probe.
+function M.register(name, eventCode, handler)
+  EVENT_MANAGER:RegisterForEvent(name, eventCode, function(_, ...)
+    local ok, err = pcall(handler, ...)
+    if not ok and Verdant.Constants.DEBUG then
+      d("[Verdant] handler '" .. name .. "' error: " .. tostring(err))
+    end
+  end)
+end
+
+function M.unregister(name, eventCode)
+  EVENT_MANAGER:UnregisterForEvent(name, eventCode)
+end
+
+function M.add_filter(name, eventCode, ...)
+  EVENT_MANAGER:AddFilterForEvent(name, eventCode, ...)
+end
