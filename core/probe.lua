@@ -15,13 +15,11 @@ local IsUnitGrouped              = IsUnitGrouped
 local GetGroupSize               = GetGroupSize
 local GetUnitName                = GetUnitName
 local GetUnitDisplayName         = GetUnitDisplayName
-local GetUnitId                  = GetUnitId
 local GetUnitClass               = GetUnitClass
 local GetUnitRace                = GetUnitRace
 local GetUnitLevel               = GetUnitLevel
 local GetUnitChampionPoints      = GetUnitChampionPoints
 local GetUnitAlliance            = GetUnitAlliance
-local GetUnitPower               = GetUnitPower
 local GetCurrentMapZoneIndex     = GetCurrentMapZoneIndex
 local GetZoneNameByIndex         = GetZoneNameByIndex
 local GetSlotName                = GetSlotName
@@ -63,6 +61,7 @@ local function new_state()
     },
     context = nil,    -- filled by snapshot_context
     last_ping_stats = nil,
+    player_unit_id  = nil,  -- learned lazily from first combat event with source=player
   }
 end
 
@@ -149,6 +148,11 @@ local function on_combat_out(result, isError, abilityName, _g, _slot,
   if (hitValue or 0) == 0 and (overflow or 0) == 0 then
     state.stats.noise_dropped = state.stats.noise_dropped + 1
     return
+  end
+
+  if not state.player_unit_id and sourceType == COMBAT_UNIT_TYPE_PLAYER and sourceUnitId and sourceUnitId ~= 0 then
+    state.player_unit_id = sourceUnitId
+    if state.context and state.context.player then state.context.player.unitId = sourceUnitId end
   end
 
   remember_ability(abilityId, abilityName)
@@ -349,7 +353,7 @@ end
 
 local function on_action_slot_used(actionSlotIndex)
   local abilityId   = GetSlotBoundId(actionSlotIndex)
-  local abilityName = (abilityId and abilityId > 0) and GetAbilityName(abilityId) or GetSlotName(actionSlotIndex)
+  local abilityName = (abilityId and abilityId > 0) and GetAbilityName(abilityId, "player") or GetSlotName(actionSlotIndex)
   remember_ability(abilityId, abilityName)
   push("casts", {
     t           = now(),
@@ -374,8 +378,8 @@ local function snapshot_group(reason)
         tag     = tag,
         name    = GetUnitName(tag),
         display = GetUnitDisplayName(tag),
-        unitId  = GetUnitId(tag),
         class   = GetUnitClass(tag),
+        -- unitId is not directly retrievable from API; correlate via universe.targets after events fire.
       }
     end
   end
@@ -403,7 +407,7 @@ local function snapshot_bars()
       slots[#slots + 1] = {
         slot      = slot,
         abilityId = abilityId,
-        name      = (abilityId and abilityId > 0) and GetAbilityName(abilityId) or "",
+        name      = (abilityId and abilityId > 0) and GetAbilityName(abilityId, "player") or "",
       }
     end
     bars[#bars + 1] = { hotbar = hotbar, slots = slots }
@@ -419,7 +423,8 @@ function M.snapshot_context()
     player = {
       name      = GetUnitName("player"),
       display   = GetUnitDisplayName("player"),
-      unitId    = GetUnitId("player"),
+      -- unitId is filled lazily from the first combat event with sourceType=PLAYER.
+      unitId    = state.player_unit_id or 0,
       level     = GetUnitLevel("player"),
       cp        = GetUnitChampionPoints("player"),
       class     = GetUnitClass("player"),
