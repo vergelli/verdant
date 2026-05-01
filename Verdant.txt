@@ -18,6 +18,7 @@ core/events.lua
 core/buffer.lua
 core/shield_registry.lua
 core/coverage.lua
+core/group_set.lua
 core/mode.lua
 core/metrics.lua
 core/engine.lua

@@ -15,11 +15,18 @@ local function now() return GetGameTimeMilliseconds() end
 
 local function on_heal_out(result, isError, _name, _g, _slot,
                            _src, sourceType, _tgt, targetType, hit,
-                           _pt, _dt, _log, _suid, targetUnitId,
+                           _pt, _dt, _log, sourceUnitId, targetUnitId,
                            abilityId, overflow)
   if isError then return end
   if (hit or 0) == 0 and (overflow or 0) == 0 then return end
   if not Verdant.Mode.uses("heal") and not Verdant.Mode.uses("overheal") then return end
+
+  if sourceType == COMBAT_UNIT_TYPE_PLAYER and sourceUnitId and sourceUnitId ~= 0 then
+    Verdant.GroupSet.set_player(sourceUnitId)
+  end
+  if targetType == COMBAT_UNIT_TYPE_GROUP and targetUnitId and targetUnitId ~= 0 then
+    Verdant.GroupSet.add(targetUnitId)
+  end
 
   local t = now()
   Verdant.Metrics.ingest_heal(t, hit, overflow, targetUnitId, targetType, abilityId)
@@ -47,6 +54,7 @@ local function on_group_damage(result, isError, _name, _g, _slot,
                                _abilityId, _overflow)
   if isError then return end
   if not Verdant.Mode.uses("damage") then return end
+  if not Verdant.GroupSet.contains(targetUnitId) then return end
   Verdant.Metrics.ingest_damage_group(now(), hit, targetUnitId)
 end
 
@@ -58,6 +66,11 @@ end
 
 local function on_group_change()
   Verdant.Coverage.refresh_mode()
+end
+
+local function on_group_left()
+  Verdant.Coverage.refresh_mode()
+  Verdant.GroupSet.reset()
 end
 
 function M.init()
@@ -98,8 +111,6 @@ function M.init()
     end
   end)
   E.add_filter("Verdant_E_GroupDmg", EVENT_COMBAT_EVENT,
-    REGISTER_FILTER_TARGET_COMBAT_UNIT_TYPE, COMBAT_UNIT_TYPE_GROUP)
-  E.add_filter("Verdant_E_GroupDmg", EVENT_COMBAT_EVENT,
     REGISTER_FILTER_IS_ERROR, false)
 
   E.register("Verdant_E_EffectPlayer", EVENT_EFFECT_CHANGED, on_effect_player_src)
@@ -107,7 +118,7 @@ function M.init()
     REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE, COMBAT_UNIT_TYPE_PLAYER)
 
   E.register("Verdant_E_GroupJ", EVENT_GROUP_MEMBER_JOINED, on_group_change)
-  E.register("Verdant_E_GroupL", EVENT_GROUP_MEMBER_LEFT,   on_group_change)
+  E.register("Verdant_E_GroupL", EVENT_GROUP_MEMBER_LEFT,   on_group_left)
   E.register("Verdant_E_GroupU", EVENT_GROUP_UPDATE,        on_group_change)
   E.register("Verdant_E_PlayerAct", EVENT_PLAYER_ACTIVATED, on_group_change)
 end

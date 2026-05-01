@@ -86,6 +86,7 @@ local function on_slash(input)
     Verdant.Metrics.reset()
     Verdant.ShieldRegistry.reset()
     Verdant.Coverage.reset()
+    Verdant.GroupSet.reset()
     d("[V] " .. L.BUFFER_CLEARED)
   else
     d("[V] " .. format_help())
