@@ -9,7 +9,11 @@ local string_lower   = string.lower
 local string_match   = string.match
 local table_concat   = table.concat
 
-local KNOWN_FILTERS = { heal=true, shield=true, damage=true, effect=true, group=true, all=true }
+local KNOWN_FILTERS = {
+  heal=true, shield=true, shield_raw=true, heal_abs=true,
+  damage=true, effect=true, effect_self=true,
+  cast=true, combat=true, group=true, all=true,
+}
 
 local function format_help()
   local L = Verdant.L
@@ -39,6 +43,12 @@ local function on_slash(input)
     end
   elseif cmd == "dump" then
     Verdant.Probe.dump()
+  elseif cmd == "stats" then
+    Verdant.Probe.print_stats()
+  elseif cmd == "context" then
+    Verdant.Probe.print_context()
+  elseif cmd == "ping" then
+    Verdant.Probe.print_ping()
   elseif cmd == "save" then
     Verdant.Probe.persist_to_savedvars(Verdant.SavedVars)
     d("[V] " .. L.DUMP_SAVED)
