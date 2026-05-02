@@ -1,0 +1,105 @@
+<GuiXml>
+  <Controls>
+
+    <!--
+      Triple-bar window: shows EMS / eHPS / MPS side by side.
+      Fixed width 110px. Height resizable (same range as single bar).
+      Column layout (left margins 10 / 42 / 74, each 26px wide):
+        Col 1 = EMS (gold), Col 2 = eHPS (green), Col 3 = MPS (pink)
+    -->
+    <TopLevelControl name="VerdantTriBarWindow"
+                     hidden="true"
+                     clampedToScreen="true"
+                     movable="true"
+                     mouseEnabled="true">
+
+      <Anchor point="BOTTOMRIGHT" relativeTo="GuiRoot"
+              relativePoint="BOTTOMRIGHT" offsetX="-100" offsetY="-40"/>
+      <Dimensions x="110" y="240"/>
+
+      <OnMoveStop>Verdant.TriBar.on_move_stop()</OnMoveStop>
+
+      <Controls>
+
+        <Backdrop name="$(parent)Bg">
+          <AnchorFill/>
+          <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
+                edgeFileWidth="128" edgeFileHeight="16" edgeSize="8"/>
+          <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+          <Insets left="8" top="8" right="-8" bottom="-8"/>
+        </Backdrop>
+
+        <!-- ── Column 1: EMS ───────────────────────────────────────────── -->
+        <Label name="$(parent)EmsLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="10" offsetY="8"/>
+          <Dimensions x="26" y="14"/>
+        </Label>
+
+        <Control name="$(parent)EmsArea" mouseEnabled="false">
+          <Anchor point="TOPLEFT"    offsetX="10" offsetY="26"/>
+          <Anchor point="BOTTOMLEFT" offsetX="10" offsetY="-26"/>
+          <Dimensions x="26"/>
+        </Control>
+
+        <Label name="$(parent)EmsValue"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="BOTTOMLEFT" offsetX="10" offsetY="-10"/>
+          <Dimensions x="26" y="14"/>
+        </Label>
+
+        <!-- ── Column 2: eHPS ─────────────────────────────────────────── -->
+        <Label name="$(parent)EhpsLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="42" offsetY="8"/>
+          <Dimensions x="26" y="14"/>
+        </Label>
+
+        <Control name="$(parent)EhpsArea" mouseEnabled="false">
+          <Anchor point="TOPLEFT"    offsetX="42" offsetY="26"/>
+          <Anchor point="BOTTOMLEFT" offsetX="42" offsetY="-26"/>
+          <Dimensions x="26"/>
+        </Control>
+
+        <Label name="$(parent)EhpsValue"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="BOTTOMLEFT" offsetX="42" offsetY="-10"/>
+          <Dimensions x="26" y="14"/>
+        </Label>
+
+        <!-- ── Column 3: MPS ──────────────────────────────────────────── -->
+        <Label name="$(parent)MpsLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="74" offsetY="8"/>
+          <Dimensions x="26" y="14"/>
+        </Label>
+
+        <Control name="$(parent)MpsArea" mouseEnabled="false">
+          <Anchor point="TOPLEFT"    offsetX="74" offsetY="26"/>
+          <Anchor point="BOTTOMLEFT" offsetX="74" offsetY="-26"/>
+          <Dimensions x="26"/>
+        </Control>
+
+        <Label name="$(parent)MpsValue"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="BOTTOMLEFT" offsetX="74" offsetY="-10"/>
+          <Dimensions x="26" y="14"/>
+        </Label>
+
+      </Controls>
+    </TopLevelControl>
+
+  </Controls>
+</GuiXml>

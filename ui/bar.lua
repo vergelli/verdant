@@ -20,9 +20,12 @@ local COLORS = {
   MPS  = { r = 0.90, g = 0.38, b = 0.68, a = 0.92 },
 }
 
-local TRACK_COLOR = { r = 0.06, g = 0.06, b = 0.06, a = 0.95 }
--- Flat tintable texture (attribute bar fill, designed for colour overrides)
-local BAR_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
+-- ESO attribute bar textures
+local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
+local BG_TEXTURE    = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
+local FRAME_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_frame.dds"
+-- TextureCoords for fill atlas: the fill strip is the top 53.125% of the sheet
+local FILL_T, FILL_B = 0, 0.53125
 
 -- size constraints (px)
 local MIN_W, MAX_W = 60, 140
@@ -59,30 +62,56 @@ local function setup_textures()
   local WM   = WINDOW_MANAGER
   local area = controls.bar_area
 
-  -- track: exact fit of bar_area (no offset extension).
-  -- We tried (-3,-3)/(+3,+3) for a containment overhang but the bottom offset
-  -- direction is ambiguous across ESO versions and the track ended up shorter.
-  -- Exact fit is reliable; the window chrome provides the visual framing.
-  local track = WM:CreateControl("VerdantBarTrack", area, CT_TEXTURE)
-  track:ClearAnchors()
-  track:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
-  track:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-  track:SetTexture(BAR_TEXTURE)
-  track:SetColor(TRACK_COLOR.r, TRACK_COLOR.g, TRACK_COLOR.b, TRACK_COLOR.a)
-  controls.track = track
+  -- bg: dark background using ESO attr-bar bg texture
+  local bg = WM:CreateControl("VerdantBarBg", area, CT_TEXTURE)
+  bg:ClearAnchors()
+  bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
+  bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
+  bg:SetTexture(BG_TEXTURE)
+  bg:SetColor(0.10, 0.10, 0.12, 1)
+  controls.bg = bg
 
-  -- fill: single BOTTOMLEFT anchor so SetWidth + SetHeight are unambiguous.
-  -- ESO ignores SetHeight when two opposing anchors fully constrain the axis;
-  -- a single anchor leaves the height axis free for explicit control.
-  -- Width and height are set each tick inside refresh() — NOT here, because the
-  -- window may still be hidden (GetWidth returns 0) at setup_textures call time.
+  -- fill: single BOTTOMLEFT anchor; SetWidth+SetHeight called each tick.
   local fill = WM:CreateControl("VerdantBarFill", area, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
-  fill:SetTexture(BAR_TEXTURE)
+  fill:SetTexture(FILL_TEXTURE)
+  fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
   local c = COLORS["EMS"]
   fill:SetColor(c.r, c.g, c.b, c.a)
   controls.fill = fill
+
+  -- fill_heal: EMS stacked mode — eHPS (green) from bottom
+  local fh = WM:CreateControl("VerdantBarFillHeal", area, CT_TEXTURE)
+  fh:ClearAnchors()
+  fh:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+  fh:SetTexture(FILL_TEXTURE)
+  fh:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  local ch = COLORS["eHPS"]
+  fh:SetColor(ch.r, ch.g, ch.b, ch.a)
+  fh:SetHidden(true)
+  controls.fill_heal = fh
+
+  -- fill_shield: EMS stacked mode — MPS (pink) above heal segment.
+  -- Anchor is repositioned each tick in refresh() to sit on top of fill_heal.
+  local fs = WM:CreateControl("VerdantBarFillShield", area, CT_TEXTURE)
+  fs:ClearAnchors()
+  fs:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+  fs:SetTexture(FILL_TEXTURE)
+  fs:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  local cs = COLORS["MPS"]
+  fs:SetColor(cs.r, cs.g, cs.b, cs.a)
+  fs:SetHidden(true)
+  controls.fill_shield = fs
+
+  -- frame: ESO attribute-bar frame overlay drawn on top of fills
+  local frame = WM:CreateControl("VerdantBarFrame", area, CT_TEXTURE)
+  frame:ClearAnchors()
+  frame:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
+  frame:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
+  frame:SetTexture(FRAME_TEXTURE)
+  frame:SetColor(1, 1, 1, 0.9)
+  controls.frame = frame
 end
 
 -- ── refresh (called by 1 Hz tick and on user input) ───────────────────────
@@ -111,20 +140,48 @@ local function refresh()
   end
   controls.value_label:SetColor(1, 1, 1, 1)
 
-  -- fill: single anchor, explicit width + height each tick.
-  -- Width keeps up with window resize; height represents the fraction.
-  local area_w = controls.bar_area:GetWidth()
-  local area_h = controls.bar_area:GetHeight()
-  if area_h > 4 then
-    local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
-    controls.fill:SetWidth(area_w)
-    controls.fill:SetHeight(fill_h)
-    controls.fill:SetColor(color.r, color.g, color.b, color.a)
-  end
-
   -- mode button: show what the NEXT click will switch to
   controls.mode_btn:SetText(display_pct and "#" or "%")
   controls.mode_btn:SetColor(0.75, 0.75, 0.75, 1)
+
+  -- fill bar(s)
+  local area_w = controls.bar_area:GetWidth()
+  local area_h = controls.bar_area:GetHeight()
+  if area_h <= 4 then return end
+
+  if m == "EMS" then
+    -- stacked fill: eHPS green at bottom, MPS pink stacked above it
+    controls.fill:SetHidden(true)
+
+    local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
+    local shield_frac = math_max(0, math_min(1, r.C_shield or 0))
+    local heal_h      = (heal_frac   > 0.005) and math_max(2, area_h * heal_frac)   or 0
+    local shield_h    = (shield_frac > 0.005) and math_max(2, area_h * shield_frac) or 0
+
+    local fh = controls.fill_heal
+    fh:SetHidden(false)
+    fh:SetWidth(area_w)
+    fh:SetHeight(heal_h)
+
+    local fs = controls.fill_shield
+    -- reposition bottom edge to sit on top of the heal segment
+    fs:ClearAnchors()
+    fs:SetAnchor(BOTTOMLEFT, controls.bar_area, BOTTOMLEFT, 0, -heal_h)
+    fs:SetHidden(false)
+    fs:SetWidth(area_w)
+    fs:SetHeight(shield_h)
+  else
+    -- single colored fill
+    controls.fill_heal:SetHidden(true)
+    controls.fill_shield:SetHidden(true)
+
+    local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
+    local f = controls.fill
+    f:SetHidden(false)
+    f:SetWidth(area_w)
+    f:SetHeight(fill_h)
+    f:SetColor(color.r, color.g, color.b, color.a)
+  end
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
@@ -212,7 +269,7 @@ function M.init()
 
   setup_textures()
 
-  -- register 1 Hz tick; show window first so refresh() doesn't bail early
+  -- show window before first refresh so GetWidth/GetHeight return real values
   local visible = (b.visible == nil) and true or b.visible
   controls.window:SetHidden(not visible)
 

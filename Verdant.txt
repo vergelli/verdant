@@ -27,4 +27,6 @@ core/engine.lua
 core/probe.lua
 ui/bar.xml
 ui/bar.lua
+ui/tribar.xml
+ui/tribar.lua
 Verdant.lua
