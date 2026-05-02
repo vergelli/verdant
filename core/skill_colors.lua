@@ -12,6 +12,7 @@ local GROUP_COLORS = {
   sorc      = { r = 0.28, g = 0.38, b = 0.95, a = 0.95 },  -- electric blue
   nb        = { r = 0.82, g = 0.10, b = 0.18, a = 0.95 },  -- crimson
   necro     = { r = 0.65, g = 0.18, b = 0.82, a = 0.95 },  -- violet
+  scribing  = { r = 0.00, g = 0.75, b = 1.00, a = 0.95 },  -- color de la magia
   undaunted = { r = 0.42, g = 0.42, b = 0.18, a = 0.95 },  -- color verde .... caca
   support   = { r = 0.42, g = 0.31, b = 0.68, a = 0.95 },  -- violeta un poco kaki
   other     = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
@@ -113,6 +114,14 @@ local NAME_PATTERNS = {
   { "chokethorn",     "items" },
   { "nightflame",     "items" },
   { "rkugamz",        "items" },
+  -- Scribing Grimoires
+  { "wield soul",    "scribing" },
+  { "contingency",   "scribing" },
+  { "torchbearer",   "scribing" },
+  { "trample",       "scribing" },
+  { "shatter",       "scribing" },
+  { "soul burst",    "scribing" },
+  { "mender's bond", "scribing" },
 }
 
 -- Direct ID → group overrides.  Faster than name lookup; add confirmed IDs here.
@@ -124,9 +133,9 @@ local ABILITY_OVERRIDES = {
   [186265] = "arcanist",
   [186267] = "arcanist",
   [186203] = "arcanist",
-  [61506] = "Echoing Vigor",
-  [33524] = "Channeled Focus",
-  [217608] = "Warding Contingency",
+  [61506] = "support",
+  [33524] = "templar",
+  [217608] = "scribing",
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
