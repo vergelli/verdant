@@ -1,0 +1,94 @@
+<GuiXml>
+  <Controls>
+
+    <!--
+      VerdantBarWindow — vertical contribution bar
+      Movable, resizable, clamp to screen.
+      Child textures (track + fill) are created in Lua to allow dynamic tinting.
+    -->
+    <TopLevelControl name="VerdantBarWindow"
+                     hidden="true"
+                     clampedToScreen="true"
+                     movable="true"
+                     mouseEnabled="true"
+                     resizeHandleSize="8">
+
+      <!-- Default position: bottom-right corner -->
+      <Anchor point="BOTTOMRIGHT" relativeTo="GuiRoot"
+              relativePoint="BOTTOMRIGHT" offsetX="-20" offsetY="-40"/>
+      <Dimensions x="70" y="220"/>
+
+      <OnMoveStop>Verdant.Bar.on_move_stop()</OnMoveStop>
+      <OnResizeStop>Verdant.Bar.on_resize_stop()</OnResizeStop>
+
+      <Controls>
+
+        <!-- Window chrome -->
+        <Backdrop name="$(parent)Bg">
+          <AnchorFill/>
+          <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
+                edgeFileWidth="128" edgeFileHeight="16" edgeSize="8"/>
+          <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+          <Insets left="8" top="8" right="-8" bottom="-8"/>
+        </Backdrop>
+
+        <!-- ← prev -->
+        <Button name="$(parent)PrevBtn" mouseEnabled="true">
+          <Anchor point="TOPLEFT" offsetX="4" offsetY="6"/>
+          <Dimensions x="16" y="16"/>
+          <OnClicked>Verdant.Bar.prev_metric()</OnClicked>
+        </Button>
+
+        <!-- metric acronym (EMS / eHPS / MPS) -->
+        <Label name="$(parent)MetricLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT"  offsetX="22" offsetY="6"/>
+          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="22"/>
+        </Label>
+
+        <!-- next → -->
+        <Button name="$(parent)NextBtn" mouseEnabled="true">
+          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="6"/>
+          <Dimensions x="16" y="16"/>
+          <OnClicked>Verdant.Bar.next_metric()</OnClicked>
+        </Button>
+
+        <!-- Numeric or % value -->
+        <Label name="$(parent)ValueLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER"
+               color="FFFFFFFF">
+          <Anchor point="TOP" offsetY="26"/>
+          <Dimensions x="66" y="14"/>
+        </Label>
+
+        <!-- Bar area — track + fill textures created in Lua -->
+        <Control name="$(parent)BarArea" mouseEnabled="false">
+          <Anchor point="TOPLEFT"     offsetX="8"  offsetY="44"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-32"/>
+        </Control>
+
+        <!-- # / % display-mode toggle -->
+        <Button name="$(parent)ModeBtn" mouseEnabled="true">
+          <Anchor point="BOTTOM" offsetY="-18"/>
+          <Dimensions x="36" y="12"/>
+          <OnClicked>Verdant.Bar.toggle_display_mode()</OnClicked>
+        </Button>
+
+        <!-- API ver + addon ver (small, bottom) -->
+        <Label name="$(parent)VersionLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="BOTTOM" offsetY="-4"/>
+          <Dimensions x="66" y="10"/>
+        </Label>
+
+      </Controls>
+    </TopLevelControl>
+
+  </Controls>
+</GuiXml>

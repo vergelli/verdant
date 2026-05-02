@@ -10,6 +10,17 @@ Verdant.Constants = {
   SV_TABLE   = "VerdantSavedVars",
   SV_VERSION = 1,
 
+  BAR = {
+    -- XML control name root
+    WINDOW = "VerdantBarWindow",
+    -- Default window geometry
+    DEFAULT_W = 70,
+    DEFAULT_H = 220,
+    -- Resize constraints
+    MIN_W = 50,  MAX_W = 130,
+    MIN_H = 160, MAX_H = 420,
+  },
+
   PROBE = {
     -- Distinct names per registration: EVENT_MANAGER keys filters by (name, eventCode).
     SRC_COMBAT_OUT      = "Verdant_CombatOut",       -- heals where source=player

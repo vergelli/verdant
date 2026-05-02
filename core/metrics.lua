@@ -5,7 +5,8 @@ Verdant.Metrics = {}
 
 local M = Verdant.Metrics
 
-local W_MS = 5000
+local W_MS       = 5000
+local W_SHIELD_MS = 30000   -- shields are sparse; wider window avoids permanent zero
 
 local heal_buf, overheal_buf, shield_buf, damage_buf
 
@@ -14,19 +15,25 @@ local function in_M(entry)
 end
 
 function M.init()
-  W_MS = 5000
-  heal_buf     = Verdant.Buffer.new(W_MS, 1024)
-  overheal_buf = Verdant.Buffer.new(W_MS, 1024)
-  shield_buf   = Verdant.Buffer.new(W_MS, 512)
-  damage_buf   = Verdant.Buffer.new(W_MS, 2048)
+  W_MS        = 5000
+  W_SHIELD_MS = 30000
+  heal_buf     = Verdant.Buffer.new(W_MS,        1024)
+  overheal_buf = Verdant.Buffer.new(W_MS,        1024)
+  shield_buf   = Verdant.Buffer.new(W_SHIELD_MS,  512)
+  damage_buf   = Verdant.Buffer.new(W_MS,        2048)
 end
 
 function M.set_window(ms)
   W_MS = ms or 5000
   heal_buf.window_ms     = W_MS
   overheal_buf.window_ms = W_MS
-  shield_buf.window_ms   = W_MS
   damage_buf.window_ms   = W_MS
+  -- shield window is intentionally independent; use set_shield_window to change it
+end
+
+function M.set_shield_window(ms)
+  W_SHIELD_MS = ms or 30000
+  shield_buf.window_ms = W_SHIELD_MS
 end
 
 function M.window_seconds() return W_MS / 1000 end
@@ -56,7 +63,7 @@ end
 
 function M.eHPS(now_ms)    return rate(heal_buf,     now_ms, in_M) end
 function M.OHPS(now_ms)    return rate(overheal_buf, now_ms, in_M) end
-function M.MPS(now_ms)     return rate(shield_buf,   now_ms, in_M) end
+function M.MPS(now_ms)     return shield_buf:sum(now_ms, "amount", in_M) / (W_SHIELD_MS / 1000) end
 function M.D_group(now_ms) return rate(damage_buf,   now_ms, nil)  end
 
 function M.EMS(now_ms)

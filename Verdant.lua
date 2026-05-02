@@ -78,6 +78,14 @@ local function on_slash(input)
     if val then val = val:gsub("%s+$", "") end
     Verdant.Probe.set_tag(val)
     d("[V] session tag: " .. (val or "(cleared)"))
+  elseif cmd == "show" then
+    Verdant.Bar.show()
+    d("[V] " .. L.BAR_SHOWN)
+  elseif cmd == "hide" then
+    Verdant.Bar.hide()
+    d("[V] " .. L.BAR_HIDDEN)
+  elseif cmd == "toggle" then
+    Verdant.Bar.toggle()
   elseif cmd == "diag" then
     Verdant.Diagnostics.print_diag()
   elseif cmd == "save" then
@@ -99,9 +107,10 @@ end
 local function on_addon_loaded()
   local C = Verdant.Constants
 
-  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, nil, { probe = {} })
+  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, nil, { probe = {}, bar = {} })
   Verdant.Probe.init()
   Verdant.Engine.init()
+  Verdant.Bar.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
 
