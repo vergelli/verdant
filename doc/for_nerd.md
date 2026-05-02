@@ -119,21 +119,10 @@ VerdantSavedVars (account-wide)
 
 ---
 
-## Slash Commands (full reference)
+## Slash Commands
 
-All commands are prefixed with `/verdant`.
-
-| Command | Description |
-|---------|-------------|
-| `show` | Show the bar |
-| `hide` | Hide the bar |
-| `toggle` | Toggle the bar |
-| `tribar` | Toggle the triple-metric window |
-| `clear` | Clear buffers, counters and peak marks |
-| `readout` | Print current metrics to chat once |
-| `skills` | Dump unclassified ability IDs seen this session |
-| `diag` | Print engine event counters |
-| `help` | Show command list in chat |
+`/verdant` — toggles the bar (show if hidden, hide if visible).  
+Any argument is ignored in normal use. Type `/verdant` once to show, again to hide.
 
 The following commands are only available when `Constants.DEBUG = true` (disabled in release builds):
 
@@ -141,10 +130,14 @@ The following commands are only available when `Constants.DEBUG = true` (disable
 |---------|-------------|
 | `on` / `off` | Enable / disable chat event logging |
 | `filter <name>` | Set chat log filter: heal \| shield \| damage \| effect \| group \| all |
+| `readout` | Print current metrics to chat once |
 | `dump` | Print rolling buffer contents to chat |
 | `save` | Snapshot buffers to SavedVars |
 | `ping` | Print alive marker with delta event counts |
 | `tag <name>` | Label current session (saved into snapshot) |
 | `stats` | Print raw event counters |
 | `context` | Print player/zone/group context |
+| `diag` | Print engine event counters |
+| `skills` | Dump unclassified ability IDs seen this session |
+| `clear` | Clear buffers, counters and peak marks |
 | `metric <name>` | Change engine routing mode: EMS \| eHPS_only \| MPS_only \| eff_ratio |

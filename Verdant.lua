@@ -7,7 +7,6 @@ local d              = d
 local string_format  = string.format
 local string_lower   = string.lower
 local string_match   = string.match
-local table_concat   = table.concat
 local GetGameTimeMilliseconds = GetGameTimeMilliseconds
 
 local KNOWN_FILTERS = {
@@ -15,13 +14,6 @@ local KNOWN_FILTERS = {
   damage=true, effect=true, effect_self=true,
   cast=true, combat=true, group=true, all=true,
 }
-
-local function format_help()
-  local L = Verdant.L
-  local out = { L.HELP_HEADER }
-  for i = 1, #L.HELP_LINES do out[#out + 1] = L.HELP_LINES[i] end
-  return table_concat(out, "\n")
-end
 
 local function print_readout()
   local L = Verdant.L
@@ -41,82 +33,74 @@ local function on_slash(input)
   local L     = Verdant.L
   local DEBUG = Verdant.Constants.DEBUG
   input = input or ""
-  local cmd = string_match(string_lower(input), "^%s*(%S+)") or "help"
+  local cmd = string_match(string_lower(input), "^%s*(%S+)") or ""
 
-  -- ── probe commands (developer only) ──────────────────────────────────────
-  if not DEBUG and (cmd == "on" or cmd == "off" or cmd == "filter"
-      or cmd == "dump" or cmd == "save" or cmd == "ping"
-      or cmd == "tag"  or cmd == "stats" or cmd == "context"
-      or cmd == "metric") then
-    d("[V] Debug mode is off. These commands are not available.")
-    return
+  -- ── debug commands (developer only) ──────────────────────────────────────
+  if DEBUG then
+    if cmd == "on" then
+      Verdant.Probe.set_enabled(true)
+      d("[V] " .. L.PROBE_ON)
+      return
+    elseif cmd == "off" then
+      Verdant.Probe.set_enabled(false)
+      d("[V] " .. L.PROBE_OFF)
+      return
+    elseif cmd == "filter" then
+      local val = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if KNOWN_FILTERS[val] then
+        Verdant.Probe.set_filter(val)
+        d("[V] " .. string_format(L.FILTER_SET, val))
+      else
+        d("[V] " .. string_format(L.FILTER_UNKNOWN, val))
+      end
+      return
+    elseif cmd == "metric" then
+      local val = string_match(input, "^%s*%S+%s+(%S+)") or ""
+      if Verdant.Mode.set(val) then
+        d("[V] " .. string_format(L.METRIC_SET, val))
+      else
+        d("[V] " .. string_format(L.METRIC_UNKNOWN, val))
+      end
+      return
+    elseif cmd == "readout" then
+      print_readout() ; return
+    elseif cmd == "dump" then
+      Verdant.Probe.dump() ; return
+    elseif cmd == "stats" then
+      Verdant.Probe.print_stats() ; return
+    elseif cmd == "context" then
+      Verdant.Probe.print_context() ; return
+    elseif cmd == "ping" then
+      Verdant.Probe.print_ping() ; return
+    elseif cmd == "tag" then
+      local val = string_match(input, "^%s*%S+%s+(.+)$")
+      if val then val = val:gsub("%s+$", "") end
+      Verdant.Probe.set_tag(val)
+      d("[V] session tag: " .. (val or "(cleared)"))
+      return
+    elseif cmd == "save" then
+      Verdant.Probe.persist_to_savedvars(Verdant.SavedVars)
+      d("[V] " .. L.DUMP_SAVED)
+      return
+    elseif cmd == "diag" then
+      Verdant.Diagnostics.print_diag() ; return
+    elseif cmd == "skills" then
+      Verdant.SkillColors.print_unknown() ; return
+    elseif cmd == "clear" then
+      Verdant.Probe.clear()
+      Verdant.Metrics.reset()
+      Verdant.ShieldRegistry.reset()
+      Verdant.Coverage.reset()
+      Verdant.GroupSet.reset()
+      Verdant.Diagnostics.reset()
+      Verdant.Bar.reset_peaks()
+      d("[V] " .. L.BUFFER_CLEARED)
+      return
+    end
   end
 
-  if cmd == "on" then
-    Verdant.Probe.set_enabled(true)
-    d("[V] " .. L.PROBE_ON)
-  elseif cmd == "off" then
-    Verdant.Probe.set_enabled(false)
-    d("[V] " .. L.PROBE_OFF)
-  elseif cmd == "filter" then
-    local val = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
-    if KNOWN_FILTERS[val] then
-      Verdant.Probe.set_filter(val)
-      d("[V] " .. string_format(L.FILTER_SET, val))
-    else
-      d("[V] " .. string_format(L.FILTER_UNKNOWN, val))
-    end
-  elseif cmd == "metric" then
-    local val = string_match(input, "^%s*%S+%s+(%S+)") or ""
-    if Verdant.Mode.set(val) then
-      d("[V] " .. string_format(L.METRIC_SET, val))
-    else
-      d("[V] " .. string_format(L.METRIC_UNKNOWN, val))
-    end
-  elseif cmd == "readout" then
-    print_readout()
-  elseif cmd == "dump" then
-    Verdant.Probe.dump()
-  elseif cmd == "stats" then
-    Verdant.Probe.print_stats()
-  elseif cmd == "context" then
-    Verdant.Probe.print_context()
-  elseif cmd == "ping" then
-    Verdant.Probe.print_ping()
-  elseif cmd == "tag" then
-    local val = string_match(input, "^%s*%S+%s+(.+)$")
-    if val then val = val:gsub("%s+$", "") end
-    Verdant.Probe.set_tag(val)
-    d("[V] session tag: " .. (val or "(cleared)"))
-  elseif cmd == "show" then
-    Verdant.Bar.show()
-    d("[V] " .. L.BAR_SHOWN)
-  elseif cmd == "hide" then
-    Verdant.Bar.hide()
-    d("[V] " .. L.BAR_HIDDEN)
-  elseif cmd == "toggle" then
-    Verdant.Bar.toggle()
-  elseif cmd == "tribar" then
-    Verdant.TriBar.toggle()
-  elseif cmd == "skills" then
-    Verdant.SkillColors.print_unknown()
-  elseif cmd == "diag" then
-    Verdant.Diagnostics.print_diag()
-  elseif cmd == "save" then
-    Verdant.Probe.persist_to_savedvars(Verdant.SavedVars)
-    d("[V] " .. L.DUMP_SAVED)
-  elseif cmd == "clear" then
-    Verdant.Probe.clear()
-    Verdant.Metrics.reset()
-    Verdant.ShieldRegistry.reset()
-    Verdant.Coverage.reset()
-    Verdant.GroupSet.reset()
-    Verdant.Diagnostics.reset()
-    Verdant.Bar.reset_peaks()
-    d("[V] " .. L.BUFFER_CLEARED)
-  else
-    d("[V] " .. format_help())
-  end
+  -- ── /verdant (any input) → toggle bar ────────────────────────────────────
+  Verdant.Bar.toggle()
 end
 
 local function on_addon_loaded()
