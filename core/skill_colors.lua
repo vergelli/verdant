@@ -6,13 +6,14 @@ local M = Verdant.SkillColors
 local GROUP_COLORS = {
   templar   = { r = 0.95, g = 0.75, b = 0.15, a = 0.95 },  -- amber gold
   arcanist  = { r = 0.20, g = 0.92, b = 0.35, a = 0.95 },  -- vivid green
-  warden    = { r = 0.20, g = 0.85, b = 0.90, a = 0.95 },  -- ice cyan
-  resto     = { r = 0.72, g = 0.50, b = 0.18, a = 0.95 },  -- brass / brown
+  warden    = { r = 0.20, g = 0.85, b = 0.90, a = 0.95 },  -- celeste
+  resto     = { r = 0.72, g = 0.50, b = 0.18, a = 0.95 },  -- marroncitos
   dk        = { r = 0.88, g = 0.28, b = 0.08, a = 0.95 },  -- rust orange
   sorc      = { r = 0.28, g = 0.38, b = 0.95, a = 0.95 },  -- electric blue
   nb        = { r = 0.82, g = 0.10, b = 0.18, a = 0.95 },  -- crimson
   necro     = { r = 0.65, g = 0.18, b = 0.82, a = 0.95 },  -- violet
-  undaunted = { r = 0.62, g = 0.62, b = 0.68, a = 0.95 },  -- silver
+  undaunted = { r = 0.42, g = 0.42, b = 0.18, a = 0.95 },  -- color verde .... caca
+  support   = { r = 0.42, g = 0.31, b = 0.68, a = 0.95 },  -- violeta un poco kaki
   other     = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
 }
 
@@ -104,6 +105,14 @@ local NAME_PATTERNS = {
   -- Alliance War
   { "barrier",        "support" },
   { "purge",          "support" },
+  { "Echoing Vigor",   "support" },
+  { "Resolving Vigor",  "support" },
+  -- Sets / Items (Cualquier cosa que huela a proc de set)
+  { "sentinel",       "items" },
+  { "earthgore",      "items" },
+  { "chokethorn",     "items" },
+  { "nightflame",     "items" },
+  { "rkugamz",        "items" },
 }
 
 -- Direct ID → group overrides.  Faster than name lookup; add confirmed IDs here.
@@ -115,7 +124,7 @@ local ABILITY_OVERRIDES = {
   [186265] = "arcanist",
   [186267] = "arcanist",
   [186203] = "arcanist",
-
+  [61506] = "Echoing Vigor",
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
