@@ -42,10 +42,17 @@ local NAME_PATTERNS = {
   { "arctic wind",          "warden" },
   { "nature's grasp",       "warden" },
   { "nature's embrace",     "warden" },
-  -- Arcanist
-  { "apocryphal",           "arcanist" },
-  { "fatecarver",           "arcanist" },
-  { "writhing storm",       "arcanist" },
+  -- Arcanist (High-priority unique stems)
+  { "runemend",       "arcanist" }, -- Audacious, Evolving, etc.
+  { "reconstructive", "arcanist" }, -- Reconstructive Domain
+  { "curative",       "arcanist" }, -- Curative Surge, etc.
+  { "apocryphal",     "arcanist" }, -- Apocryphal Gate, Barriers, etc.
+  { "chakram",        "arcanist" }, -- Chakram of Destiny
+  { "glyphic",        "arcanist" }, -- Glyphic Cascade
+  { "remedy",         "arcanist" }, -- Remedy Cascade
+  { "fatecarver",     "arcanist" }, -- Pragmatic Fatecarver (escudo)
+  { "zena",           "arcanist" }, -- Zenas' Empowering Disc
+  { "tome-bearer",    "arcanist" }, -- Tome-bearer's Inspiration
   -- Dragonknight
   { "green dragon blood",   "dk" },
   { "coagulating blood",    "dk" },
@@ -90,16 +97,25 @@ local NAME_PATTERNS = {
   { "ward ally",            "resto" },
   { "mutagen",              "resto" },
   { "efficient purge",      "resto" },
-  -- Undaunted
-  { "blood altar",          "undaunted" },
-  { "overflowing altar",    "undaunted" },
-  { "bloodthirst",          "undaunted" },
+  -- UNDAUNTED & WORLD (Sinergias y gremios)
+  { "altar",          "undaunted" },
+  { "blood",          "undaunted" },
+  { "energy orb",     "undaunted" },
+  -- Alliance War
+  { "barrier",        "support" },
+  { "purge",          "support" },
 }
 
 -- Direct ID → group overrides.  Faster than name lookup; add confirmed IDs here.
 -- Format: [abilityId] = "group_key"
 local ABILITY_OVERRIDES = {
   -- example: [29483] = "resto",
+  [186191] = "arcanist",
+  [186243] = "arcanist",
+  [186265] = "arcanist",
+  [186267] = "arcanist",
+  [186203] = "arcanist",
+
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
