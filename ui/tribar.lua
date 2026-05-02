@@ -57,8 +57,8 @@ end
 
 local COLORS = {
   EMS  = { r = 0.95, g = 0.80, b = 0.20, a = 0.92 },
-  eHPS = { r = 0.25, g = 0.88, b = 0.35, a = 0.92 },
-  MPS  = { r = 0.90, g = 0.38, b = 0.68, a = 0.92 },
+  eHPS = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 },  -- pastel green
+  MPS  = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 },  -- pastel pink
 }
 
 local COLS = { "EMS", "eHPS", "MPS" }

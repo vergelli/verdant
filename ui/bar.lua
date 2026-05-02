@@ -18,8 +18,8 @@ local DISPLAY_METRICS = { "EMS", "eHPS", "MPS", "ALL" }
 
 local COLORS = {
   EMS  = { r = 0.95, g = 0.80, b = 0.20, a = 0.92 },
-  eHPS = { r = 0.25, g = 0.88, b = 0.35, a = 0.92 },
-  MPS  = { r = 0.90, g = 0.38, b = 0.68, a = 0.92 },
+  eHPS = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 },  -- pastel green
+  MPS  = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 },  -- pastel pink
 }
 
 local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
@@ -305,7 +305,30 @@ local function setup_triple_view()
     fill:SetColor(c.r, c.g, c.b, c.a)
     col.fill = fill
 
-    -- skill pool for eHPS and MPS columns (EMS stays single-fill)
+    -- EMS: stacked heal (pastel green, bottom) + shield (pastel pink, above)
+    if m == "EMS" then
+      fill:SetHidden(true)
+
+      local fh = WM:CreateControl("VerdantBarTriFillHeal" .. m, area, CT_TEXTURE)
+      fh:ClearAnchors()
+      fh:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+      fh:SetTexture(FILL_TEXTURE)
+      fh:SetTextureCoords(0, 1, FILL_T, FILL_B)
+      fh:SetColor(COLORS.eHPS.r, COLORS.eHPS.g, COLORS.eHPS.b, COLORS.eHPS.a)
+      fh:SetHidden(true)
+      col.fill_heal = fh
+
+      local fs = WM:CreateControl("VerdantBarTriFillShield" .. m, area, CT_TEXTURE)
+      fs:ClearAnchors()
+      fs:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+      fs:SetTexture(FILL_TEXTURE)
+      fs:SetTextureCoords(0, 1, FILL_T, FILL_B)
+      fs:SetColor(COLORS.MPS.r, COLORS.MPS.g, COLORS.MPS.b, COLORS.MPS.a)
+      fs:SetHidden(true)
+      col.fill_shield = fs
+    end
+
+    -- skill pool for eHPS and MPS columns
     if m ~= "EMS" then
       col.pool = make_skill_pool(area, "VerdantBarTriSkill" .. m)
     end
@@ -354,10 +377,10 @@ local function refresh()
   -- mode button is always visible; text and color depend on view
   if m ~= "ALL" then
     local color = COLORS[m]
-    controls.mode_btn:SetText(display_pct and "#" or "%")
+    controls.mode_btn:SetText(display_pct and "[#]" or "[%]")
     controls.mode_btn:SetColor(color.r, color.g, color.b, 0.90)
   else
-    controls.mode_btn:SetText(display_pct and "#" or "%")
+    controls.mode_btn:SetText(display_pct and "[#]" or "[%]")
     controls.mode_btn:SetColor(1, 1, 1, 0.80)
   end
 
@@ -404,10 +427,24 @@ local function refresh()
           local segs = Verdant.Metrics.MPS_by_group(now)
           render_skill_segments(col.pool, col.area, segs, area_w, area_h, frac)
         else
-          -- EMS: single gold fill
-          local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
-          col.fill:SetWidth(area_w)
-          col.fill:SetHeight(fill_h)
+          -- EMS: stacked heal (green, bottom) + shield (pink, above)
+          col.fill:SetHidden(true)
+          local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
+          local shield_frac = math_max(0, math_min(1, r.C_shield or 0))
+          local heal_h      = (heal_frac   > 0.005) and math_max(2, area_h * heal_frac)   or 0
+          local shield_h    = (shield_frac > 0.005) and math_max(2, area_h * shield_frac) or 0
+
+          local fh = col.fill_heal
+          fh:SetHidden(false)
+          fh:SetWidth(area_w)
+          fh:SetHeight(heal_h)
+
+          local fs = col.fill_shield
+          fs:ClearAnchors()
+          fs:SetAnchor(BOTTOMLEFT, col.area, BOTTOMLEFT, 0, -heal_h)
+          fs:SetHidden(false)
+          fs:SetWidth(area_w)
+          fs:SetHeight(shield_h)
         end
         render_peak_line(col.peak_line, col.area, area_w, area_h, peaks[cm].frac)
       end
@@ -581,13 +618,17 @@ function M.init()
   controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
   controls.next_btn:SetText(">")
   controls.next_btn:SetColor(0.75, 0.75, 0.75, 1)
-  controls.settings_btn:SetText("S")
-  controls.settings_btn:SetColor(0.50, 0.50, 0.50, 1)
+  controls.settings_btn:SetText("")
+  local gear = WINDOW_MANAGER:CreateControl("VerdantBarGearIcon", controls.settings_btn, CT_TEXTURE)
+  gear:ClearAnchors()
+  gear:SetAnchor(TOPLEFT,     controls.settings_btn, TOPLEFT,     0, 0)
+  gear:SetAnchor(BOTTOMRIGHT, controls.settings_btn, BOTTOMRIGHT, 0, 0)
+  gear:SetTexture("EsoUI/Art/ChatWindow/chat_options_up.dds")
+  gear:SetColor(0.65, 0.65, 0.65, 1)
 
-  controls.api_label:SetText(string_format("API %d", GetAPIVersion()))
-  controls.api_label:SetColor(0.45, 0.45, 0.45, 1)
-  controls.version_label:SetText(string_format("v%s", C.VERSION))
-  controls.version_label:SetColor(0.45, 0.45, 0.45, 1)
+  controls.api_label:SetHidden(true)
+  controls.version_label:SetText(string_format("v%s  API %d", C.VERSION, GetAPIVersion()))
+  controls.version_label:SetColor(0.40, 0.40, 0.40, 1)
 
   local is_all = (DISPLAY_METRICS[metric_idx] == "ALL")
   local min_w  = is_all and MIN_W_ALL or MIN_W_SINGLE
