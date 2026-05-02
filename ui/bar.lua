@@ -581,7 +581,7 @@ function M.init()
   controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
   controls.next_btn:SetText(">")
   controls.next_btn:SetColor(0.75, 0.75, 0.75, 1)
-  controls.settings_btn:SetText("⚙")
+  controls.settings_btn:SetText("S")
   controls.settings_btn:SetColor(0.50, 0.50, 0.50, 1)
 
   controls.api_label:SetText(string_format("API %d", GetAPIVersion()))

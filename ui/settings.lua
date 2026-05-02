@@ -99,7 +99,7 @@ function M.toggle()
     local ph = win:GetHeight()
 
     win:ClearAnchors()
-    if bBottom + 4 + ph <= GetScreenHeight() then
+    if bBottom + 4 + ph <= GuiRoot:GetHeight() then
       win:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, bLeft, bBottom + 4)
     else
       win:SetAnchor(BOTTOMLEFT, GuiRoot, TOPLEFT, bLeft, bTop - 4)

@@ -3,8 +3,6 @@ Verdant.SkillColors = {}
 local M = Verdant.SkillColors
 
 -- One color per class / skill-line.
--- Two shades were considered but a single vivid color per group reads better
--- on a narrow vertical bar at small sizes.
 local GROUP_COLORS = {
   templar   = { r = 0.95, g = 0.75, b = 0.15, a = 0.95 },  -- amber gold
   arcanist  = { r = 0.20, g = 0.92, b = 0.35, a = 0.95 },  -- vivid green
@@ -18,143 +16,124 @@ local GROUP_COLORS = {
   other     = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
 }
 
--- ability ID → group key
--- Covers the most common healer skills.  Unknown IDs fall through to "other".
--- Use /verdant dump to discover IDs for skills not listed here, then add them.
-local ABILITY_MAP = {
-
-  -- ── Templar ──────────────────────────────────────────────────────────────
-  -- Rushed Ceremony / Breath of Life / Honor the Dead
-  [1604]  = "templar",
-  [5938]  = "templar",
-  [1977]  = "templar",
-  -- Healing Ritual / Extended Ritual / Purifying Ritual
-  [1122]  = "templar",
-  [5899]  = "templar",
-  [5900]  = "templar",
-  -- Restoring Light / Mending / Rapid Mending
-  [1718]  = "templar",
-  [5924]  = "templar",
-  [5925]  = "templar",
-  -- Spear Shards / Luminous Shards / Blazing Spear
-  [21353] = "templar",
-  [21365] = "templar",
-  [21366] = "templar",
-  -- Restoring Aura / Radiant Aura / Repentance
-  [2259]  = "templar",
-  [2260]  = "templar",
-  [22250] = "templar",
-
-  -- ── Warden ───────────────────────────────────────────────────────────────
-  -- Healing Seed / Budding Seeds / Corrupting Pollen
-  [85414] = "warden",
-  [85432] = "warden",
-  [85433] = "warden",
-  -- Healing Thicket / Enchanted Forest / Nature's Embrace
-  [85499] = "warden",
-  [85502] = "warden",
-  [85505] = "warden",
-  -- Living Thorn / Leeching Vines
-  [100175]= "warden",
-  [100178]= "warden",
-  -- Arctic Wind / Polar Wind / Icy Aura
-  [86127] = "warden",
-  [86130] = "warden",
-  [86133] = "warden",
-
-  -- ── Arcanist ─────────────────────────────────────────────────────────────
-  -- Apocryphal Gate / Wanderer's Mark / Fatecarver heals
-  [183508]= "arcanist",
-  [183509]= "arcanist",
-  [183510]= "arcanist",
-  [185820]= "arcanist",
-  [185821]= "arcanist",
-  [186006]= "arcanist",
-  [186007]= "arcanist",
-
-  -- ── Dragonknight ─────────────────────────────────────────────────────────
-  -- Green Dragon Blood / Coagulating Blood / Bursting Vines
-  [29059] = "dk",
-  [29062] = "dk",
-  [29065] = "dk",
-  -- Cauterize / Burning Heart
-  [33414] = "dk",
-  [33417] = "dk",
-
-  -- ── Sorcerer ─────────────────────────────────────────────────────────────
-  -- Twilight Matriarch / Twilight Tormentor
-  [23236] = "sorc",
-  [23241] = "sorc",
-  -- Regenerative Ward / Annulment / Dampen Magic
-  [24830] = "sorc",
-  [24833] = "sorc",
-  [24836] = "sorc",
-
-  -- ── Nightblade ───────────────────────────────────────────────────────────
-  -- Refreshing Path / Twisting Path
-  [33195] = "nb",
-  [33208] = "nb",
-  -- Sap Essence / Drain Power / Swallow Soul
-  [37526] = "nb",
-  [37528] = "nb",
-  [61907] = "nb",
-  [61910] = "nb",
-
-  -- ── Necromancer ──────────────────────────────────────────────────────────
-  -- Render Flesh / Resistant Flesh / Ghostly Embrace
-  [114108]= "necro",
-  [114111]= "necro",
-  [114114]= "necro",
-  -- Restoring Tether / Braided Tether / Mortal Coil
-  [115009]= "necro",
-  [115012]= "necro",
-  [115015]= "necro",
-  -- Spirit Mender / Spirit Guardian / Intensive Mender
-  [114343]= "necro",
-  [114346]= "necro",
-  [114349]= "necro",
-
-  -- ── Restoration Staff ────────────────────────────────────────────────────
-  -- Grand Healing / Healing Springs / Illustrious Healing
-  [29478] = "resto",
-  [29483] = "resto",
-  [29488] = "resto",
-  -- Regeneration / Rapid Regeneration / Radiating Regeneration
-  [1376]  = "resto",
-  [1377]  = "resto",
-  [1378]  = "resto",
-  -- Combat Prayer / Blessed Barrier / Blessing of Protection
-  [29493] = "resto",
-  [29494] = "resto",
-  [29495] = "resto",
-  -- Healing Ward / Panacea / Ward Ally
-  [29490] = "resto",
-  [29491] = "resto",
-  [29492] = "resto",
-  -- Mutagen / Efficient Purge / Cure
-  [38928] = "resto",
-  [38931] = "resto",
-  [38934] = "resto",
-
-  -- ── Undaunted ────────────────────────────────────────────────────────────
-  -- Blood Altar / Overflowing Altar / Bloodthirst
-  [33010] = "undaunted",
-  [33013] = "undaunted",
-  [33016] = "undaunted",
+-- Lowercase English name fragments.  More specific patterns must come first.
+-- Use /verdant dump to find IDs for skills that still show grey, then add
+-- entries to ABILITY_OVERRIDES below (no name-lookup overhead for those).
+local NAME_PATTERNS = {
+  -- Templar
+  { "breath of life",       "templar" },
+  { "honor the dead",       "templar" },
+  { "rushed ceremony",      "templar" },
+  { "extended ritual",      "templar" },
+  { "purifying ritual",     "templar" },
+  { "healing ritual",       "templar" },
+  { "restoring light",      "templar" },
+  { "mending",              "templar" },
+  { "luminous shards",      "templar" },
+  { "repentance",           "templar" },
+  -- Warden
+  { "budding seeds",        "warden" },
+  { "healing seed",         "warden" },
+  { "healing thicket",      "warden" },
+  { "enchanted forest",     "warden" },
+  { "living thorn",         "warden" },
+  { "leeching vines",       "warden" },
+  { "polar wind",           "warden" },
+  { "arctic wind",          "warden" },
+  { "nature's grasp",       "warden" },
+  { "nature's embrace",     "warden" },
+  -- Arcanist
+  { "apocryphal",           "arcanist" },
+  { "fatecarver",           "arcanist" },
+  { "writhing storm",       "arcanist" },
+  -- Dragonknight
+  { "green dragon blood",   "dk" },
+  { "coagulating blood",    "dk" },
+  { "cauterize",            "dk" },
+  { "burning heart",        "dk" },
+  { "bursting vines",       "dk" },
+  -- Sorcerer
+  { "twilight matriarch",   "sorc" },
+  { "twilight tormentor",   "sorc" },
+  { "regenerative ward",    "sorc" },
+  { "annulment",            "sorc" },
+  { "dampen magic",         "sorc" },
+  -- Nightblade
+  { "refreshing path",      "nb" },
+  { "twisting path",        "nb" },
+  { "sap essence",          "nb" },
+  { "drain power",          "nb" },
+  { "swallow soul",         "nb" },
+  { "funnel health",        "nb" },
+  -- Necromancer
+  { "render flesh",         "necro" },
+  { "resistant flesh",      "necro" },
+  { "ghostly embrace",      "necro" },
+  { "restoring tether",     "necro" },
+  { "braided tether",       "necro" },
+  { "mortal coil",          "necro" },
+  { "spirit mender",        "necro" },
+  { "spirit guardian",      "necro" },
+  { "intensive mender",     "necro" },
+  -- Restoration Staff  (put "rapid" / "radiating" before plain "regeneration")
+  { "healing springs",      "resto" },
+  { "grand healing",        "resto" },
+  { "illustrious healing",  "resto" },
+  { "rapid regeneration",   "resto" },
+  { "radiating regeneration","resto" },
+  { "regeneration",         "resto" },
+  { "combat prayer",        "resto" },
+  { "blessed barrier",      "resto" },
+  { "blessing of protection","resto" },
+  { "healing ward",         "resto" },
+  { "panacea",              "resto" },
+  { "ward ally",            "resto" },
+  { "mutagen",              "resto" },
+  { "efficient purge",      "resto" },
+  -- Undaunted
+  { "blood altar",          "undaunted" },
+  { "overflowing altar",    "undaunted" },
+  { "bloodthirst",          "undaunted" },
 }
+
+-- Direct ID → group overrides.  Faster than name lookup; add confirmed IDs here.
+-- Format: [abilityId] = "group_key"
+local ABILITY_OVERRIDES = {
+  -- example: [29483] = "resto",
+}
+
+-- Runtime cache (abilityId → group string); populated on first encounter.
+local ability_cache = {}
+
+local function classify_by_name(abilityId)
+  local name = GetAbilityName(abilityId)
+  if not name or name == "" then return "other" end
+  name = string.lower(name)
+  for _, entry in ipairs(NAME_PATTERNS) do
+    if string.find(name, entry[1], 1, true) then
+      return entry[2]
+    end
+  end
+  return "other"
+end
+
+local function lookup_group(abilityId)
+  if not abilityId or abilityId <= 0 then return "other" end
+  local g = ability_cache[abilityId]
+  if g then return g end
+  g = ABILITY_OVERRIDES[abilityId] or classify_by_name(abilityId)
+  ability_cache[abilityId] = g
+  return g
+end
 
 local FALLBACK = GROUP_COLORS.other
 
 function M.get_color(abilityId)
-  local g = ABILITY_MAP[abilityId]
-  if g then return GROUP_COLORS[g] end
-  return FALLBACK
+  return GROUP_COLORS[lookup_group(abilityId)] or FALLBACK
 end
 
--- Returns a sorted array of { r, g, b, a, share } where share is 0-1 and
--- all shares sum to 1.  Largest segment first (bottom of a vertical bar).
--- buf: a Verdant.Buffer instance whose entries have .amount and .abilityId.
--- predicate: optional function(entry) → bool (same as Buffer:sum's predicate).
+-- Returns a sorted array of { r, g, b, a, share } (largest segment first).
+-- All shares sum to 1.  Empty if total is 0.
 function M.group_shares(buf, now_ms, predicate)
   buf:trim(now_ms)
   local buckets = {}
@@ -163,7 +142,7 @@ function M.group_shares(buf, now_ms, predicate)
     local e   = buf.entries[i]
     local amt = e.amount or 0
     if amt > 0 and (not predicate or predicate(e)) then
-      local key = ABILITY_MAP[e.abilityId] or "other"
+      local key = lookup_group(e.abilityId)
       buckets[key] = (buckets[key] or 0) + amt
       total = total + amt
     end
