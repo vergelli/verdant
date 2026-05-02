@@ -21,6 +21,7 @@ core/coverage.lua
 core/group_set.lua
 core/mode.lua
 core/metrics.lua
+core/diagnostics.lua
 core/engine.lua
 core/probe.lua
 Verdant.lua

@@ -41,3 +41,9 @@ function M.size()
   for _ in pairs(members) do n = n + 1 end
   return n
 end
+
+function M.snapshot()
+  local ids = {}
+  for uid in pairs(members) do ids[#ids + 1] = uid end
+  return { player_unit_id = player_unit_id, member_count = #ids, members = ids }
+end

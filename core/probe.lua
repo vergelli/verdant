@@ -568,6 +568,7 @@ function M.persist_to_savedvars(sv)
     stats       = deep_copy(state.stats),
     universe    = deep_copy(state.universe),
     buffers     = deep_copy(state.buffers),
+    engine      = Verdant.Diagnostics and deep_copy(Verdant.Diagnostics.snapshot()) or nil,
   }
 
   table.insert(sv.probe.dumps, 1, snapshot)

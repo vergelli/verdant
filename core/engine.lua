@@ -13,20 +13,38 @@ local GetGameTimeMilliseconds = GetGameTimeMilliseconds
 
 local function now() return GetGameTimeMilliseconds() end
 
+local function bump(key)   Verdant.Diagnostics.bump(key)         end
+local function log(cat, p) Verdant.Diagnostics.log_event(cat, p) end
+
 local function on_heal_out(result, isError, _name, _g, _slot,
                            _src, sourceType, _tgt, targetType, hit,
                            _pt, _dt, _log, sourceUnitId, targetUnitId,
                            abilityId, overflow)
-  if isError then return end
-  if (hit or 0) == 0 and (overflow or 0) == 0 then return end
-  if not Verdant.Mode.uses("heal") and not Verdant.Mode.uses("overheal") then return end
+  bump("engine.heal.in")
+  if isError then bump("engine.heal.dropped_error") return end
+  if (hit or 0) == 0 and (overflow or 0) == 0 then
+    bump("engine.heal.dropped_noise") return
+  end
+  if not Verdant.Mode.uses("heal") and not Verdant.Mode.uses("overheal") then
+    bump("engine.heal.dropped_mode") return
+  end
 
   if sourceType == COMBAT_UNIT_TYPE_PLAYER and sourceUnitId and sourceUnitId ~= 0 then
     Verdant.GroupSet.set_player(sourceUnitId)
   end
   if targetType == COMBAT_UNIT_TYPE_GROUP and targetUnitId and targetUnitId ~= 0 then
     Verdant.GroupSet.add(targetUnitId)
+    bump("engine.heal.target_group")
+  else
+    bump("engine.heal.target_other")
   end
+
+  bump("engine.heal.accepted")
+  log("heal", "ab=" .. tostring(abilityId)
+    .. " tgt=" .. tostring(targetUnitId)
+    .. " hit=" .. tostring(hit)
+    .. " ovfl=" .. tostring(overflow)
+    .. " ttype=" .. tostring(targetType))
 
   local t = now()
   Verdant.Metrics.ingest_heal(t, hit, overflow, targetUnitId, targetType, abilityId)
@@ -39,9 +57,20 @@ local function on_shield_abs(result, isError, _name, _g, _slot,
                              _src, _sourceType, _tgt, targetType, hit,
                              _pt, _dt, _log, _suid, targetUnitId,
                              abilityId, _overflow)
-  if isError then return end
-  if not Verdant.Mode.uses("shield_abs") then return end
-  if not Verdant.ShieldRegistry.is_self_cast(abilityId, targetUnitId) then return end
+  bump("engine.shield.in")
+  if isError then bump("engine.shield.dropped_error") return end
+  if not Verdant.Mode.uses("shield_abs") then
+    bump("engine.shield.dropped_mode") return
+  end
+  if not Verdant.ShieldRegistry.is_self_cast(abilityId, targetUnitId) then
+    bump("engine.shield.foreign") return
+  end
+
+  bump("engine.shield.accepted")
+  log("shield_abs", "ab=" .. tostring(abilityId)
+    .. " tgt=" .. tostring(targetUnitId)
+    .. " hit=" .. tostring(hit)
+    .. " ttype=" .. tostring(targetType))
 
   local t = now()
   Verdant.Metrics.ingest_shield(t, hit, targetUnitId, targetType, abilityId)
@@ -52,23 +81,41 @@ local function on_group_damage(result, isError, _name, _g, _slot,
                                _src, _sourceType, _tgt, _targetType, hit,
                                _pt, _dt, _log, _suid, targetUnitId,
                                _abilityId, _overflow)
-  if isError then return end
-  if not Verdant.Mode.uses("damage") then return end
-  if not Verdant.GroupSet.contains(targetUnitId) then return end
+  bump("engine.damage.in")
+  if isError then bump("engine.damage.dropped_error") return end
+  if not Verdant.Mode.uses("damage") then
+    bump("engine.damage.dropped_mode") return
+  end
+  if not Verdant.GroupSet.contains(targetUnitId) then
+    bump("engine.damage.not_in_groupset") return
+  end
+
+  bump("engine.damage.accepted")
+  log("group_dmg", "tgt=" .. tostring(targetUnitId) .. " hit=" .. tostring(hit))
+
   Verdant.Metrics.ingest_damage_group(now(), hit, targetUnitId)
 end
 
 local function on_effect_player_src(changeType, _slot, _name, _tag, _bt, endTime,
                                     _stack, _icon, _depBuff, _et, _at,
                                     _stat, _uname, unitId, abilityId, sourceType)
+  bump("engine.effect.in_player_src")
+  if changeType == EFFECT_RESULT_GAINED then
+    bump("engine.effect.gained")
+  elseif changeType == EFFECT_RESULT_FADED then
+    bump("engine.effect.faded")
+  end
   Verdant.ShieldRegistry.on_effect(changeType, abilityId, unitId, sourceType, endTime)
 end
 
 local function on_group_change()
+  bump("engine.group.changed")
   Verdant.Coverage.refresh_mode()
 end
 
 local function on_group_left()
+  bump("engine.group.left")
+  log("group_left", "resetting groupset sz=" .. Verdant.GroupSet.size())
   Verdant.Coverage.refresh_mode()
   Verdant.GroupSet.reset()
 end
@@ -76,6 +123,7 @@ end
 function M.init()
   local E = Verdant.Events
 
+  Verdant.Diagnostics.init()
   Verdant.Metrics.init()
   Verdant.Coverage.refresh_mode()
 

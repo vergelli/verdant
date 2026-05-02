@@ -66,6 +66,14 @@ end
 
 M.is_group_target_type = is_group_target_type
 
+function M.snapshot()
+  local units = {}
+  for uid, t in pairs(coverage) do
+    units[#units + 1] = { uid = uid, last_t = t }
+  end
+  return { mode_grouped = mode_grouped, coverage_sz = #units, units = units }
+end
+
 function M.reset()
   coverage = {}
   mode_grouped = false

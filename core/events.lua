@@ -36,3 +36,11 @@ end
 function M.add_filter(name, eventCode, ...)
   EVENT_MANAGER:AddFilterForEvent(name, eventCode, ...)
 end
+
+function M.register_update(name, interval_ms, callback)
+  EVENT_MANAGER:RegisterForUpdate(name, interval_ms, callback)
+end
+
+function M.unregister_update(name)
+  EVENT_MANAGER:UnregisterForUpdate(name)
+end

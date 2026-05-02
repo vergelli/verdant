@@ -78,6 +78,8 @@ local function on_slash(input)
     if val then val = val:gsub("%s+$", "") end
     Verdant.Probe.set_tag(val)
     d("[V] session tag: " .. (val or "(cleared)"))
+  elseif cmd == "diag" then
+    Verdant.Diagnostics.print_diag()
   elseif cmd == "save" then
     Verdant.Probe.persist_to_savedvars(Verdant.SavedVars)
     d("[V] " .. L.DUMP_SAVED)
@@ -87,6 +89,7 @@ local function on_slash(input)
     Verdant.ShieldRegistry.reset()
     Verdant.Coverage.reset()
     Verdant.GroupSet.reset()
+    Verdant.Diagnostics.reset()
     d("[V] " .. L.BUFFER_CLEARED)
   else
     d("[V] " .. format_help())

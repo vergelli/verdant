@@ -32,8 +32,21 @@ function M.uses(class)
   return m and m[class] == true
 end
 
+function M.current()
+  return active
+end
+
 function M.list()
   local out = {}
   for k in pairs(METRICS) do out[#out + 1] = k end
   return out
+end
+
+function M.snapshot()
+  local flags = {}
+  local m = METRICS[active]
+  if m then
+    for cls, v in pairs(m) do flags[cls] = v end
+  end
+  return { active = active, flags = flags }
 end
