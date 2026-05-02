@@ -29,4 +29,6 @@ ui/bar.xml
 ui/bar.lua
 ui/tribar.xml
 ui/tribar.lua
+ui/settings.xml
+ui/settings.lua
 Verdant.lua

@@ -1,0 +1,60 @@
+<GuiXml>
+  <Controls>
+
+    <!--
+      Settings drop-down panel.  No anchor here — M.toggle() positions it
+      dynamically above or below VerdantBarWindow depending on screen room.
+      Not movable: it's a transient popup, not a persistent window.
+    -->
+    <TopLevelControl name="VerdantSettingsPanel"
+                     hidden="true"
+                     clampedToScreen="true"
+                     mouseEnabled="true">
+
+      <Dimensions x="160" y="50"/>
+
+      <Controls>
+
+        <Backdrop name="$(parent)Bg">
+          <AnchorFill/>
+          <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
+                edgeFileWidth="128" edgeFileHeight="16" edgeSize="6"/>
+          <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+          <Insets left="6" top="6" right="-6" bottom="-6"/>
+        </Backdrop>
+
+        <!-- "Refresh Rate" label (left) -->
+        <Label name="$(parent)Title"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="7"/>
+          <Dimensions x="88" y="12"/>
+        </Label>
+
+        <!-- Current Hz value (right, gold) -->
+        <Label name="$(parent)RateLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="7"/>
+          <Dimensions x="54" y="12"/>
+        </Label>
+
+        <!--
+          Slider track: the entire bottom strip is the click target.
+          bg / fill / thumb textures are created in Lua so they are
+          children of this control and render on top of it.
+        -->
+        <Control name="$(parent)SliderTrack" mouseEnabled="true">
+          <Anchor point="BOTTOMLEFT"  offsetX="8"  offsetY="-8"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8"/>
+          <Dimensions y="14"/>
+          <OnMouseUp>Verdant.Settings.on_track_click(self)</OnMouseUp>
+        </Control>
+
+      </Controls>
+    </TopLevelControl>
+
+  </Controls>
+</GuiXml>

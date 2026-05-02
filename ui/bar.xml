@@ -59,13 +59,25 @@
           <OnMouseUp>Verdant.Bar.next_metric()</OnMouseUp>
         </Label>
 
-        <!-- Value display (number or %) -->
+        <!-- Value display (number or %) — leaves right margin for settings btn -->
         <Label name="$(parent)ValueLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOP" offsetY="28"/>
-          <Dimensions x="60" y="14"/>
+          <Anchor point="TOPLEFT"  offsetX="8"   offsetY="28"/>
+          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="28"/>
+          <Dimensions y="14"/>
+        </Label>
+
+        <!-- Settings toggle (⚙ gear, top-right of value row) -->
+        <Label name="$(parent)SettingsBtn"
+               mouseEnabled="true"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-2" offsetY="28"/>
+          <Dimensions x="18" y="14"/>
+          <OnMouseUp>Verdant.Settings.toggle()</OnMouseUp>
         </Label>
 
         <!--

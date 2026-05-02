@@ -404,6 +404,12 @@ function M.hide()
   save_state()
 end
 
+-- Called by Settings when the slider changes
+function M.set_rate(ms)
+  Verdant.Events.unregister_update("Verdant_BarTick")
+  Verdant.Events.register_update("Verdant_BarTick", ms, refresh)
+end
+
 function M.on_move_stop()
   local left, top = controls.window:GetScreenRect()
   local sv = Verdant.SavedVars
@@ -441,11 +447,14 @@ function M.init()
   controls.api_label     = VerdantBarWindowApiLabel
   controls.prev_btn      = VerdantBarWindowPrevBtn
   controls.next_btn      = VerdantBarWindowNextBtn
+  controls.settings_btn  = VerdantBarWindowSettingsBtn
 
   controls.prev_btn:SetText("<")
   controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
   controls.next_btn:SetText(">")
   controls.next_btn:SetColor(0.75, 0.75, 0.75, 1)
+  controls.settings_btn:SetText("⚙")
+  controls.settings_btn:SetColor(0.50, 0.50, 0.50, 1)
 
   controls.api_label:SetText(string_format("API %d", GetAPIVersion()))
   controls.api_label:SetColor(0.45, 0.45, 0.45, 1)
@@ -469,6 +478,7 @@ function M.init()
   local visible = (b.visible == nil) and true or b.visible
   controls.window:SetHidden(not visible)
 
-  Verdant.Events.register_update("Verdant_BarTick", 1000, refresh)
+  local rate_ms = b.rate_ms or 1000
+  Verdant.Events.register_update("Verdant_BarTick", rate_ms, refresh)
   refresh()
 end
