@@ -1,11 +1,6 @@
 <GuiXml>
   <Controls>
 
-    <!--
-      VerdantBarWindow — vertical contribution bar
-      Movable, resizable, clamp to screen.
-      Child textures (track + fill) are created in Lua to allow dynamic tinting.
-    -->
     <TopLevelControl name="VerdantBarWindow"
                      hidden="true"
                      clampedToScreen="true"
@@ -13,10 +8,9 @@
                      mouseEnabled="true"
                      resizeHandleSize="8">
 
-      <!-- Default position: bottom-right corner -->
       <Anchor point="BOTTOMRIGHT" relativeTo="GuiRoot"
               relativePoint="BOTTOMRIGHT" offsetX="-20" offsetY="-40"/>
-      <Dimensions x="70" y="220"/>
+      <Dimensions x="70" y="240"/>
 
       <OnMoveStop>Verdant.Bar.on_move_stop()</OnMoveStop>
       <OnResizeStop>Verdant.Bar.on_resize_stop()</OnResizeStop>
@@ -32,59 +26,89 @@
           <Insets left="8" top="8" right="-8" bottom="-8"/>
         </Backdrop>
 
-        <!-- ← prev -->
-        <Button name="$(parent)PrevBtn" mouseEnabled="true">
-          <Anchor point="TOPLEFT" offsetX="4" offsetY="6"/>
-          <Dimensions x="16" y="16"/>
-          <OnClicked>Verdant.Bar.prev_metric()</OnClicked>
-        </Button>
+        <!-- Prev arrow — Label acts as clickable text; no invisible Button quirks -->
+        <Label name="$(parent)PrevBtn"
+               mouseEnabled="true"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="8"/>
+          <Dimensions x="14" y="16"/>
+          <OnMouseUp>Verdant.Bar.prev_metric()</OnMouseUp>
+        </Label>
 
-        <!-- metric acronym (EMS / eHPS / MPS) -->
+        <!-- Metric acronym — both TOPLEFT/TOPRIGHT share same offsetY to avoid
+             conflicting vertical constraints that caused the collision bug -->
         <Label name="$(parent)MetricLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT"  offsetX="22" offsetY="6"/>
-          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="22"/>
+          <Anchor point="TOPLEFT"  offsetX="24" offsetY="8"/>
+          <Anchor point="TOPRIGHT" offsetX="-24" offsetY="8"/>
+          <Dimensions y="16"/>
         </Label>
 
-        <!-- next → -->
-        <Button name="$(parent)NextBtn" mouseEnabled="true">
-          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="6"/>
-          <Dimensions x="16" y="16"/>
-          <OnClicked>Verdant.Bar.next_metric()</OnClicked>
-        </Button>
+        <!-- Next arrow -->
+        <Label name="$(parent)NextBtn"
+               mouseEnabled="true"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="8"/>
+          <Dimensions x="14" y="16"/>
+          <OnMouseUp>Verdant.Bar.next_metric()</OnMouseUp>
+        </Label>
 
-        <!-- Numeric or % value -->
+        <!-- Value display (number or %) -->
         <Label name="$(parent)ValueLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
-               verticalAlignment="CENTER"
-               color="FFFFFFFF">
-          <Anchor point="TOP" offsetY="26"/>
-          <Dimensions x="66" y="14"/>
+               verticalAlignment="CENTER">
+          <Anchor point="TOP" offsetY="28"/>
+          <Dimensions x="60" y="14"/>
         </Label>
 
-        <!-- Bar area — track + fill textures created in Lua -->
+        <!--
+          BarArea: fixed narrow width, centered via TOP/BOTTOM anchors.
+          TOP and BOTTOM are center-horizontal points in ESO, so the bar
+          is always centered regardless of window width.
+          Track and fill textures are created in Lua.
+        -->
         <Control name="$(parent)BarArea" mouseEnabled="false">
-          <Anchor point="TOPLEFT"     offsetX="8"  offsetY="44"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-32"/>
+          <Anchor point="TOP"    offsetY="46"/>
+          <Anchor point="BOTTOM" offsetY="-36"/>
+          <Dimensions x="22" y="0"/>
         </Control>
 
-        <!-- # / % display-mode toggle -->
-        <Button name="$(parent)ModeBtn" mouseEnabled="true">
-          <Anchor point="BOTTOM" offsetY="-18"/>
-          <Dimensions x="36" y="12"/>
-          <OnClicked>Verdant.Bar.toggle_display_mode()</OnClicked>
-        </Button>
+        <!-- Display mode toggle (Label, not Button) -->
+        <Label name="$(parent)ModeBtn"
+               mouseEnabled="true"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="BOTTOM" offsetY="-22"/>
+          <Dimensions x="30" y="12"/>
+          <OnMouseUp>Verdant.Bar.toggle_display_mode()</OnMouseUp>
+        </Label>
 
-        <!-- API ver + addon ver (small, bottom) -->
+        <!-- API version (upper of the two version lines) -->
+        <Label name="$(parent)ApiLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="BOTTOMLEFT"  offsetX="4"  offsetY="-14"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-4" offsetY="-14"/>
+          <Dimensions y="10"/>
+        </Label>
+
+        <!-- Addon version (lowest line) -->
         <Label name="$(parent)VersionLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="BOTTOM" offsetY="-4"/>
-          <Dimensions x="66" y="10"/>
+          <Anchor point="BOTTOMLEFT"  offsetX="4"  offsetY="-4"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-4" offsetY="-4"/>
+          <Dimensions y="10"/>
         </Label>
 
       </Controls>

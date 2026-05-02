@@ -12,37 +12,35 @@ local math_min                = math.min
 local math_floor              = math.floor
 
 -- ── display metric cycle ──────────────────────────────────────────────────
--- Each entry drives which slice of contribution() is shown on the bar.
 local DISPLAY_METRICS = { "EMS", "eHPS", "MPS" }
 
--- v1.0 colours: EMS = gold, eHPS = green, MPS = pink
 local COLORS = {
   EMS  = { r = 0.95, g = 0.80, b = 0.20, a = 0.92 },
   eHPS = { r = 0.25, g = 0.88, b = 0.35, a = 0.92 },
   MPS  = { r = 0.90, g = 0.38, b = 0.68, a = 0.92 },
 }
 
-local TRACK_COLOR  = { r = 0.05, g = 0.05, b = 0.05, a = 0.92 }
-local BAR_TEXTURE  = "EsoUI/Art/Tooltips/UI-TooltipCenter.dds"
+local TRACK_COLOR = { r = 0.06, g = 0.06, b = 0.06, a = 0.95 }
+-- Flat tintable texture (attribute bar fill, designed for colour overrides)
+local BAR_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 
 -- size constraints (px)
-local MIN_W, MAX_W = 50,  130
-local MIN_H, MAX_H = 160, 420
+local MIN_W, MAX_W = 60, 140
+local MIN_H, MAX_H = 180, 440
 
 -- ── state ─────────────────────────────────────────────────────────────────
-local metric_idx  = 1      -- index into DISPLAY_METRICS
-local display_pct = false  -- false = raw number, true = percentage
-
-local controls = {}  -- populated in init()
+local metric_idx  = 1
+local display_pct = false
+local controls    = {}
 
 -- ── helpers ───────────────────────────────────────────────────────────────
 local function current_metric() return DISPLAY_METRICS[metric_idx] end
 
 local function contribution_values(r)
   local m = current_metric()
-  if m == "EMS"  then return r.C_self,   r.EMS,  "EMS"  end
-  if m == "eHPS" then return r.C_heal,   r.eHPS, "HPS"  end
-  if m == "MPS"  then return r.C_shield, r.MPS,  "MPS"  end
+  if m == "EMS"  then return r.C_self,   r.EMS,  "EMS" end
+  if m == "eHPS" then return r.C_heal,   r.eHPS, "HPS" end
+  if m == "MPS"  then return r.C_shield, r.MPS,  "MPS" end
   return 0, 0, "?"
 end
 
@@ -51,43 +49,47 @@ local function save_state()
   if not sv then return end
   sv.bar = sv.bar or {}
   local b = sv.bar
-  b.metric_idx   = metric_idx
-  b.display_pct  = display_pct
-  b.visible      = not controls.window:IsHidden()
+  b.metric_idx  = metric_idx
+  b.display_pct = display_pct
+  b.visible     = not controls.window:IsHidden()
 end
 
 -- ── bar texture setup ─────────────────────────────────────────────────────
 local function setup_textures()
-  local WM       = WINDOW_MANAGER
-  local bar_area = controls.bar_area
+  local WM  = WINDOW_MANAGER
+  local area = controls.bar_area
 
-  -- track: slightly larger than bar_area to give "containment" depth
-  local track = WM:CreateControl("VerdantBarTrack", bar_area, CT_TEXTURE)
+  -- track: 3px larger on each side → "containment" border effect.
+  -- Uses two anchors; height is fully determined, so no SetHeight needed.
+  local track = WM:CreateControl("VerdantBarTrack", area, CT_TEXTURE)
   track:ClearAnchors()
-  track:SetAnchor(TOPLEFT,     bar_area, TOPLEFT,     -3, -3)
-  track:SetAnchor(BOTTOMRIGHT, bar_area, BOTTOMRIGHT,  3,  3)
+  track:SetAnchor(TOPLEFT,     area, TOPLEFT,     -3, -3)
+  track:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT,  3,  3)
   track:SetTexture(BAR_TEXTURE)
   track:SetColor(TRACK_COLOR.r, TRACK_COLOR.g, TRACK_COLOR.b, TRACK_COLOR.a)
   controls.track = track
 
-  -- fill: anchored bottom-left + bottom-right so it grows upward.
-  -- height is set each tick; top edge floats.
-  local fill = WM:CreateControl("VerdantBarFill", bar_area, CT_TEXTURE)
+  -- fill: single BOTTOMLEFT anchor so SetWidth + SetHeight are unambiguous.
+  -- ESO ignores SetHeight when two opposing anchors fully constrain the axis;
+  -- a single anchor leaves height free.
+  local fill = WM:CreateControl("VerdantBarFill", area, CT_TEXTURE)
   fill:ClearAnchors()
-  fill:SetAnchor(BOTTOMLEFT,  bar_area, BOTTOMLEFT,  0, 0)
-  fill:SetAnchor(BOTTOMRIGHT, bar_area, BOTTOMRIGHT, 0, 0)
-  fill:SetHeight(2)
+  fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
   fill:SetTexture(BAR_TEXTURE)
   local c = COLORS["EMS"]
   fill:SetColor(c.r, c.g, c.b, c.a)
+  fill:SetWidth(area:GetWidth())
+  fill:SetHeight(0)
   controls.fill = fill
 end
 
--- ── refresh (1 Hz tick) ───────────────────────────────────────────────────
+-- ── refresh (called by 1 Hz tick and on user input) ───────────────────────
 local function refresh()
   if controls.window:IsHidden() then return end
 
-  local r       = Verdant.Metrics.contribution(GetGameTimeMilliseconds())
+  local now = GetGameTimeMilliseconds()
+  local r   = Verdant.Metrics.contribution(now)
+
   local frac, raw, suffix = contribution_values(r)
   frac = math_max(0, math_min(1, frac or 0))
   raw  = raw or 0
@@ -95,26 +97,32 @@ local function refresh()
   local m     = current_metric()
   local color = COLORS[m]
 
-  -- metric acronym (colored)
+  -- metric label (colored to match bar)
   controls.metric_label:SetText(m)
   controls.metric_label:SetColor(color.r, color.g, color.b, 1)
 
-  -- value text
+  -- value below metric label (white)
   if display_pct then
     controls.value_label:SetText(string_format("%.0f%%", frac * 100))
   else
     controls.value_label:SetText(string_format("%d %s", math_floor(raw), suffix))
   end
+  controls.value_label:SetColor(1, 1, 1, 1)
 
-  -- bar fill height
+  -- fill: single anchor, explicit width + height each tick.
+  -- Width keeps up with window resize; height represents the fraction.
+  local area_w = controls.bar_area:GetWidth()
   local area_h = controls.bar_area:GetHeight()
   if area_h > 4 then
-    controls.fill:SetHeight(math_max(2, area_h * frac))
+    local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
+    controls.fill:SetWidth(area_w)
+    controls.fill:SetHeight(fill_h)
     controls.fill:SetColor(color.r, color.g, color.b, color.a)
   end
 
-  -- mode button label: show what pressing it would switch TO
+  -- mode button: show what the NEXT click will switch to
   controls.mode_btn:SetText(display_pct and "#" or "%")
+  controls.mode_btn:SetColor(0.75, 0.75, 0.75, 1)
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
@@ -137,8 +145,7 @@ function M.toggle_display_mode()
 end
 
 function M.toggle()
-  local hidden = not controls.window:IsHidden()
-  controls.window:SetHidden(hidden)
+  controls.window:SetHidden(not controls.window:IsHidden())
   save_state()
 end
 
@@ -148,10 +155,7 @@ function M.hide() controls.window:SetHidden(true)  save_state() end
 function M.on_move_stop()
   local left, top = controls.window:GetScreenRect()
   local sv = Verdant.SavedVars
-  if sv then
-    sv.bar = sv.bar or {}
-    sv.bar.x, sv.bar.y = left, top
-  end
+  if sv then sv.bar = sv.bar or {} ; sv.bar.x, sv.bar.y = left, top end
 end
 
 function M.on_resize_stop()
@@ -160,10 +164,7 @@ function M.on_resize_stop()
   h = math_max(MIN_H, math_min(MAX_H, h))
   controls.window:SetDimensions(w, h)
   local sv = Verdant.SavedVars
-  if sv then
-    sv.bar = sv.bar or {}
-    sv.bar.w, sv.bar.h = w, h
-  end
+  if sv then sv.bar = sv.bar or {} ; sv.bar.w, sv.bar.h = w, h end
 end
 
 -- ── init ──────────────────────────────────────────────────────────────────
@@ -173,52 +174,46 @@ function M.init()
   sv.bar = sv.bar or {}
   local b = sv.bar
 
-  -- restore display state
   metric_idx  = b.metric_idx  or 1
   display_pct = b.display_pct or false
 
-  -- bind named XML controls
-  controls.window       = VerdantBarWindow
-  controls.metric_label = VerdantBarWindowMetricLabel
-  controls.value_label  = VerdantBarWindowValueLabel
-  controls.bar_area     = VerdantBarWindowBarArea
-  controls.mode_btn     = VerdantBarWindowModeBtn
-  controls.version_label= VerdantBarWindowVersionLabel
-  controls.prev_btn     = VerdantBarWindowPrevBtn
-  controls.next_btn     = VerdantBarWindowNextBtn
+  controls.window        = VerdantBarWindow
+  controls.metric_label  = VerdantBarWindowMetricLabel
+  controls.value_label   = VerdantBarWindowValueLabel
+  controls.bar_area      = VerdantBarWindowBarArea
+  controls.mode_btn      = VerdantBarWindowModeBtn
+  controls.version_label = VerdantBarWindowVersionLabel
+  controls.api_label     = VerdantBarWindowApiLabel
+  controls.prev_btn      = VerdantBarWindowPrevBtn
+  controls.next_btn      = VerdantBarWindowNextBtn
 
-  -- arrow button labels
+  -- arrow labels
   controls.prev_btn:SetText("<")
+  controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
   controls.next_btn:SetText(">")
+  controls.next_btn:SetColor(0.75, 0.75, 0.75, 1)
 
-  -- version label
-  controls.version_label:SetText(
-    string_format("API %d  v%s", GetAPIVersion(), C.VERSION))
+  -- version labels (small, grey)
+  controls.api_label:SetText(string_format("API %d", GetAPIVersion()))
+  controls.api_label:SetColor(0.45, 0.45, 0.45, 1)
+  controls.version_label:SetText(string_format("v%s", C.VERSION))
+  controls.version_label:SetColor(0.45, 0.45, 0.45, 1)
 
-  -- size constraints
+  -- size constraints and restore
   controls.window:SetDimensionConstraints(MIN_W, MIN_H, MAX_W, MAX_H)
+  controls.window:SetDimensions(b.w or 70, b.h or 240)
 
-  -- restore size
-  local w = b.w or 70
-  local h = b.h or 220
-  controls.window:SetDimensions(w, h)
-
-  -- restore position (nil = keep XML default: bottom-right)
   if b.x and b.y then
     controls.window:ClearAnchors()
     controls.window:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, b.x, b.y)
   end
 
-  -- build textures now that bar_area dimensions are known
   setup_textures()
 
-  -- initial refresh before first tick
-  refresh()
-
-  -- 1 Hz update
-  Verdant.Events.register_update("Verdant_BarTick", 1000, refresh)
-
-  -- restore visibility (default: visible)
+  -- register 1 Hz tick; show window first so refresh() doesn't bail early
   local visible = (b.visible == nil) and true or b.visible
   controls.window:SetHidden(not visible)
+
+  Verdant.Events.register_update("Verdant_BarTick", 1000, refresh)
+  refresh()
 end
