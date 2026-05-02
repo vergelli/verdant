@@ -5,14 +5,15 @@ Verdant.TriBar = {}
 local M = Verdant.TriBar
 
 local GetGameTimeMilliseconds = GetGameTimeMilliseconds
+local PlaySound               = PlaySound
 local string_format           = string.format
 local math_max                = math.max
 local math_min                = math.min
 local math_floor              = math.floor
 
-local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE    = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
-local FRAME_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_frame.dds"
+local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
+local BG_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
+local BORDER_EDGE  = "EsoUI/Art/Tooltips/UI-Border.dds"
 local FILL_T, FILL_B = 0, 0.53125
 
 local COLORS = {
@@ -44,14 +45,16 @@ local function make_bar(area, name_suffix, color)
   fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
   fill:SetColor(color.r, color.g, color.b, color.a)
 
-  local frame = WM:CreateControl("VerdantTriBarFrame" .. name_suffix, area, CT_TEXTURE)
-  frame:ClearAnchors()
-  frame:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
-  frame:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-  frame:SetTexture(FRAME_TEXTURE)
-  frame:SetColor(1, 1, 1, 0.9)
+  -- CT_BACKDROP border — last so it renders on top of fill
+  local border = WM:CreateControl("VerdantTriBarBorder" .. name_suffix, area, CT_BACKDROP)
+  border:ClearAnchors()
+  border:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
+  border:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
+  border:SetEdgeTexture(BORDER_EDGE, 128, 16, 3, 0)
+  border:SetCenterColor(0, 0, 0, 0)
+  border:SetInsets(3, 3, -3, -3)
 
-  return { bg = bg, fill = fill, frame = frame }
+  return { bg = bg, fill = fill, border = border }
 end
 
 -- ── refresh (1 Hz tick) ───────────────────────────────────────────────────
@@ -90,14 +93,22 @@ end
 
 -- ── public API ────────────────────────────────────────────────────────────
 function M.toggle()
-  local hidden = not controls.window:IsHidden()
-  controls.window:SetHidden(hidden)
+  local hidden = controls.window:IsHidden()
+  controls.window:SetHidden(not hidden)
+  PlaySound(hidden and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
   local sv = Verdant.SavedVars
-  if sv then sv.tribar = sv.tribar or {} ; sv.tribar.visible = not hidden end
+  if sv then sv.tribar = sv.tribar or {} ; sv.tribar.visible = hidden end
 end
 
-function M.show() controls.window:SetHidden(false) end
-function M.hide() controls.window:SetHidden(true)  end
+function M.show()
+  controls.window:SetHidden(false)
+  PlaySound(SOUNDS.ARMORY_OPEN)
+end
+
+function M.hide()
+  controls.window:SetHidden(true)
+  PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+end
 
 function M.on_move_stop()
   local left, top = controls.window:GetScreenRect()
