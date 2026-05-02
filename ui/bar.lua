@@ -24,25 +24,29 @@ local COLORS = {
 
 local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local BG_TEXTURE    = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
-local BORDER_EDGE   = "EsoUI/Art/Tooltips/UI-Border.dds"
+local GLOSS_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill_gloss.dds"
 local FILL_T, FILL_B = 0, 0.53125
+
+-- 4-strip border: warm gold tint, 2 px each side
+local BORDER_COLOR = { r = 0.75, g = 0.62, b = 0.38, a = 0.90 }
+local BORDER_SIZE  = 2
 
 -- ── size constraints ──────────────────────────────────────────────────────
 local MIN_W_SINGLE, MAX_W_SINGLE = 60,  140
 local MIN_W_ALL,    MAX_W_ALL    = 110, 200
 local MIN_H,        MAX_H        = 180, 440
 
--- triple-view column geometry (fixed, centered in window)
+-- triple-view column geometry (fixed width, centered in window)
 local TRI_COL_W   = 26
 local TRI_COL_GAP = 8
 local TRI_COLS    = { "EMS", "eHPS", "MPS" }
 local TRI_COL_X   = { EMS = 0, eHPS = TRI_COL_W + TRI_COL_GAP, MPS = (TRI_COL_W + TRI_COL_GAP) * 2 }
-local TRI_TOTAL_W = TRI_COL_W * 3 + TRI_COL_GAP * 2   -- 94
+local TRI_TOTAL_W = TRI_COL_W * 3 + TRI_COL_GAP * 2   -- 94 px
 
 -- ── state ─────────────────────────────────────────────────────────────────
 local metric_idx  = 1
 local display_pct = false
-local controls    = {}  -- flat bag: .window, .bar_area, .fill, .tri_container, .tri[m], …
+local controls    = {}
 
 -- ── helpers ───────────────────────────────────────────────────────────────
 local function current_metric() return DISPLAY_METRICS[metric_idx] end
@@ -76,18 +80,33 @@ local function apply_size_constraints()
   end
 end
 
--- ── small helper: create a CT_BACKDROP border overlay (transparent center) ──
--- Created LAST inside a parent so it renders on top of fill textures.
+-- ── border: 4 solid CT_TEXTURE strips, warm gold ─────────────────────────
+-- Created LAST inside a parent so each strip renders above the fill textures.
+-- Each strip is anchored using two opposing corners of the *parent* so the
+-- strips track resizes without any Lua intervention.
 local function make_border(parent, name)
-  local WM     = WINDOW_MANAGER
-  local border = WM:CreateControl(name, parent, CT_BACKDROP)
-  border:ClearAnchors()
-  border:SetAnchor(TOPLEFT,     parent, TOPLEFT,     0, 0)
-  border:SetAnchor(BOTTOMRIGHT, parent, BOTTOMRIGHT, 0, 0)
-  border:SetEdgeTexture(BORDER_EDGE, 128, 16, 3, 0)
-  border:SetCenterColor(0, 0, 0, 0)
-  border:SetInsets(3, 3, -3, -3)
-  return border
+  local WM  = WINDOW_MANAGER
+  local r, g, b, a = BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, BORDER_COLOR.a
+  local B   = BORDER_SIZE
+
+  local function strip(suffix, a1, rp1, x1, y1, a2, rp2, x2, y2)
+    local t = WM:CreateControl(name .. suffix, parent, CT_TEXTURE)
+    t:ClearAnchors()
+    t:SetAnchor(a1, parent, rp1, x1, y1)
+    t:SetAnchor(a2, parent, rp2, x2, y2)
+    t:SetTexture(FILL_TEXTURE)
+    t:SetTextureCoords(0, 1, FILL_T, FILL_B)
+    t:SetColor(r, g, b, a)
+  end
+
+  -- top:    my TOPLEFT    = parent TOPLEFT,   my BOTTOMRIGHT = parent TOPRIGHT   + (0, B)
+  strip("T", TOPLEFT, TOPLEFT, 0, 0, BOTTOMRIGHT, TOPRIGHT,    0,  B)
+  -- bottom: my TOPLEFT    = parent BOTTOMLEFT + (0, -B), my BOTTOMRIGHT = parent BOTTOMRIGHT
+  strip("B", TOPLEFT, BOTTOMLEFT, 0, -B, BOTTOMRIGHT, BOTTOMRIGHT, 0, 0)
+  -- left:   my TOPLEFT    = parent TOPLEFT,   my BOTTOMRIGHT = parent BOTTOMLEFT + (B, 0)
+  strip("L", TOPLEFT, TOPLEFT, 0, 0, BOTTOMRIGHT, BOTTOMLEFT, B, 0)
+  -- right:  my TOPLEFT    = parent TOPRIGHT   + (-B, 0), my BOTTOMRIGHT = parent BOTTOMRIGHT
+  strip("R", TOPLEFT, TOPRIGHT, -B, 0, BOTTOMRIGHT, BOTTOMRIGHT, 0, 0)
 end
 
 -- ── single-bar texture setup ──────────────────────────────────────────────
@@ -95,6 +114,7 @@ local function setup_single_bar()
   local WM   = WINDOW_MANAGER
   local area = controls.bar_area
 
+  -- dark background
   local bg = WM:CreateControl("VerdantBarBg", area, CT_TEXTURE)
   bg:ClearAnchors()
   bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
@@ -103,49 +123,56 @@ local function setup_single_bar()
   bg:SetColor(0.10, 0.10, 0.12, 1)
   controls.bg = bg
 
-  -- main fill (eHPS / MPS single metric, or EMS total)
+  -- main fill (single metric, or EMS total placeholder)
   local fill = WM:CreateControl("VerdantBarFill", area, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
   fill:SetTexture(FILL_TEXTURE)
   fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  local c = COLORS["EMS"]
-  fill:SetColor(c.r, c.g, c.b, c.a)
+  fill:SetColor(COLORS.EMS.r, COLORS.EMS.g, COLORS.EMS.b, COLORS.EMS.a)
   controls.fill = fill
 
-  -- EMS stacked mode: eHPS green segment (bottom)
+  -- EMS stacked: eHPS green (bottom)
   local fh = WM:CreateControl("VerdantBarFillHeal", area, CT_TEXTURE)
   fh:ClearAnchors()
   fh:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
   fh:SetTexture(FILL_TEXTURE)
   fh:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  local ch = COLORS["eHPS"]
-  fh:SetColor(ch.r, ch.g, ch.b, ch.a)
+  fh:SetColor(COLORS.eHPS.r, COLORS.eHPS.g, COLORS.eHPS.b, COLORS.eHPS.a)
   fh:SetHidden(true)
   controls.fill_heal = fh
 
-  -- EMS stacked mode: MPS pink segment (above eHPS).
-  -- Bottom anchor is repositioned each tick in refresh() to sit atop fill_heal.
+  -- EMS stacked: MPS pink (above eHPS). Anchor repositioned each tick.
   local fs = WM:CreateControl("VerdantBarFillShield", area, CT_TEXTURE)
   fs:ClearAnchors()
   fs:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
   fs:SetTexture(FILL_TEXTURE)
   fs:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  local cs = COLORS["MPS"]
-  fs:SetColor(cs.r, cs.g, cs.b, cs.a)
+  fs:SetColor(COLORS.MPS.r, COLORS.MPS.g, COLORS.MPS.b, COLORS.MPS.a)
   fs:SetHidden(true)
   controls.fill_shield = fs
 
-  -- CT_BACKDROP border — created LAST so it renders on top of all fills
-  controls.bar_border = make_border(area, "VerdantBarBorder")
+  -- gloss overlay: subtle horizontal sheen from the original ESO fill gloss sheet.
+  -- Covers the full bar area so it applies equally to any fill configuration.
+  local gloss = WM:CreateControl("VerdantBarGloss", area, CT_TEXTURE)
+  gloss:ClearAnchors()
+  gloss:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
+  gloss:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
+  gloss:SetTexture(GLOSS_TEXTURE)
+  gloss:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  gloss:SetColor(1, 1, 1, 0.25)
+  controls.gloss = gloss
+
+  -- 4-strip gold border — created LAST so it renders above fills and gloss
+  make_border(area, "VerdantBarBorder")
 end
 
--- ── triple-column view setup (created in Lua inside main window) ──────────
+-- ── triple-column view (Lua-created inside main window) ───────────────────
 local function setup_triple_view()
   local WM  = WINDOW_MANAGER
   local win = controls.window
 
-  -- container: same vertical span as bar_area (TOP+BOTTOM), fixed width centered
+  -- container: same vertical span as bar_area, fixed width centered
   local container = WM:CreateControl("VerdantBarTriContainer", win, CT_CONTROL)
   container:ClearAnchors()
   container:SetAnchor(TOP,    win, TOP,    0, 46)
@@ -171,7 +198,7 @@ local function setup_triple_view()
     lbl:SetVerticalAlignment(TEXT_ALIGN_CENTER)
     col.label = lbl
 
-    -- bar area (between labels)
+    -- bar area (between label and value)
     local area = WM:CreateControl("VerdantBarTriArea" .. m, container, CT_CONTROL)
     area:ClearAnchors()
     area:SetAnchor(TOPLEFT,    container, TOPLEFT,    x, 18)
@@ -179,7 +206,6 @@ local function setup_triple_view()
     area:SetWidth(TRI_COL_W)
     col.area = area
 
-    -- bg
     local bg = WM:CreateControl("VerdantBarTriBg" .. m, area, CT_TEXTURE)
     bg:ClearAnchors()
     bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
@@ -187,7 +213,6 @@ local function setup_triple_view()
     bg:SetTexture(BG_TEXTURE)
     bg:SetColor(0.10, 0.10, 0.12, 1)
 
-    -- fill
     local fill = WM:CreateControl("VerdantBarTriFill" .. m, area, CT_TEXTURE)
     fill:ClearAnchors()
     fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
@@ -197,7 +222,15 @@ local function setup_triple_view()
     fill:SetColor(c.r, c.g, c.b, c.a)
     col.fill = fill
 
-    -- border (last = on top)
+    local gloss = WM:CreateControl("VerdantBarTriGloss" .. m, area, CT_TEXTURE)
+    gloss:ClearAnchors()
+    gloss:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
+    gloss:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
+    gloss:SetTexture(GLOSS_TEXTURE)
+    gloss:SetTextureCoords(0, 1, FILL_T, FILL_B)
+    gloss:SetColor(1, 1, 1, 0.25)
+
+    -- 4-strip border (last = on top of fill + gloss)
     make_border(area, "VerdantBarTriBorder" .. m)
 
     -- value label (bottom of column)
@@ -212,7 +245,7 @@ local function setup_triple_view()
   end
 end
 
--- ── refresh (called by 1 Hz tick and on user input) ───────────────────────
+-- ── refresh (1 Hz tick + on user input) ──────────────────────────────────
 local function refresh()
   if controls.window:IsHidden() then return end
 
@@ -220,12 +253,21 @@ local function refresh()
   local r   = Verdant.Metrics.contribution(now)
   local m   = current_metric()
 
+  -- mode button is always visible; text and color depend on view
+  if m ~= "ALL" then
+    local color = COLORS[m]
+    controls.mode_btn:SetText(display_pct and "#" or "%")
+    controls.mode_btn:SetColor(color.r, color.g, color.b, 0.90)
+  else
+    controls.mode_btn:SetText(display_pct and "#" or "%")
+    controls.mode_btn:SetColor(1, 1, 1, 0.80)
+  end
+
   if m == "ALL" then
     -- ── triple-column view ────────────────────────────────────────────────
     controls.bar_area:SetHidden(true)
     controls.metric_label:SetHidden(true)
     controls.value_label:SetHidden(true)
-    controls.mode_btn:SetHidden(true)
     controls.tri_container:SetHidden(false)
 
     local vals = {
@@ -235,14 +277,19 @@ local function refresh()
     }
 
     for _, cm in ipairs(TRI_COLS) do
-      local col  = controls.tri[cm]
-      local v    = vals[cm]
+      local col   = controls.tri[cm]
+      local v     = vals[cm]
       local col_c = COLORS[cm]
-      local frac = math_max(0, math_min(1, v.frac))
+      local frac  = math_max(0, math_min(1, v.frac))
 
       col.label:SetText(cm)
       col.label:SetColor(col_c.r, col_c.g, col_c.b, 1)
-      col.value:SetText(string_format("%d", math_floor(v.raw)))
+
+      if display_pct then
+        col.value:SetText(string_format("%.0f%%", frac * 100))
+      else
+        col.value:SetText(string_format("%d", math_floor(v.raw)))
+      end
       col.value:SetColor(1, 1, 1, 1)
 
       local area_w = col.area:GetWidth()
@@ -259,7 +306,6 @@ local function refresh()
     controls.bar_area:SetHidden(false)
     controls.metric_label:SetHidden(false)
     controls.value_label:SetHidden(false)
-    controls.mode_btn:SetHidden(false)
     controls.tri_container:SetHidden(true)
 
     local frac, raw, suffix = contribution_values(r)
@@ -277,15 +323,12 @@ local function refresh()
     end
     controls.value_label:SetColor(1, 1, 1, 1)
 
-    controls.mode_btn:SetText(display_pct and "#" or "%")
-    controls.mode_btn:SetColor(0.75, 0.75, 0.75, 1)
-
     local area_w = controls.bar_area:GetWidth()
     local area_h = controls.bar_area:GetHeight()
     if area_h <= 4 then return end
 
     if m == "EMS" then
-      -- stacked fill: eHPS green at bottom, MPS pink stacked above it
+      -- stacked fill: eHPS green (bottom), MPS pink (above)
       controls.fill:SetHidden(true)
 
       local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
@@ -409,7 +452,6 @@ function M.init()
   controls.version_label:SetText(string_format("v%s", C.VERSION))
   controls.version_label:SetColor(0.45, 0.45, 0.45, 1)
 
-  -- restore size and position
   local is_all = (DISPLAY_METRICS[metric_idx] == "ALL")
   local min_w  = is_all and MIN_W_ALL or MIN_W_SINGLE
   local max_w  = is_all and MAX_W_ALL or MAX_W_SINGLE
@@ -424,7 +466,6 @@ function M.init()
   setup_single_bar()
   setup_triple_view()
 
-  -- show before first refresh so GetWidth/GetHeight return real values
   local visible = (b.visible == nil) and true or b.visible
   controls.window:SetHidden(not visible)
 
