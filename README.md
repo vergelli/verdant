@@ -21,13 +21,13 @@ In other words it tracks *contribution*: how much of a meaningful ceiling your o
 
 ![eHPS](doc/assets/eHPS_1.png)
 
-Healing that lands on missing HP. Overheal is tracked separately and excluded.
+Healing that lands on missing HP
 
 ### Mitigation Per Second
 
 ![MPS](doc/assets/MPS_1.png)
 
-Damage absorbed by shields you cast.
+Damage absorbed by shields you cast
 
 ### Effective Mitigation Score
 
@@ -37,13 +37,9 @@ The combined metric. This is what the bar primarily represents.
 
 $$EMS = eHPS + MPS$$
 
-A deeper technical explanation: [for the curious](doc/for_nerd.md)
-
 ---
 
 ## The Contribution Bar
-
-The bar shows how much your output matters in context. What "100%" means changes depending on whether you are alone or in a group.
 
 **Open world** — the bar measures *efficiency*: what fraction of everything you cast was actually useful.
 
@@ -51,14 +47,16 @@ The bar shows how much your output matters in context. What "100%" means changes
 
 > Verdant switches between both modes automatically based on group status.
 
+> PvP Environments (BG specially) are Work in Progress
+
 ### Bar fill
 
-The EMS bar uses two stacked fills:
+The **EMS** bar uses two stacked fills:
 
-- **Green (bottom)** — your eHPS share of EMS
-- **Pink / lavender (above)** — your MPS share of EMS
+- **Green (bottom)** — your **eHPS** share of **EMS**
+- **Pink (above)** — your **MPS** share of **EMS**
 
-This lets you see at a glance whether your contribution is heal-driven, shield-driven, or a mix.
+This lets you see at a glance whether your contribution is heal-driven, shield-driven, or a mix!
 
 ---
 
@@ -68,16 +66,16 @@ Cycle through modes with the **<** / **>** arrows at the top of the window.
 
 | Mode | What it shows |
 |------|---------------|
-| **EMS** | Single bar: green (eHPS) + pink (MPS) stacked fills |
-| **eHPS** | Segmented bar, each segment colored by the ability's class or skill line |
-| **MPS** | Segmented bar, each segment colored by the ability's class or skill line |
-| **ALL** | Three columns side by side — EMS, eHPS and MPS simultaneously |
+| **EMS** | Single bar: green (**eHPS**) + pink (**MPS**) stacked fills |
+| **eHPS** | Segmented bar, each segment colored by the **ability's class** or **skill line** |
+| **MPS** | Segmented bar, each segment colored by the** ability's class** or **skill line** |
+| **ALL** | Three columns side by side — **EMS**, *eHPS* and **MPS** simultaneously |
 
-The **%** / **#** button below the bar toggles between contribution percentage and raw value.
+The **%** / **#** button below, are not the best, but toggles between contribution percentage and raw value
 
 ### Skill-color segmentation
 
-In eHPS and MPS modes the bar is split into colored segments — one per ability group — so you can see which class or skill line is carrying the most weight.
+In **eHPS** and **MPS** modes the bar is split into colored segments — one per ability group — so you can see which **class** or **skill line** is carrying the most weight.
 
 | Swatch | Group |
 |--------|-------|
@@ -94,23 +92,23 @@ In eHPS and MPS modes the bar is split into colored segments — one per ability
 | ![](https://img.shields.io/badge/-%20-6B4FAD?style=flat-square) | Alliance War support |
 | ![](https://img.shields.io/badge/-%20-8C8C8C?style=flat-square) | Unclassified |
 
+### In-Game example
+
 ![UI example](doc/assets/verdant_ui_example_1.png)
-
----
-
-## Triple-bar Window
-
-Shows EMS, eHPS and MPS as three independent vertical bars side by side in a compact, repositionable window. Each bar uses the same skill-color segmentation as the main bar's eHPS/MPS modes. The EMS column stacks green and pink fills the same way as the single bar.
 
 ---
 
 ## Settings
 
-Click the **gear icon** (top-right corner of the value row) to open the settings panel. All values are saved per account.
+Click the **gear icon** (top-right corner of the value row) to open the settings panel. 
+
+All values are saved per account.
 
 ### Refresh Rate
 
-How often the bar redraws. Six presets from 0.5 Hz to 20 Hz. Default is 1 Hz.
+How often the bar redraws **(watch performance)**
+
+Six presets from `0.5 Hz` to `20 Hz`. Default is `1 Hz`.
 
 | Preset | Interval |
 |--------|----------|
@@ -123,7 +121,7 @@ How often the bar redraws. Six presets from 0.5 Hz to 20 Hz. Default is 1 Hz.
 
 ### Heal Window
 
-The rolling time window used to calculate eHPS. A shorter window reacts faster; a longer one smooths out burst heals.
+The rolling time window used to calculate **eHPS**. A shorter window reacts faster; a longer one smooths out burst heals.
 
 | Preset |
 |--------|
@@ -136,7 +134,7 @@ The rolling time window used to calculate eHPS. A shorter window reacts faster; 
 
 ### Shield Window
 
-The rolling time window used to calculate MPS. Shields are sparse events, so a wider window is needed to avoid the metric collapsing to zero between hits.
+The rolling time window used to calculate **MPS**. Shields are sparse events, so a wider window sometimes is convenient to avoid the metric collapsing to zero between hits (not an often thing anyway)
 
 | Preset |
 |--------|
