@@ -11,7 +11,7 @@
                      clampedToScreen="true"
                      mouseEnabled="true">
 
-      <Dimensions x="160" y="50"/>
+      <Dimensions x="160" y="126"/>
 
       <Controls>
 
@@ -23,7 +23,7 @@
           <Insets left="6" top="6" right="-6" bottom="-6"/>
         </Backdrop>
 
-        <!-- "Refresh Rate" label (left) -->
+        <!-- ── Row 1: Refresh Rate ─────────────────────────────────────── -->
         <Label name="$(parent)Title"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
@@ -32,7 +32,6 @@
           <Dimensions x="88" y="12"/>
         </Label>
 
-        <!-- Current Hz value (right, gold) -->
         <Label name="$(parent)RateLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
@@ -41,16 +40,59 @@
           <Dimensions x="54" y="12"/>
         </Label>
 
-        <!--
-          Slider track: the entire bottom strip is the click target.
-          bg / fill / thumb textures are created in Lua so they are
-          children of this control and render on top of it.
-        -->
         <Control name="$(parent)SliderTrack" mouseEnabled="true">
-          <Anchor point="BOTTOMLEFT"  offsetX="8"  offsetY="-8"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8"/>
+          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="22"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="22"/>
           <Dimensions y="14"/>
-          <OnMouseUp>Verdant.Settings.on_track_click(self)</OnMouseUp>
+          <OnMouseUp>Verdant.Settings.on_rate_track_click(self)</OnMouseUp>
+        </Control>
+
+        <!-- ── Row 2: Heal Window ──────────────────────────────────────── -->
+        <Label name="$(parent)HealTitle"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="46"/>
+          <Dimensions x="88" y="12"/>
+        </Label>
+
+        <Label name="$(parent)HealLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="46"/>
+          <Dimensions x="54" y="12"/>
+        </Label>
+
+        <Control name="$(parent)SliderTrackHeal" mouseEnabled="true">
+          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="61"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="61"/>
+          <Dimensions y="14"/>
+          <OnMouseUp>Verdant.Settings.on_heal_track_click(self)</OnMouseUp>
+        </Control>
+
+        <!-- ── Row 3: Shield Window ────────────────────────────────────── -->
+        <Label name="$(parent)ShieldTitle"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="89"/>
+          <Dimensions x="88" y="12"/>
+        </Label>
+
+        <Label name="$(parent)ShieldLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="89"/>
+          <Dimensions x="54" y="12"/>
+        </Label>
+
+        <Control name="$(parent)SliderTrackShield" mouseEnabled="true">
+          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="104"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="104"/>
+          <Dimensions y="14"/>
+          <OnMouseUp>Verdant.Settings.on_shield_track_click(self)</OnMouseUp>
         </Control>
 
       </Controls>

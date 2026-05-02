@@ -3,23 +3,12 @@ local Verdant = Verdant
 
 Verdant.Constants = {
   ADDON_NAME    = "Verdant",
-  VERSION       = "0.1.0",
+  VERSION       = "1.0.0",
   SLASH_COMMAND = "/verdant",
-  DEBUG         = true,
+  DEBUG         = false,
 
   SV_TABLE   = "VerdantSavedVars",
   SV_VERSION = 1,
-
-  BAR = {
-    -- XML control name root
-    WINDOW = "VerdantBarWindow",
-    -- Default window geometry
-    DEFAULT_W = 70,
-    DEFAULT_H = 220,
-    -- Resize constraints
-    MIN_W = 50,  MAX_W = 130,
-    MIN_H = 160, MAX_H = 420,
-  },
 
   PROBE = {
     -- Distinct names per registration: EVENT_MANAGER keys filters by (name, eventCode).

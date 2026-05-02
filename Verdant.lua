@@ -38,9 +38,19 @@ local function print_readout()
 end
 
 local function on_slash(input)
-  local L = Verdant.L
+  local L     = Verdant.L
+  local DEBUG = Verdant.Constants.DEBUG
   input = input or ""
   local cmd = string_match(string_lower(input), "^%s*(%S+)") or "help"
+
+  -- ── probe commands (developer only) ──────────────────────────────────────
+  if not DEBUG and (cmd == "on" or cmd == "off" or cmd == "filter"
+      or cmd == "dump" or cmd == "save" or cmd == "ping"
+      or cmd == "tag"  or cmd == "stats" or cmd == "context"
+      or cmd == "metric") then
+    d("[V] Debug mode is off. These commands are not available.")
+    return
+  end
 
   if cmd == "on" then
     Verdant.Probe.set_enabled(true)

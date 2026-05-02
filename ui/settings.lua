@@ -8,156 +8,194 @@ local GetUIMousePosition = GetUIMousePosition
 local math_max   = math.max
 local math_min   = math.min
 local math_floor = math.floor
-local string_format = string.format
 
 local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local BG_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local FILL_T, FILL_B = 0, 0.53125
 
--- ── rate presets ──────────────────────────────────────────────────────────
--- Stored as milliseconds; displayed as Hz.
--- 50 ms (20 Hz) is the practical upper bound — faster than the game's
--- own combat event rate so the display updates every visible frame.
-local PRESETS    = { 50, 100, 200, 500, 1000, 2000 }
-local PRESET_HZ  = {
-  [50]   = "20 Hz",
-  [100]  = "10 Hz",
-  [200]  = "5 Hz",
-  [500]  = "2 Hz",
-  [1000] = "1 Hz",
-  [2000] = "0.5 Hz",
+-- ── presets ───────────────────────────────────────────────────────────────────
+local RATE_PRESETS   = { 50, 100, 200, 500, 1000, 2000 }
+local RATE_LABELS    = {
+  [50]   = "20 Hz", [100] = "10 Hz", [200] = "5 Hz",
+  [500]  = "2 Hz",  [1000] = "1 Hz", [2000] = "0.5 Hz",
 }
-local DEFAULT_MS = 1000
+local RATE_DEFAULT   = 1000
 
-local controls   = {}
-local current_ms = DEFAULT_MS
+local HEAL_PRESETS   = { 2000, 3000, 5000, 8000, 10000, 15000 }
+local HEAL_LABELS    = {
+  [2000] = "2s", [3000] = "3s", [5000]  = "5s",
+  [8000] = "8s", [10000] = "10s", [15000] = "15s",
+}
+local HEAL_DEFAULT   = 5000
 
--- ── helpers ───────────────────────────────────────────────────────────────
-local function nearest_idx(ms)
+local SHIELD_PRESETS = { 10000, 15000, 20000, 30000, 45000, 60000 }
+local SHIELD_LABELS  = {
+  [10000] = "10s", [15000] = "15s", [20000] = "20s",
+  [30000] = "30s", [45000] = "45s", [60000] = "60s",
+}
+local SHIELD_DEFAULT = 30000
+
+-- ── state ─────────────────────────────────────────────────────────────────────
+local controls       = {}
+local current_rate   = RATE_DEFAULT
+local current_heal   = HEAL_DEFAULT
+local current_shield = SHIELD_DEFAULT
+
+-- ── shared helpers ────────────────────────────────────────────────────────────
+local function nearest_idx(presets, ms)
   local bi, bd = 1, math.huge
-  for i, p in ipairs(PRESETS) do
+  for i, p in ipairs(presets) do
     local d = math.abs(p - ms)
     if d < bd then bi, bd = i, d end
   end
   return bi
 end
 
-local function update_slider()
-  local track = controls.track
-  local w     = track:GetWidth()
-  if w <= 0 then return end  -- not yet laid out (hidden window)
-
-  local idx  = nearest_idx(current_ms)
-  local pct  = (idx - 1) / (#PRESETS - 1)
-
-  -- fill: proportional gold strip from left
-  controls.fill:SetWidth(math_max(2, w * pct))
-  controls.fill:SetHeight(track:GetHeight())
-
-  -- thumb: bright 3-px vertical bar at the current position.
-  -- Uses TOP+BOTTOM single-horizontal-center anchors against TOPLEFT/BOTTOMLEFT
-  -- of the track so only the X position needs to be computed.
-  controls.thumb:ClearAnchors()
-  controls.thumb:SetAnchor(TOP,    track, TOPLEFT,    w * pct, -1)
-  controls.thumb:SetAnchor(BOTTOM, track, BOTTOMLEFT, w * pct,  1)
-  controls.thumb:SetWidth(3)
-
-  controls.rate_label:SetText(PRESET_HZ[current_ms] or (current_ms .. " ms"))
+local function update_slider(track, fill, thumb, label, presets, labels, ms)
+  local w = track:GetWidth()
+  if w <= 0 then return end
+  local idx = nearest_idx(presets, ms)
+  local pct = (idx - 1) / (#presets - 1)
+  fill:SetWidth(math_max(2, w * pct))
+  fill:SetHeight(track:GetHeight())
+  thumb:ClearAnchors()
+  thumb:SetAnchor(TOP,    track, TOPLEFT,    w * pct, -1)
+  thumb:SetAnchor(BOTTOM, track, BOTTOMLEFT, w * pct,  1)
+  thumb:SetWidth(3)
+  label:SetText(labels[ms] or (math_floor(ms / 1000) .. "s"))
 end
 
--- ── public API ────────────────────────────────────────────────────────────
-function M.on_track_click(control)
-  local cx         = GetUIMousePosition()  -- x, (y discarded)
-  local track_left = control:GetLeft()
-  local track_w    = control:GetWidth()
-  if track_w <= 0 then return end
+local function setup_slider_visuals(track, name_prefix)
+  local WM = WINDOW_MANAGER
 
-  local pct = math_max(0, math_min(1, (cx - track_left) / track_w))
-  -- snap to nearest discrete preset
-  local idx = math_floor(pct * (#PRESETS - 1) + 0.5) + 1
-  idx = math_max(1, math_min(#PRESETS, idx))
-  current_ms = PRESETS[idx]
-
-  -- re-register the bar tick at the new interval
-  Verdant.Bar.set_rate(current_ms)
-
-  -- persist
-  local sv = Verdant.SavedVars
-  if sv then sv.bar = sv.bar or {} ; sv.bar.rate_ms = current_ms end
-
-  update_slider()
-end
-
-function M.toggle()
-  local win    = controls.window
-  local hidden = win:IsHidden()
-
-  if hidden then
-    -- position: below bar window if there is room, otherwise above it
-    local bw = VerdantBarWindow
-    local bLeft, bTop, bRight, bBottom = bw:GetScreenRect()
-    local ph = win:GetHeight()
-
-    win:ClearAnchors()
-    if bBottom + 4 + ph <= GuiRoot:GetHeight() then
-      win:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, bLeft, bBottom + 4)
-    else
-      win:SetAnchor(BOTTOMLEFT, GuiRoot, TOPLEFT, bLeft, bTop - 4)
-    end
-
-    win:SetHidden(false)
-    update_slider()  -- width is valid once visible
-  else
-    win:SetHidden(true)
-  end
-end
-
--- ── setup ─────────────────────────────────────────────────────────────────
-local function setup_slider()
-  local WM    = WINDOW_MANAGER
-  local track = controls.track
-
-  -- dark background (exact fit of track control)
-  local bg = WM:CreateControl("VerdantSettingsBg", track, CT_TEXTURE)
+  local bg = WM:CreateControl(name_prefix .. "Bg", track, CT_TEXTURE)
   bg:ClearAnchors()
   bg:SetAnchor(TOPLEFT,     track, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, track, BOTTOMRIGHT, 0, 0)
   bg:SetTexture(BG_TEXTURE)
   bg:SetColor(0.10, 0.10, 0.12, 1)
 
-  -- fill: gold, grows left to right with current preset
-  local fill = WM:CreateControl("VerdantSettingsFill", track, CT_TEXTURE)
+  local fill = WM:CreateControl(name_prefix .. "Fill", track, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, track, BOTTOMLEFT, 0, 0)
   fill:SetTexture(FILL_TEXTURE)
   fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
   fill:SetColor(0.95, 0.80, 0.20, 0.90)
-  controls.fill = fill
 
-  -- thumb: bright white 3-px vertical indicator
-  local thumb = WM:CreateControl("VerdantSettingsThumb", track, CT_TEXTURE)
+  local thumb = WM:CreateControl(name_prefix .. "Thumb", track, CT_TEXTURE)
   thumb:SetTexture(FILL_TEXTURE)
   thumb:SetTextureCoords(0, 1, FILL_T, FILL_B)
   thumb:SetColor(1, 1, 1, 1)
-  controls.thumb = thumb
+
+  return fill, thumb
 end
 
+local function persist(key, val)
+  local sv = Verdant.SavedVars
+  if sv then sv.bar = sv.bar or {} ; sv.bar[key] = val end
+end
+
+-- ── public API ────────────────────────────────────────────────────────────────
+function M.toggle()
+  local win    = controls.window
+  local hidden = win:IsHidden()
+
+  if hidden then
+    local bw = VerdantBarWindow
+    local bLeft, bTop, _, bBottom = bw:GetScreenRect()
+    local ph = win:GetHeight()
+    win:ClearAnchors()
+    if bBottom + 4 + ph <= GuiRoot:GetHeight() then
+      win:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, bLeft, bBottom + 4)
+    else
+      win:SetAnchor(BOTTOMLEFT, GuiRoot, TOPLEFT, bLeft, bTop - 4)
+    end
+    win:SetHidden(false)
+
+    -- widths are valid now that the panel is visible
+    local c = controls
+    update_slider(c.track_rate,   c.fill_rate,   c.thumb_rate,   c.label_rate,   RATE_PRESETS,   RATE_LABELS,   current_rate)
+    update_slider(c.track_heal,   c.fill_heal,   c.thumb_heal,   c.label_heal,   HEAL_PRESETS,   HEAL_LABELS,   current_heal)
+    update_slider(c.track_shield, c.fill_shield, c.thumb_shield, c.label_shield, SHIELD_PRESETS, SHIELD_LABELS, current_shield)
+  else
+    win:SetHidden(true)
+  end
+end
+
+function M.on_rate_track_click(control)
+  local cx      = GetUIMousePosition()
+  local track_w = control:GetWidth()
+  if track_w <= 0 then return end
+  local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
+  local idx = math_max(1, math_min(#RATE_PRESETS, math_floor(pct * (#RATE_PRESETS - 1) + 0.5) + 1))
+  current_rate = RATE_PRESETS[idx]
+  Verdant.Bar.set_rate(current_rate)
+  persist("rate_ms", current_rate)
+  update_slider(controls.track_rate, controls.fill_rate, controls.thumb_rate, controls.label_rate, RATE_PRESETS, RATE_LABELS, current_rate)
+end
+
+function M.on_heal_track_click(control)
+  local cx      = GetUIMousePosition()
+  local track_w = control:GetWidth()
+  if track_w <= 0 then return end
+  local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
+  local idx = math_max(1, math_min(#HEAL_PRESETS, math_floor(pct * (#HEAL_PRESETS - 1) + 0.5) + 1))
+  current_heal = HEAL_PRESETS[idx]
+  Verdant.Metrics.set_window(current_heal)
+  persist("heal_window_ms", current_heal)
+  update_slider(controls.track_heal, controls.fill_heal, controls.thumb_heal, controls.label_heal, HEAL_PRESETS, HEAL_LABELS, current_heal)
+end
+
+function M.on_shield_track_click(control)
+  local cx      = GetUIMousePosition()
+  local track_w = control:GetWidth()
+  if track_w <= 0 then return end
+  local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
+  local idx = math_max(1, math_min(#SHIELD_PRESETS, math_floor(pct * (#SHIELD_PRESETS - 1) + 0.5) + 1))
+  current_shield = SHIELD_PRESETS[idx]
+  Verdant.Metrics.set_shield_window(current_shield)
+  persist("shield_window_ms", current_shield)
+  update_slider(controls.track_shield, controls.fill_shield, controls.thumb_shield, controls.label_shield, SHIELD_PRESETS, SHIELD_LABELS, current_shield)
+end
+
+-- ── init ──────────────────────────────────────────────────────────────────────
 function M.init()
   local sv = Verdant.SavedVars
   sv.bar   = sv.bar or {}
-  -- clamp saved value to the nearest valid preset
-  current_ms = PRESETS[nearest_idx(sv.bar.rate_ms or DEFAULT_MS)]
 
-  controls.window     = VerdantSettingsPanel
-  controls.title      = VerdantSettingsPanelTitle
-  controls.rate_label = VerdantSettingsPanelRateLabel
-  controls.track      = VerdantSettingsPanelSliderTrack
+  current_rate   = RATE_PRESETS  [nearest_idx(RATE_PRESETS,   sv.bar.rate_ms          or RATE_DEFAULT)]
+  current_heal   = HEAL_PRESETS  [nearest_idx(HEAL_PRESETS,   sv.bar.heal_window_ms   or HEAL_DEFAULT)]
+  current_shield = SHIELD_PRESETS[nearest_idx(SHIELD_PRESETS, sv.bar.shield_window_ms or SHIELD_DEFAULT)]
 
-  controls.title:SetText("Refresh Rate")
-  controls.title:SetColor(0.75, 0.75, 0.75, 1)
-  controls.rate_label:SetColor(0.95, 0.80, 0.20, 1)
+  Verdant.Metrics.set_window(current_heal)
+  Verdant.Metrics.set_shield_window(current_shield)
 
-  setup_slider()
-  -- update_slider() is deferred to first toggle() open because the
-  -- panel is hidden at init time and GetWidth() would return 0.
+  controls.window       = VerdantSettingsPanel
+  controls.title_rate   = VerdantSettingsPanelTitle
+  controls.label_rate   = VerdantSettingsPanelRateLabel
+  controls.track_rate   = VerdantSettingsPanelSliderTrack
+  controls.title_heal   = VerdantSettingsPanelHealTitle
+  controls.label_heal   = VerdantSettingsPanelHealLabel
+  controls.track_heal   = VerdantSettingsPanelSliderTrackHeal
+  controls.title_shield = VerdantSettingsPanelShieldTitle
+  controls.label_shield = VerdantSettingsPanelShieldLabel
+  controls.track_shield = VerdantSettingsPanelSliderTrackShield
+
+  controls.title_rate:SetText("Refresh Rate")
+  controls.title_rate:SetColor(0.75, 0.75, 0.75, 1)
+  controls.label_rate:SetColor(0.95, 0.80, 0.20, 1)
+
+  controls.title_heal:SetText("Heal Window")
+  controls.title_heal:SetColor(0.75, 0.75, 0.75, 1)
+  controls.label_heal:SetColor(0.95, 0.80, 0.20, 1)
+
+  controls.title_shield:SetText("Shield Window")
+  controls.title_shield:SetColor(0.75, 0.75, 0.75, 1)
+  controls.label_shield:SetColor(0.95, 0.80, 0.20, 1)
+
+  local c = controls
+  c.fill_rate,   c.thumb_rate   = setup_slider_visuals(c.track_rate,   "VerdantSettingsRate")
+  c.fill_heal,   c.thumb_heal   = setup_slider_visuals(c.track_heal,   "VerdantSettingsHeal")
+  c.fill_shield, c.thumb_shield = setup_slider_visuals(c.track_shield, "VerdantSettingsShield")
+  -- slider display deferred to first toggle() — panel is hidden and GetWidth() returns 0
 end
