@@ -43,6 +43,50 @@ local TRI_COLS    = { "EMS", "eHPS", "MPS" }
 local TRI_COL_X   = { EMS = 0, eHPS = TRI_COL_W + TRI_COL_GAP, MPS = (TRI_COL_W + TRI_COL_GAP) * 2 }
 local TRI_TOTAL_W = TRI_COL_W * 3 + TRI_COL_GAP * 2   -- 94 px
 
+-- ── skill-color fill pools ────────────────────────────────────────────────
+-- Pre-allocated textures for stacked per-skill segments on eHPS / MPS bars.
+-- 8 slots covers any realistic number of distinct skills in a 5-second window.
+local POOL_SIZE = 8
+
+local function make_skill_pool(parent, name_prefix)
+  local WM   = WINDOW_MANAGER
+  local pool = {}
+  for i = 1, POOL_SIZE do
+    local t = WM:CreateControl(name_prefix .. i, parent, CT_TEXTURE)
+    t:ClearAnchors()
+    t:SetAnchor(BOTTOMLEFT, parent, BOTTOMLEFT, 0, 0)
+    t:SetTexture(FILL_TEXTURE)
+    t:SetTextureCoords(0, 1, FILL_T, FILL_B)
+    t:SetHidden(true)
+    pool[i] = t
+  end
+  return pool
+end
+
+-- Positions and colors pool textures as stacked vertical segments.
+-- segments: array of { r,g,b,a, share } sorted largest-first (from group_shares).
+-- total_frac: 0-1 contribution for this metric.
+local function render_skill_segments(pool, parent, segments, area_w, area_h, total_frac)
+  local total_h = (total_frac > 0.005) and math_max(2, area_h * math_min(1, total_frac)) or 0
+  local cum_h   = 0
+  local n       = math_min(#segments, POOL_SIZE)
+  for i = 1, n do
+    local seg   = segments[i]
+    local seg_h = math_max(1, math_floor(total_h * seg.share + 0.5))
+    local t     = pool[i]
+    t:ClearAnchors()
+    t:SetAnchor(BOTTOMLEFT, parent, BOTTOMLEFT, 0, -cum_h)
+    t:SetWidth(area_w)
+    t:SetHeight(seg_h)
+    t:SetColor(seg.r, seg.g, seg.b, seg.a)
+    t:SetHidden(false)
+    cum_h = cum_h + seg_h
+  end
+  for i = n + 1, POOL_SIZE do
+    pool[i]:SetHidden(true)
+  end
+end
+
 -- ── state ─────────────────────────────────────────────────────────────────
 local metric_idx  = 1
 local display_pct = false
@@ -152,6 +196,10 @@ local function setup_single_bar()
   fs:SetHidden(true)
   controls.fill_shield = fs
 
+  -- skill-color fill pools for eHPS and MPS modes (created before gloss)
+  controls.pool_ehps = make_skill_pool(area, "VerdantBarSkillEhps")
+  controls.pool_mps  = make_skill_pool(area, "VerdantBarSkillMps")
+
   -- gloss overlay: subtle horizontal sheen from the original ESO fill gloss sheet.
   -- Covers the full bar area so it applies equally to any fill configuration.
   local gloss = WM:CreateControl("VerdantBarGloss", area, CT_TEXTURE)
@@ -221,6 +269,11 @@ local function setup_triple_view()
     local c = COLORS[m]
     fill:SetColor(c.r, c.g, c.b, c.a)
     col.fill = fill
+
+    -- skill pool for eHPS and MPS columns (EMS stays single-fill)
+    if m ~= "EMS" then
+      col.pool = make_skill_pool(area, "VerdantBarTriSkill" .. m)
+    end
 
     local gloss = WM:CreateControl("VerdantBarTriGloss" .. m, area, CT_TEXTURE)
     gloss:ClearAnchors()
@@ -295,9 +348,20 @@ local function refresh()
       local area_w = col.area:GetWidth()
       local area_h = col.area:GetHeight()
       if area_h > 4 then
-        local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
-        col.fill:SetWidth(area_w)
-        col.fill:SetHeight(fill_h)
+        if cm == "eHPS" then
+          col.fill:SetHidden(true)
+          local segs = Verdant.Metrics.eHPS_by_group(now)
+          render_skill_segments(col.pool, col.area, segs, area_w, area_h, frac)
+        elseif cm == "MPS" then
+          col.fill:SetHidden(true)
+          local segs = Verdant.Metrics.MPS_by_group(now)
+          render_skill_segments(col.pool, col.area, segs, area_w, area_h, frac)
+        else
+          -- EMS: single gold fill
+          local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
+          col.fill:SetWidth(area_w)
+          col.fill:SetHeight(fill_h)
+        end
       end
     end
 
@@ -328,8 +392,10 @@ local function refresh()
     if area_h <= 4 then return end
 
     if m == "EMS" then
-      -- stacked fill: eHPS green (bottom), MPS pink (above)
+      -- stacked fill: eHPS green (bottom), MPS pink (above); no per-skill coloring
       controls.fill:SetHidden(true)
+      for i = 1, POOL_SIZE do controls.pool_ehps[i]:SetHidden(true) end
+      for i = 1, POOL_SIZE do controls.pool_mps[i]:SetHidden(true)  end
 
       local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
       local shield_frac = math_max(0, math_min(1, r.C_shield or 0))
@@ -347,16 +413,22 @@ local function refresh()
       fs:SetHidden(false)
       fs:SetWidth(area_w)
       fs:SetHeight(shield_h)
-    else
+
+    elseif m == "eHPS" then
+      controls.fill:SetHidden(true)
       controls.fill_heal:SetHidden(true)
       controls.fill_shield:SetHidden(true)
+      for i = 1, POOL_SIZE do controls.pool_mps[i]:SetHidden(true) end
+      local segs = Verdant.Metrics.eHPS_by_group(now)
+      render_skill_segments(controls.pool_ehps, controls.bar_area, segs, area_w, area_h, frac)
 
-      local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
-      local f = controls.fill
-      f:SetHidden(false)
-      f:SetWidth(area_w)
-      f:SetHeight(fill_h)
-      f:SetColor(color.r, color.g, color.b, color.a)
+    elseif m == "MPS" then
+      controls.fill:SetHidden(true)
+      controls.fill_heal:SetHidden(true)
+      controls.fill_shield:SetHidden(true)
+      for i = 1, POOL_SIZE do controls.pool_ehps[i]:SetHidden(true) end
+      local segs = Verdant.Metrics.MPS_by_group(now)
+      render_skill_segments(controls.pool_mps, controls.bar_area, segs, area_w, area_h, frac)
     end
   end
 end

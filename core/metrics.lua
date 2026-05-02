@@ -112,6 +112,14 @@ function M.contribution(now_ms)
   }
 end
 
+function M.eHPS_by_group(now_ms)
+  return Verdant.SkillColors.group_shares(heal_buf, now_ms, in_M)
+end
+
+function M.MPS_by_group(now_ms)
+  return Verdant.SkillColors.group_shares(shield_buf, now_ms, in_M)
+end
+
 function M.reset()
   heal_buf:reset()
   overheal_buf:reset()
