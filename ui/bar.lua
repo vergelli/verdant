@@ -56,30 +56,32 @@ end
 
 -- ── bar texture setup ─────────────────────────────────────────────────────
 local function setup_textures()
-  local WM  = WINDOW_MANAGER
+  local WM   = WINDOW_MANAGER
   local area = controls.bar_area
 
-  -- track: 3px larger on each side → "containment" border effect.
-  -- Uses two anchors; height is fully determined, so no SetHeight needed.
+  -- track: exact fit of bar_area (no offset extension).
+  -- We tried (-3,-3)/(+3,+3) for a containment overhang but the bottom offset
+  -- direction is ambiguous across ESO versions and the track ended up shorter.
+  -- Exact fit is reliable; the window chrome provides the visual framing.
   local track = WM:CreateControl("VerdantBarTrack", area, CT_TEXTURE)
   track:ClearAnchors()
-  track:SetAnchor(TOPLEFT,     area, TOPLEFT,     -3, -3)
-  track:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT,  3,  3)
+  track:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
+  track:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
   track:SetTexture(BAR_TEXTURE)
   track:SetColor(TRACK_COLOR.r, TRACK_COLOR.g, TRACK_COLOR.b, TRACK_COLOR.a)
   controls.track = track
 
   -- fill: single BOTTOMLEFT anchor so SetWidth + SetHeight are unambiguous.
   -- ESO ignores SetHeight when two opposing anchors fully constrain the axis;
-  -- a single anchor leaves height free.
+  -- a single anchor leaves the height axis free for explicit control.
+  -- Width and height are set each tick inside refresh() — NOT here, because the
+  -- window may still be hidden (GetWidth returns 0) at setup_textures call time.
   local fill = WM:CreateControl("VerdantBarFill", area, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
   fill:SetTexture(BAR_TEXTURE)
   local c = COLORS["EMS"]
   fill:SetColor(c.r, c.g, c.b, c.a)
-  fill:SetWidth(area:GetWidth())
-  fill:SetHeight(0)
   controls.fill = fill
 end
 
