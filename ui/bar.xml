@@ -69,16 +69,18 @@
           <Dimensions y="14"/>
         </Label>
 
-        <!-- Settings toggle (⚙ gear, top-right of value row) -->
-        <Label name="$(parent)SettingsBtn"
-               mouseEnabled="true"
-               font="ZoFontGameSmall"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
+        <!-- Settings toggle — gear icon button, same row as ValueLabel -->
+        <Button name="$(parent)SettingsBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
           <Anchor point="TOPRIGHT" offsetX="-2" offsetY="28"/>
-          <Dimensions x="18" y="14"/>
-          <OnMouseUp>Verdant.Settings.toggle()</OnMouseUp>
-        </Label>
+          <Dimensions x="18" y="18"/>
+          <Textures normal="EsoUI/Art/ChatWindow/chat_options_up.dds"
+                    pressed="EsoUI/Art/ChatWindow/chat_options_down.dds"
+                    mouseOver="EsoUI/Art/ChatWindow/chat_options_over.dds"/>
+          <OnClicked>Verdant.Settings.toggle()</OnClicked>
+        </Button>
 
         <!--
           BarArea: fixed narrow width, centered via TOP/BOTTOM anchors.
@@ -88,27 +90,22 @@
         -->
         <Control name="$(parent)BarArea" mouseEnabled="false">
           <Anchor point="TOP"    offsetY="46"/>
-          <Anchor point="BOTTOM" offsetY="-47"/>
+          <Anchor point="BOTTOM" offsetY="-70"/>
           <Dimensions x="22"/>
         </Control>
 
-        <!--
-          Display mode toggle: full-width strip sitting between the ApiLabel
-          and the bar area. Both anchors share the same offsetY so the bottom
-          edge is unambiguous.  Color and text set each tick in Lua.
-        -->
-        <Label name="$(parent)ModeBtn"
-               mouseEnabled="true"
-               font="ZoFontGameSmall"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
-          <Anchor point="BOTTOMLEFT"  offsetX="6"  offsetY="-35"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-6" offsetY="-35"/>
-          <Dimensions y="10"/>
-          <OnMouseUp>Verdant.Bar.toggle_display_mode()</OnMouseUp>
-        </Label>
+        <!-- Display mode toggle: % ↔ # — proper button so it looks clickable -->
+        <Button name="$(parent)ModeBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMLEFT"  offsetX="6"  offsetY="-41"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-6" offsetY="-41"/>
+          <Dimensions y="22"/>
+          <OnClicked>Verdant.Bar.toggle_display_mode()</OnClicked>
+        </Button>
 
-        <!-- API version -->
+        <!-- API version (hidden via Lua; kept for reference) -->
         <Label name="$(parent)ApiLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
@@ -118,13 +115,13 @@
           <Dimensions y="10"/>
         </Label>
 
-        <!-- Addon version (lowest line) -->
+        <!-- Addon + API version, single line -->
         <Label name="$(parent)VersionLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="BOTTOMLEFT"  offsetX="4"  offsetY="-11"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-4" offsetY="-11"/>
+          <Anchor point="BOTTOMLEFT"  offsetX="4"  offsetY="-13"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-4" offsetY="-13"/>
           <Dimensions y="10"/>
         </Label>
 

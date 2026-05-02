@@ -374,15 +374,7 @@ local function refresh()
   local r   = Verdant.Metrics.contribution(now)
   local m   = current_metric()
 
-  -- mode button is always visible; text and color depend on view
-  if m ~= "ALL" then
-    local color = COLORS[m]
-    controls.mode_btn:SetText(display_pct and "[#]" or "[%]")
-    controls.mode_btn:SetColor(color.r, color.g, color.b, 0.90)
-  else
-    controls.mode_btn:SetText(display_pct and "[#]" or "[%]")
-    controls.mode_btn:SetColor(1, 1, 1, 0.80)
-  end
+  controls.mode_btn:SetText(display_pct and "#" or "%")
 
   if m == "ALL" then
     -- ── triple-column view ────────────────────────────────────────────────
@@ -618,13 +610,6 @@ function M.init()
   controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
   controls.next_btn:SetText(">")
   controls.next_btn:SetColor(0.75, 0.75, 0.75, 1)
-  controls.settings_btn:SetText("")
-  local gear = WINDOW_MANAGER:CreateControl("VerdantBarGearIcon", controls.settings_btn, CT_TEXTURE)
-  gear:ClearAnchors()
-  gear:SetAnchor(TOPLEFT,     controls.settings_btn, TOPLEFT,     0, 0)
-  gear:SetAnchor(BOTTOMRIGHT, controls.settings_btn, BOTTOMRIGHT, 0, 0)
-  gear:SetTexture("EsoUI/Art/ChatWindow/chat_options_up.dds")
-  gear:SetColor(0.65, 0.65, 0.65, 1)
 
   controls.api_label:SetHidden(true)
   controls.version_label:SetText(string_format("v%s  API %d", C.VERSION, GetAPIVersion()))
