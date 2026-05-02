@@ -100,6 +100,7 @@ local function on_slash(input)
     Verdant.Coverage.reset()
     Verdant.GroupSet.reset()
     Verdant.Diagnostics.reset()
+    Verdant.Bar.reset_peaks()
     d("[V] " .. L.BUFFER_CLEARED)
   else
     d("[V] " .. format_help())

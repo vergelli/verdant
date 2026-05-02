@@ -87,6 +87,31 @@ local function render_skill_segments(pool, parent, segments, area_w, area_h, tot
   end
 end
 
+-- ── peak-value tracking ──────────────────────────────────────────────────
+-- Holds the highest contribution fraction seen per metric.
+-- Resets after PEAK_DECAY_MS of not being beaten.
+local PEAK_DECAY_MS = 60000
+local peaks = { EMS = { frac=0, t=0 }, eHPS = { frac=0, t=0 }, MPS = { frac=0, t=0 } }
+
+local function update_peak(key, frac, now)
+  local p = peaks[key]
+  if frac >= p.frac then
+    p.frac = frac ; p.t = now
+  elseif (now - p.t) > PEAK_DECAY_MS then
+    p.frac = frac ; p.t = now
+  end
+end
+
+-- Places and shows the peak line.  peak_frac=0 hides it.
+local function render_peak_line(line, parent, area_w, area_h, peak_frac)
+  if peak_frac < 0.01 then line:SetHidden(true) ; return end
+  local y = -math_floor(area_h * math_min(1, peak_frac))
+  line:ClearAnchors()
+  line:SetAnchor(BOTTOMLEFT, parent, BOTTOMLEFT, 0, y)
+  line:SetWidth(area_w)
+  line:SetHidden(false)
+end
+
 -- ── state ─────────────────────────────────────────────────────────────────
 local metric_idx  = 1
 local display_pct = false
@@ -211,6 +236,16 @@ local function setup_single_bar()
   gloss:SetColor(1, 1, 1, 0.25)
   controls.gloss = gloss
 
+  -- peak line: bright 2-px strip above gloss, below border
+  local pl = WM:CreateControl("VerdantBarPeakLine", area, CT_TEXTURE)
+  pl:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+  pl:SetTexture(FILL_TEXTURE)
+  pl:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  pl:SetDimensions(0, 2)
+  pl:SetColor(1, 1, 1, 0.92)
+  pl:SetHidden(true)
+  controls.peak_line = pl
+
   -- 4-strip gold border — created LAST so it renders above fills and gloss
   make_border(area, "VerdantBarBorder")
 end
@@ -283,6 +318,16 @@ local function setup_triple_view()
     gloss:SetTextureCoords(0, 1, FILL_T, FILL_B)
     gloss:SetColor(1, 1, 1, 0.25)
 
+    -- peak line: above gloss, below border
+    local tpl = WM:CreateControl("VerdantBarTriPeak" .. m, area, CT_TEXTURE)
+    tpl:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+    tpl:SetTexture(FILL_TEXTURE)
+    tpl:SetTextureCoords(0, 1, FILL_T, FILL_B)
+    tpl:SetDimensions(0, 2)
+    tpl:SetColor(1, 1, 1, 0.92)
+    tpl:SetHidden(true)
+    col.peak_line = tpl
+
     -- 4-strip border (last = on top of fill + gloss)
     make_border(area, "VerdantBarTriBorder" .. m)
 
@@ -345,6 +390,8 @@ local function refresh()
       end
       col.value:SetColor(1, 1, 1, 1)
 
+      update_peak(cm, frac, now)
+
       local area_w = col.area:GetWidth()
       local area_h = col.area:GetHeight()
       if area_h > 4 then
@@ -362,6 +409,7 @@ local function refresh()
           col.fill:SetWidth(area_w)
           col.fill:SetHeight(fill_h)
         end
+        render_peak_line(col.peak_line, col.area, area_w, area_h, peaks[cm].frac)
       end
     end
 
@@ -390,6 +438,8 @@ local function refresh()
     local area_w = controls.bar_area:GetWidth()
     local area_h = controls.bar_area:GetHeight()
     if area_h <= 4 then return end
+
+    update_peak(m, frac, now)
 
     if m == "EMS" then
       -- stacked fill: eHPS green (bottom), MPS pink (above); no per-skill coloring
@@ -430,6 +480,8 @@ local function refresh()
       local segs = Verdant.Metrics.MPS_by_group(now)
       render_skill_segments(controls.pool_mps, controls.bar_area, segs, area_w, area_h, frac)
     end
+
+    render_peak_line(controls.peak_line, controls.bar_area, area_w, area_h, peaks[m].frac)
   end
 end
 
@@ -486,6 +538,10 @@ function M.on_move_stop()
   local left, top = controls.window:GetScreenRect()
   local sv = Verdant.SavedVars
   if sv then sv.bar = sv.bar or {} ; sv.bar.x, sv.bar.y = left, top end
+end
+
+function M.reset_peaks()
+  for k in pairs(peaks) do peaks[k].frac = 0 ; peaks[k].t = 0 end
 end
 
 function M.on_resize_stop()

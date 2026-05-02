@@ -66,6 +66,27 @@ local COLS = { "EMS", "eHPS", "MPS" }
 -- controls[m] = { area, label, value, bar = { bg, fill, frame } }
 local controls = {}
 
+local PEAK_DECAY_MS = 60000
+local peaks = { EMS = { frac=0, t=0 }, eHPS = { frac=0, t=0 }, MPS = { frac=0, t=0 } }
+
+local function update_peak(key, frac, now)
+  local p = peaks[key]
+  if frac >= p.frac then
+    p.frac = frac ; p.t = now
+  elseif (now - p.t) > PEAK_DECAY_MS then
+    p.frac = frac ; p.t = now
+  end
+end
+
+local function render_peak_line(line, parent, area_w, area_h, peak_frac)
+  if peak_frac < 0.01 then line:SetHidden(true) ; return end
+  local y = -math_floor(area_h * math_min(1, peak_frac))
+  line:ClearAnchors()
+  line:SetAnchor(BOTTOMLEFT, parent, BOTTOMLEFT, 0, y)
+  line:SetWidth(area_w)
+  line:SetHidden(false)
+end
+
 local BORDER_COLOR = { r = 0.75, g = 0.62, b = 0.38, a = 0.90 }
 local BORDER_SIZE  = 2
 
@@ -119,10 +140,19 @@ local function make_bar(area, name_suffix, color, use_pool)
   gloss:SetTextureCoords(0, 1, FILL_T, FILL_B)
   gloss:SetColor(1, 1, 1, 0.25)
 
+  -- peak line: above gloss, below border
+  local pl = WM:CreateControl("VerdantTriBarPeak" .. name_suffix, area, CT_TEXTURE)
+  pl:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+  pl:SetTexture(FILL_TEXTURE)
+  pl:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  pl:SetDimensions(0, 2)
+  pl:SetColor(1, 1, 1, 0.92)
+  pl:SetHidden(true)
+
   -- 4-strip border — last so it renders above fill, pool segments, and gloss
   make_border(area, "VerdantTriBarBorder" .. name_suffix)
 
-  return { bg = bg, fill = fill, pool = pool }
+  return { bg = bg, fill = fill, pool = pool, peak_line = pl }
 end
 
 -- ── refresh (1 Hz tick) ───────────────────────────────────────────────────
@@ -149,6 +179,8 @@ local function refresh()
     c.value:SetText(string_format("%d", math_floor(v.raw)))
     c.value:SetColor(1, 1, 1, 1)
 
+    update_peak(m, frac, now)
+
     local area_w = c.area:GetWidth()
     local area_h = c.area:GetHeight()
     if area_h > 4 then
@@ -163,6 +195,7 @@ local function refresh()
         c.bar.fill:SetWidth(area_w)
         c.bar.fill:SetHeight(fill_h)
       end
+      render_peak_line(c.bar.peak_line, c.area, area_w, area_h, peaks[m].frac)
     end
   end
 end
