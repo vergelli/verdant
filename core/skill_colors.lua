@@ -105,16 +105,41 @@ local ABILITY_OVERRIDES = {
 -- Runtime cache (abilityId → group string); populated on first encounter.
 local ability_cache = {}
 
+-- IDs that fell through all patterns: { [abilityId] = "original name" }
+-- Printed by M.print_unknown() so the user can add them to ABILITY_OVERRIDES.
+local unknown_log = {}
+
 local function classify_by_name(abilityId)
   local name = GetAbilityName(abilityId)
   if not name or name == "" then return "other" end
-  name = string.lower(name)
+  local lc = string.lower(name)
   for _, entry in ipairs(NAME_PATTERNS) do
-    if string.find(name, entry[1], 1, true) then
+    if string.find(lc, entry[1], 1, true) then
       return entry[2]
     end
   end
+  -- record for user discovery
+  unknown_log[abilityId] = name
   return "other"
+end
+
+-- Print all unclassified abilities seen so far.
+-- Use /verdant skills after a heal session to discover what to add to ABILITY_OVERRIDES.
+function M.print_unknown()
+  local d      = d
+  local lines  = {}
+  local count  = 0
+  for id, name in pairs(unknown_log) do
+    lines[#lines + 1] = string.format("  [%d] = \"?\",  -- %s", id, name)
+    count = count + 1
+  end
+  if count == 0 then
+    d("[V] No unclassified heal/shield abilities seen yet.")
+    return
+  end
+  table.sort(lines)
+  d("[V] Unclassified abilities (" .. count .. ") — add to ABILITY_OVERRIDES in skill_colors.lua:")
+  for _, line in ipairs(lines) do d(line) end
 end
 
 local function lookup_group(abilityId)

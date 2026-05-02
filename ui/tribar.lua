@@ -110,9 +110,9 @@ local function make_border(parent, name)
 end
 
 -- ── per-column bar textures ───────────────────────────────────────────────
--- use_pool: true for eHPS/MPS columns (skill-colored segments);
---           false for EMS (single gold fill).
-local function make_bar(area, name_suffix, color, use_pool)
+-- use_pool:    true for eHPS/MPS (skill-colored segments)
+-- use_stacked: true for EMS (heal green + shield pink stacked fills)
+local function make_bar(area, name_suffix, color, use_pool, use_stacked)
   local WM = WINDOW_MANAGER
 
   local bg = WM:CreateControl("VerdantTriBarBg" .. name_suffix, area, CT_TEXTURE)
@@ -128,7 +128,27 @@ local function make_bar(area, name_suffix, color, use_pool)
   fill:SetTexture(FILL_TEXTURE)
   fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
   fill:SetColor(color.r, color.g, color.b, color.a)
-  if use_pool then fill:SetHidden(true) end
+  if use_pool or use_stacked then fill:SetHidden(true) end
+
+  -- EMS stacked fills: eHPS green (bottom), MPS pink (above)
+  local fill_heal, fill_shield
+  if use_stacked then
+    fill_heal = WM:CreateControl("VerdantTriBarFillHeal" .. name_suffix, area, CT_TEXTURE)
+    fill_heal:ClearAnchors()
+    fill_heal:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+    fill_heal:SetTexture(FILL_TEXTURE)
+    fill_heal:SetTextureCoords(0, 1, FILL_T, FILL_B)
+    fill_heal:SetColor(COLORS.eHPS.r, COLORS.eHPS.g, COLORS.eHPS.b, COLORS.eHPS.a)
+    fill_heal:SetHidden(true)
+
+    fill_shield = WM:CreateControl("VerdantTriBarFillShield" .. name_suffix, area, CT_TEXTURE)
+    fill_shield:ClearAnchors()
+    fill_shield:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
+    fill_shield:SetTexture(FILL_TEXTURE)
+    fill_shield:SetTextureCoords(0, 1, FILL_T, FILL_B)
+    fill_shield:SetColor(COLORS.MPS.r, COLORS.MPS.g, COLORS.MPS.b, COLORS.MPS.a)
+    fill_shield:SetHidden(true)
+  end
 
   local pool = use_pool and make_skill_pool(area, "VerdantTriBarSkill" .. name_suffix) or nil
 
@@ -149,10 +169,10 @@ local function make_bar(area, name_suffix, color, use_pool)
   pl:SetColor(1, 1, 1, 0.92)
   pl:SetHidden(true)
 
-  -- 4-strip border — last so it renders above fill, pool segments, and gloss
+  -- 4-strip border — last so it renders above all fills and gloss
   make_border(area, "VerdantTriBarBorder" .. name_suffix)
 
-  return { bg = bg, fill = fill, pool = pool, peak_line = pl }
+  return { bg=bg, fill=fill, fill_heal=fill_heal, fill_shield=fill_shield, pool=pool, peak_line=pl }
 end
 
 -- ── refresh (1 Hz tick) ───────────────────────────────────────────────────
@@ -191,9 +211,23 @@ local function refresh()
         local segs = Verdant.Metrics.MPS_by_group(now)
         render_skill_segments(c.bar.pool, c.area, segs, area_w, area_h, frac)
       else
-        local fill_h = (frac > 0.005) and math_max(2, area_h * frac) or 0
-        c.bar.fill:SetWidth(area_w)
-        c.bar.fill:SetHeight(fill_h)
+        -- EMS: stacked heal (green, bottom) + shield (pink, above)
+        local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
+        local shield_frac = math_max(0, math_min(1, r.C_shield or 0))
+        local heal_h      = (heal_frac   > 0.005) and math_max(2, area_h * heal_frac)   or 0
+        local shield_h    = (shield_frac > 0.005) and math_max(2, area_h * shield_frac) or 0
+
+        local fh = c.bar.fill_heal
+        fh:SetHidden(false)
+        fh:SetWidth(area_w)
+        fh:SetHeight(heal_h)
+
+        local fs = c.bar.fill_shield
+        fs:ClearAnchors()
+        fs:SetAnchor(BOTTOMLEFT, c.area, BOTTOMLEFT, 0, -heal_h)
+        fs:SetHidden(false)
+        fs:SetWidth(area_w)
+        fs:SetHeight(shield_h)
       end
       render_peak_line(c.bar.peak_line, c.area, area_w, area_h, peaks[m].frac)
     end
@@ -255,7 +289,7 @@ function M.init()
   end
 
   for _, m in ipairs(COLS) do
-    controls[m].bar = make_bar(controls[m].area, m, COLORS[m], m ~= "EMS")
+    controls[m].bar = make_bar(controls[m].area, m, COLORS[m], m ~= "EMS", m == "EMS")
   end
 
   local visible = b.visible or false

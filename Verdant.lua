@@ -88,6 +88,8 @@ local function on_slash(input)
     Verdant.Bar.toggle()
   elseif cmd == "tribar" then
     Verdant.TriBar.toggle()
+  elseif cmd == "skills" then
+    Verdant.SkillColors.print_unknown()
   elseif cmd == "diag" then
     Verdant.Diagnostics.print_diag()
   elseif cmd == "save" then
