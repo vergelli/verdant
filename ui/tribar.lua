@@ -248,11 +248,19 @@ end
 function M.show()
   controls.window:SetHidden(false)
   PlaySound(SOUNDS.ARMORY_OPEN)
+  local sv = Verdant.SavedVars
+  if sv then sv.tribar = sv.tribar or {} ; sv.tribar.visible = true end
 end
 
 function M.hide()
   controls.window:SetHidden(true)
   PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+  local sv = Verdant.SavedVars
+  if sv then sv.tribar = sv.tribar or {} ; sv.tribar.visible = false end
+end
+
+function M.on_close_click()
+  M.hide()
 end
 
 function M.on_move_stop()

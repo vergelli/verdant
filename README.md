@@ -10,7 +10,8 @@
 
 **Real-time healer contribution bar for The Elder Scrolls Online**
 
-Verdant quantifies your healing and shielding output into a single bar that adapts its meaning depending on whether you are playing solo or in a group. It does not track raw throughput numbers — it tracks *contribution*: how much of a meaningful ceiling your output is covering.
+Verdant quantifies your healing and shielding output into a single bar that adapts its meaning depending on whether you are playing solo or in a group. 
+In other words it tracks *contribution*: how much of a meaningful ceiling your output is covering.
 
 ---
 
