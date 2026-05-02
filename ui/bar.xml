@@ -26,26 +26,35 @@
           <Insets left="8" top="8" right="-8" bottom="-8"/>
         </Backdrop>
 
-        <!-- Prev arrow — Label acts as clickable text; no invisible Button quirks -->
+        <!-- Addon name — small, centered, top of window -->
+        <Label name="$(parent)TitleLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT"  offsetX="8" offsetY="8"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="8"/>
+          <Dimensions y="10"/>
+        </Label>
+
+        <!-- Prev arrow -->
         <Label name="$(parent)PrevBtn"
                mouseEnabled="true"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="8" offsetY="8"/>
-          <Dimensions x="14" y="16"/>
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="20"/>
+          <Dimensions x="14" y="14"/>
           <OnMouseUp>Verdant.Bar.prev_metric()</OnMouseUp>
         </Label>
 
-        <!-- Metric acronym — both TOPLEFT/TOPRIGHT share same offsetY to avoid
-             conflicting vertical constraints that caused the collision bug -->
+        <!-- Metric acronym -->
         <Label name="$(parent)MetricLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT"  offsetX="24" offsetY="8"/>
-          <Anchor point="TOPRIGHT" offsetX="-24" offsetY="8"/>
-          <Dimensions y="16"/>
+          <Anchor point="TOPLEFT"  offsetX="24" offsetY="20"/>
+          <Anchor point="TOPRIGHT" offsetX="-24" offsetY="20"/>
+          <Dimensions y="14"/>
         </Label>
 
         <!-- Next arrow -->
@@ -54,8 +63,8 @@
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="8"/>
-          <Dimensions x="14" y="16"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="20"/>
+          <Dimensions x="14" y="14"/>
           <OnMouseUp>Verdant.Bar.next_metric()</OnMouseUp>
         </Label>
 
@@ -64,8 +73,8 @@
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT"  offsetX="8"   offsetY="28"/>
-          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="28"/>
+          <Anchor point="TOPLEFT"  offsetX="8"   offsetY="36"/>
+          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="36"/>
           <Dimensions y="14"/>
         </Label>
 
@@ -74,8 +83,8 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-2" offsetY="28"/>
-          <Dimensions x="18" y="18"/>
+          <Anchor point="TOPRIGHT" offsetX="-2" offsetY="36"/>
+          <Dimensions x="18" y="14"/>
           <Textures normal="EsoUI/Art/ChatWindow/chat_options_up.dds"
                     pressed="EsoUI/Art/ChatWindow/chat_options_down.dds"
                     mouseOver="EsoUI/Art/ChatWindow/chat_options_over.dds"/>
@@ -89,7 +98,7 @@
           Track and fill textures are created in Lua.
         -->
         <Control name="$(parent)BarArea" mouseEnabled="false">
-          <Anchor point="TOP"    offsetY="46"/>
+          <Anchor point="TOP"    offsetY="52"/>
           <Anchor point="BOTTOM" offsetY="-70"/>
           <Dimensions x="22"/>
         </Control>

@@ -258,8 +258,8 @@ local function setup_triple_view()
   -- container: same vertical span as bar_area, fixed width centered
   local container = WM:CreateControl("VerdantBarTriContainer", win, CT_CONTROL)
   container:ClearAnchors()
-  container:SetAnchor(TOP,    win, TOP,    0, 46)
-  container:SetAnchor(BOTTOM, win, BOTTOM, 0, -36)
+  container:SetAnchor(TOP,    win, TOP,    0, 52)
+  container:SetAnchor(BOTTOM, win, BOTTOM, 0, -70)
   container:SetWidth(TRI_TOTAL_W)
   container:SetHidden(true)
   controls.tri_container = container
@@ -596,6 +596,7 @@ function M.init()
   display_pct = b.display_pct or false
 
   controls.window        = VerdantBarWindow
+  controls.title_label   = VerdantBarWindowTitleLabel
   controls.metric_label  = VerdantBarWindowMetricLabel
   controls.value_label   = VerdantBarWindowValueLabel
   controls.bar_area      = VerdantBarWindowBarArea
@@ -605,6 +606,9 @@ function M.init()
   controls.prev_btn      = VerdantBarWindowPrevBtn
   controls.next_btn      = VerdantBarWindowNextBtn
   controls.settings_btn  = VerdantBarWindowSettingsBtn
+
+  controls.title_label:SetText("Verdant")
+  controls.title_label:SetColor(0.55, 0.55, 0.55, 0.70)
 
   controls.prev_btn:SetText("<")
   controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
