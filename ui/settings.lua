@@ -5,9 +5,10 @@ Verdant.Settings = {}
 local M = Verdant.Settings
 
 local GetUIMousePosition = GetUIMousePosition
-local math_max   = math.max
-local math_min   = math.min
-local math_floor = math.floor
+local WINDOW_MANAGER     = WINDOW_MANAGER
+local math_max           = math.max
+local math_min           = math.min
+local math_floor         = math.floor
 
 local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local BG_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"

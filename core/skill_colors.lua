@@ -2,6 +2,10 @@ Verdant = Verdant or {}
 Verdant.SkillColors = {}
 local M = Verdant.SkillColors
 
+local GetAbilityName = GetAbilityName
+local string_lower   = string.lower
+local string_find    = string.find
+
 -- One color per class / skill-line.
 local GROUP_COLORS = {
   templar   = { r = 0.95, g = 0.75, b = 0.15, a = 0.95 },  -- amber gold
@@ -151,9 +155,9 @@ local unknown_log = {}
 local function classify_by_name(abilityId)
   local name = GetAbilityName(abilityId)
   if not name or name == "" then return "other" end
-  local lc = string.lower(name)
+  local lc = string_lower(name)
   for _, entry in ipairs(NAME_PATTERNS) do
-    if string.find(lc, entry[1], 1, true) then
+    if string_find(lc, entry[1], 1, true) then
       return entry[2]
     end
   end

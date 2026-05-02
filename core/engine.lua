@@ -10,6 +10,7 @@ Verdant.Engine = {}
 local M = Verdant.Engine
 
 local GetGameTimeMilliseconds = GetGameTimeMilliseconds
+local tostring                = tostring
 
 local function now() return GetGameTimeMilliseconds() end
 

@@ -105,7 +105,11 @@ Shows EMS, eHPS and MPS as three independent vertical bars side by side in a com
 
 ## Settings
 
-Click the **gear icon** (top-right corner of the value row) to open the refresh rate panel. Six presets from 0.5 Hz to 20 Hz. Default is 1 Hz. Saved per account.
+Click the **gear icon** (top-right corner of the value row) to open the settings panel. All values are saved per account.
+
+### Refresh Rate
+
+How often the bar redraws. Six presets from 0.5 Hz to 20 Hz. Default is 1 Hz.
 
 | Preset | Interval |
 |--------|----------|
@@ -115,6 +119,31 @@ Click the **gear icon** (top-right corner of the value row) to open the refresh 
 | 2 Hz | 500 ms |
 | 1 Hz | 1000 ms (default) |
 | 0.5 Hz | 2000 ms |
+
+### Heal Window
+
+The rolling time window used to calculate eHPS. A shorter window reacts faster; a longer one smooths out burst heals.
+
+| Preset |
+|--------|
+| 2 s |
+| 3 s |
+| **5 s** (default) |
+| 8 s |
+| 10 s |
+| 15 s |
+
+### Shield Window
+
+The rolling time window used to calculate MPS. Shields are sparse events, so a wider window is needed to avoid the metric collapsing to zero between hits.
+
+| Preset |
+|--------|
+| 10 s |
+| 15 s |
+| **30 s** (default) |
+| 45 s |
+| 60 s |
 
 ---
 

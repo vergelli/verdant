@@ -107,7 +107,9 @@ VerdantSavedVars (account-wide)
 │   ├── visible        -- bool: bar window visibility
 │   ├── x, y           -- last window position
 │   ├── w, h           -- last window dimensions
-│   └── rate_ms        -- refresh rate in milliseconds
+│   ├── rate_ms        -- refresh rate in milliseconds
+│   ├── heal_window_ms -- eHPS rolling window in milliseconds (default 5000)
+│   └── shield_window_ms -- MPS rolling window in milliseconds (default 30000)
 ├── tribar
 │   ├── visible        -- bool
 │   └── x, y

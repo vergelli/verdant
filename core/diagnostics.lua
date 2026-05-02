@@ -5,6 +5,11 @@ Verdant.Diagnostics = {}
 local M = Verdant.Diagnostics
 
 local GetGameTimeMilliseconds = GetGameTimeMilliseconds
+local d           = d
+local pairs       = pairs
+local tostring    = tostring
+local math_min    = math.min
+local table_sort  = table.sort
 
 -- ── config ────────────────────────────────────────────────────────────────
 local EVENT_CAP   = 200   -- ring buffer capacity for discrete events
@@ -112,7 +117,6 @@ end
 
 -- ── chat dump (/verdant diag) ─────────────────────────────────────────────
 function M.print_diag()
-  local d = d
   d("[V:diag] uptime=" .. (GetGameTimeMilliseconds() - start_time) .. "ms"
     .. "  ev_total=" .. ev_count
     .. "  ts_samples=" .. ts_count)
@@ -120,14 +124,14 @@ function M.print_diag()
   d("[V:diag] counters:")
   local keys = {}
   for k in pairs(counters) do keys[#keys+1] = k end
-  table.sort(keys)
+  table_sort(keys)
   for _, k in ipairs(keys) do
     d("  " .. k .. " = " .. tostring(counters[k]))
   end
   -- last 10 events
   d("[V:diag] last events (up to 10):")
-  local n_show = math.min(ev_count, 10)
-  local base   = math.min(ev_count, EVENT_CAP)
+  local n_show = math_min(ev_count, 10)
+  local base   = math_min(ev_count, EVENT_CAP)
   for i = base - n_show + 1, base do
     local idx = (ev_head - base + i - 1 + EVENT_CAP) % EVENT_CAP + 1
     local e = ev_buf[idx]

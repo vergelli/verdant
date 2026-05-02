@@ -7,6 +7,7 @@ local M = Verdant.Bar
 local GetGameTimeMilliseconds = GetGameTimeMilliseconds
 local GetAPIVersion           = GetAPIVersion
 local PlaySound               = PlaySound
+local WINDOW_MANAGER          = WINDOW_MANAGER
 local string_format           = string.format
 local math_max                = math.max
 local math_min                = math.min
