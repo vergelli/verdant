@@ -125,6 +125,8 @@ local ABILITY_OVERRIDES = {
   [186267] = "arcanist",
   [186203] = "arcanist",
   [61506] = "Echoing Vigor",
+  [33524] = "Channeled Focus",
+  [217608] = "Warding Contingency",
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
