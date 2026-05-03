@@ -58,7 +58,7 @@ local function make_skill_pool(parent, name_prefix)
       t:SetTextureCoords(0, 1, FILL_T, FILL_B)
       return t
     end,
-    function(pool, t)
+    function(t)
       t:SetHidden(true)
     end
   )
