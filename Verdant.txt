@@ -12,7 +12,8 @@
 
 
 bindings.xml
-locales/en.lua
+locales/default.lua
+locales/$(language).lua
 core/constants.lua
 core/events.lua
 core/buffer.lua
