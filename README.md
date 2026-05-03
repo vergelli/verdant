@@ -148,7 +148,7 @@ The rolling time window used to calculate **MPS**. Shields are sparse events, so
 
 ## Installation
 
-1. Download the latest release from [ESOUI](https://www.esoui.com) or [GitHub Releases](../../releases).
+1. Download the latest release.
 2. Extract to your AddOns folder:
    ```
    Documents/Elder Scrolls Online/live/AddOns/Verdant/
