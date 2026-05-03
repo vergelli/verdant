@@ -3,13 +3,6 @@ local Verdant = Verdant
 
 Verdant.GroupSet = {}
 
--- Tracks unitIds known to be in our group. ESO's REGISTER_FILTER_TARGET_COMBAT_UNIT_TYPE
--- = COMBAT_UNIT_TYPE_GROUP doesn't match incoming damage to teammates because
--- targetType in those events is COMBAT_UNIT_TYPE_PLAYER (the type is relative to
--- source's perspective). LibCombat solves this by maintaining its own map; we copy
--- the pattern. Population: every outgoing heal whose event-reported targetType is
--- GROUP marks that targetUnitId here. The damage handler then filters by lookup.
-
 local M = Verdant.GroupSet
 
 local pairs = pairs
