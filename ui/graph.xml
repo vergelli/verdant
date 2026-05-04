@@ -1,6 +1,14 @@
 <GuiXml>
   <Controls>
 
+    <!-- Virtual template for polyline segments (one per adjacent data-point pair).
+         Two anchors placed on the canvas define start/end; ESO draws the segment. -->
+    <Line name="VerdantGraphLineTemplate"
+          thickness="2"
+          textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
+          pixelRoundingEnabled="false"
+          virtual="true"/>
+
     <!--
       Temporal Analytics graph window.
       Movable, position persisted in sv.temporal.graph_x / graph_y.

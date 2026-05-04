@@ -2,31 +2,34 @@ Verdant = Verdant or {}
 Verdant.Graph = {}
 local M = Verdant.Graph
 
-local ZO_ObjectPool           = ZO_ObjectPool
-local WINDOW_MANAGER          = WINDOW_MANAGER
-local EVENT_MANAGER           = EVENT_MANAGER
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
-local GetString               = GetString
-local math_max                = math.max
-local math_min                = math.min
-local math_floor              = math.floor
-local string_format           = string.format
+local ZO_ObjectPool              = ZO_ObjectPool
+local WINDOW_MANAGER             = WINDOW_MANAGER
+local EVENT_MANAGER              = EVENT_MANAGER
+local CreateControlFromVirtual   = CreateControlFromVirtual
+local GetGameTimeMilliseconds    = GetGameTimeMilliseconds
+local GetString                  = GetString
+local math_max                   = math.max
+local math_floor                 = math.floor
+local string_format              = string.format
 
 -- Colors matching bar.lua
-local C_EHPS = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 }  -- pastel green
-local C_MPS  = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink
-local C_BG   = { r = 0.06, g = 0.06, b = 0.08, a = 1.00 }
+local C_EHPS      = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 }  -- pastel green fill
+local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink fill
+local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
+local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
+local C_BG        = { r = 0.06, g = 0.06, b = 0.08, a = 1.00 }
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local BG_TEXTURE     = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local FILL_T, FILL_B = 0, 0.53125
+local LINE_THICKNESS = 2
 
 -- ── state ─────────────────────────────────────────────────────────────────
 local controls           = {}
 local recording_start_ms = 0
 
--- ── pool factory ──────────────────────────────────────────────────────────
-local function make_graph_pool(name_prefix)
+-- ── pool factories ────────────────────────────────────────────────────────
+local function make_fill_pool(name_prefix)
   local counter = 0
   return ZO_ObjectPool:New(
     function(pool, key)
@@ -36,18 +39,29 @@ local function make_graph_pool(name_prefix)
       t:SetTextureCoords(0, 1, FILL_T, FILL_B)
       return t
     end,
-    function(t)
-      t:SetHidden(true)
-    end
+    function(t) t:SetHidden(true) end
+  )
+end
+
+local function make_line_pool(name_prefix)
+  local counter = 0
+  return ZO_ObjectPool:New(
+    function(pool, key)
+      counter = counter + 1
+      local line = CreateControlFromVirtual(name_prefix .. counter, controls.canvas, "VerdantGraphLineTemplate")
+      line:SetThickness(LINE_THICKNESS)
+      return line
+    end,
+    function(line) line:SetHidden(true) end
   )
 end
 
 -- ── rendering ─────────────────────────────────────────────────────────────
 local function render_graph()
-  local pool_ehps = controls.pool_ehps
-  local pool_mps  = controls.pool_mps
-  pool_ehps:ReleaseAllObjects()
-  pool_mps:ReleaseAllObjects()
+  controls.pool_ehps:ReleaseAllObjects()
+  controls.pool_mps:ReleaseAllObjects()
+  controls.pool_line_ehps:ReleaseAllObjects()
+  controls.pool_line_ems:ReleaseAllObjects()
 
   local n = Verdant.TemporalBuffer.count()
   if n == 0 then
@@ -61,7 +75,7 @@ local function render_graph()
   local ch = canvas:GetHeight()
   if cw <= 4 or ch <= 4 then return end
 
-  -- Y-axis scale: max EMS value in the visible buffer
+  -- Y-axis scale: max EMS across the buffer
   local max_ems = 0
   Verdant.TemporalBuffer.iterate(function(i, s)
     local ems = s.eHPS + s.MPS
@@ -71,24 +85,37 @@ local function render_graph()
 
   local bar_w = cw / n
 
+  -- Pass 1: draw fill columns and collect pixel heights for the polyline pass.
+  local xs      = {}   -- x-center of each column
+  local ehps_hs = {}   -- pixel height of eHPS bar at sample i
+  local ems_hs  = {}   -- pixel height of eHPS+MPS at sample i
+
   Verdant.TemporalBuffer.iterate(function(i, s)
-    local x  = (i - 1) * bar_w
-    local bw = math_max(1, math_floor(bar_w))
+    local x    = (i - 1) * bar_w
+    local bw   = math_max(1, math_floor(bar_w))
+    local xc   = x + bar_w * 0.5          -- column centre for polyline anchor
 
-    -- Green bar: eHPS, BOTTOM-anchored to canvas floor
-    local ehps_h = math_max(1, math_floor(ch * (s.eHPS / max_ems) + 0.5))
-    local te = pool_ehps:AcquireObject()
-    te:ClearAnchors()
-    te:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
-    te:SetWidth(bw)
-    te:SetHeight(ehps_h)
-    te:SetColor(C_EHPS.r, C_EHPS.g, C_EHPS.b, C_EHPS.a)
-    te:SetHidden(false)
+    local ehps_h = math_max(0, math_floor(ch * (s.eHPS / max_ems) + 0.5))
+    local mps_h  = math_max(0, math_floor(ch * (s.MPS  / max_ems) + 0.5))
 
-    -- Pink bar: MPS, stacked on top of the green bar
-    if s.MPS > 0 then
-      local mps_h = math_max(1, math_floor(ch * (s.MPS / max_ems) + 0.5))
-      local tm = pool_mps:AcquireObject()
+    xs[i]      = xc
+    ehps_hs[i] = ehps_h
+    ems_hs[i]  = ehps_h + mps_h
+
+    -- eHPS fill (green), BOTTOM-anchored to canvas floor
+    if ehps_h > 0 then
+      local te = controls.pool_ehps:AcquireObject()
+      te:ClearAnchors()
+      te:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
+      te:SetWidth(bw)
+      te:SetHeight(ehps_h)
+      te:SetColor(C_EHPS.r, C_EHPS.g, C_EHPS.b, C_EHPS.a)
+      te:SetHidden(false)
+    end
+
+    -- MPS fill (pink), stacked above eHPS
+    if mps_h > 0 then
+      local tm = controls.pool_mps:AcquireObject()
       tm:ClearAnchors()
       tm:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -ehps_h)
       tm:SetWidth(bw)
@@ -97,21 +124,38 @@ local function render_graph()
       tm:SetHidden(false)
     end
   end)
+
+  -- Pass 2: polyline segments connecting adjacent column centres.
+  -- One Line control per pair (i-1, i) for each boundary curve.
+  for i = 2, n do
+    local x1, x2 = xs[i-1], xs[i]
+
+    -- eHPS boundary (top of green fill)
+    local le = controls.pool_line_ehps:AcquireObject()
+    le:ClearAnchors()
+    le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -ehps_hs[i-1])
+    le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -ehps_hs[i])
+    le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+    le:SetHidden(false)
+
+    -- EMS boundary (top of stacked fills)
+    local lm = controls.pool_line_ems:AcquireObject()
+    lm:ClearAnchors()
+    lm:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -ems_hs[i-1])
+    lm:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -ems_hs[i])
+    lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
+    lm:SetHidden(false)
+  end
 end
 
 -- ── button state visuals ──────────────────────────────────────────────────
 local function refresh_button_colors()
   local recording = Verdant.TemporalBuffer.is_recording()
-  -- REC: bright red when available, dim when already recording
   if recording then
     controls.btn_record:SetColor(0.55, 0.15, 0.15, 0.70)
-  else
-    controls.btn_record:SetColor(1.00, 0.20, 0.20, 1.00)
-  end
-  -- STOP: bright when recording is active
-  if recording then
     controls.btn_stop:SetColor(0.90, 0.90, 0.90, 1.00)
   else
+    controls.btn_record:SetColor(1.00, 0.20, 0.20, 1.00)
     controls.btn_stop:SetColor(0.40, 0.40, 0.40, 0.70)
   end
 end
@@ -122,14 +166,20 @@ local function on_sample_update()
   local r   = Verdant.Metrics.contribution(now)
   Verdant.TemporalBuffer.push(now, r.eHPS, r.MPS)
 
-  -- Update elapsed timer on the status label
   local elapsed = math_floor((now - recording_start_ms) / 1000)
   controls.status:SetText(string_format("%d:%02d", math_floor(elapsed / 60), elapsed % 60))
 
-  -- Live redraw only if the window is open
   if not controls.window:IsHidden() then
     render_graph()
   end
+end
+
+-- ── local helper: release all four pools ─────────────────────────────────
+local function release_all_pools()
+  controls.pool_ehps:ReleaseAllObjects()
+  controls.pool_mps:ReleaseAllObjects()
+  controls.pool_line_ehps:ReleaseAllObjects()
+  controls.pool_line_ems:ReleaseAllObjects()
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
@@ -139,7 +189,8 @@ function M.on_record_click()
   Verdant.TemporalBuffer.start_recording()
   recording_start_ms = GetGameTimeMilliseconds()
   local sv       = Verdant.SavedVars
-  local interval = (sv and sv.temporal and sv.temporal.sample_rate_ms) or Verdant.Constants.TEMPORAL.SAMPLE_RATE_DEFAULT
+  local interval = (sv and sv.temporal and sv.temporal.sample_rate_ms)
+                   or Verdant.Constants.TEMPORAL.SAMPLE_RATE_DEFAULT
   EVENT_MANAGER:RegisterForUpdate(Verdant.Constants.TEMPORAL.UPDATE_NAME, interval, on_sample_update)
   refresh_button_colors()
   controls.status:SetText("0:00")
@@ -155,8 +206,7 @@ end
 
 function M.on_close_click()
   controls.window:SetHidden(true)
-  controls.pool_ehps:ReleaseAllObjects()
-  controls.pool_mps:ReleaseAllObjects()
+  release_all_pools()
 end
 
 function M.on_move_stop()
@@ -175,8 +225,7 @@ function M.toggle()
     render_graph()
   else
     win:SetHidden(true)
-    controls.pool_ehps:ReleaseAllObjects()
-    controls.pool_mps:ReleaseAllObjects()
+    release_all_pools()
   end
 end
 
@@ -192,7 +241,7 @@ function M.init()
   controls.canvas     = VerdantGraphWindowCanvas
   controls.no_data    = VerdantGraphWindowNoDataLabel
 
-  -- Restore saved position, fall back to screen centre
+  -- Restore saved position
   local sv = Verdant.SavedVars
   sv.temporal = sv.temporal or {}
   if sv.temporal.graph_x then
@@ -208,9 +257,11 @@ function M.init()
   bg:SetTexture(BG_TEXTURE)
   bg:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
 
-  -- ZO_ObjectPools — created once, reused every render
-  controls.pool_ehps = make_graph_pool("VerdantGraphEhps")
-  controls.pool_mps  = make_graph_pool("VerdantGraphMps")
+  -- Four ZO_ObjectPools — created once, reused every render
+  controls.pool_ehps      = make_fill_pool("VerdantGraphFillEhps")
+  controls.pool_mps       = make_fill_pool("VerdantGraphFillMps")
+  controls.pool_line_ehps = make_line_pool("VerdantGraphLineEhps")
+  controls.pool_line_ems  = make_line_pool("VerdantGraphLineEms")
 
   -- Labels
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
@@ -227,7 +278,7 @@ function M.init()
 
   refresh_button_colors()
 
-  -- Wire up the graph button on the bar
+  -- Graph toggle button on the main bar
   VerdantBarWindowGraphBtn:SetText("G")
   VerdantBarWindowGraphBtn:SetColor(0.55, 0.75, 0.95, 1)
 end
