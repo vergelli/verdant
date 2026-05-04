@@ -18,3 +18,13 @@ ZO_CreateStringId("VERDANT_METRIC_UNKNOWN", "Unknown metric '%s'. Use: EMS | eHP
 ZO_CreateStringId("VERDANT_BAR_SHOWN",      "Bar shown.")
 ZO_CreateStringId("VERDANT_BAR_HIDDEN",     "Bar hidden.")
 ZO_CreateStringId("VERDANT_LOADED",         "Verdant v%s loaded. Type %s to toggle.")
+
+-- Temporal Analytics settings
+ZO_CreateStringId("VERDANT_SETTING_SAMPLE_RATE",  "Sampling Rate")
+ZO_CreateStringId("VERDANT_SETTING_TIME_WINDOW",  "Time Window")
+
+-- Graph window
+ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Temporal Analytics")
+ZO_CreateStringId("VERDANT_GRAPH_RECORD",         "Record")
+ZO_CreateStringId("VERDANT_GRAPH_STOP",           "Stop")
+ZO_CreateStringId("VERDANT_GRAPH_NO_DATA",        "No data — press Record during combat.")

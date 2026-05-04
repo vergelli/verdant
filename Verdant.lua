@@ -107,7 +107,7 @@ local function on_addon_loaded()
   local C = Verdant.Constants
 
   -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
-  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, tribar = {} })
+  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, tribar = {}, temporal = {} })
   Verdant.Probe.init()
   Verdant.Engine.init()
   Verdant.Bar.init()

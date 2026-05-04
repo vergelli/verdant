@@ -26,6 +26,7 @@ core/metrics.lua
 core/diagnostics.lua
 core/engine.lua
 core/probe.lua
+core/temporal_buffer.lua
 ui/bar.xml
 ui/bar.lua
 ui/tribar.xml
