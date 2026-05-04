@@ -68,14 +68,25 @@
           <OnMouseUp>Verdant.Bar.next_metric()</OnMouseUp>
         </Label>
 
-        <!-- Value display (number or %) — leaves right margin for settings btn -->
+        <!-- Value display (number or %) — leaves right margin for settings + graph btns -->
         <Label name="$(parent)ValueLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
           <Anchor point="TOPLEFT"  offsetX="8"   offsetY="36"/>
-          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="36"/>
+          <Anchor point="TOPRIGHT" offsetX="-40" offsetY="36"/>
           <Dimensions y="14"/>
+        </Label>
+
+        <!-- Graph window toggle — same row as ValueLabel -->
+        <Label name="$(parent)GraphBtn"
+               mouseEnabled="true"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="36"/>
+          <Dimensions x="16" y="14"/>
+          <OnMouseUp>Verdant.Graph.toggle()</OnMouseUp>
         </Label>
 
         <!-- Settings toggle — gear icon button, same row as ValueLabel -->

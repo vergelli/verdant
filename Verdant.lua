@@ -113,6 +113,7 @@ local function on_addon_loaded()
   Verdant.Bar.init()
   Verdant.TriBar.init()
   Verdant.Settings.init()
+  Verdant.Graph.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
 

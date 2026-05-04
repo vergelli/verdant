@@ -33,4 +33,6 @@ ui/tribar.xml
 ui/tribar.lua
 ui/settings.xml
 ui/settings.lua
+ui/graph.xml
+ui/graph.lua
 Verdant.lua
