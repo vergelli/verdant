@@ -17,8 +17,8 @@ local C_EHPS      = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 }  -- pastel green 
 local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink fill
 local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
 local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
--- Slightly lifted from pitch-black so the canvas reads as a panel, not a void
-local C_BG        = { r = 0.10, g = 0.10, b = 0.13, a = 0.97 }
+-- Canvas is intentionally dark so it contrasts with the lighter outer frame
+local C_BG        = { r = 0.06, g = 0.07, b = 0.09, a = 1.00 }
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local BG_TEXTURE     = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
@@ -26,11 +26,12 @@ local FILL_T, FILL_B = 0, 0.53125
 local LINE_THICKNESS = 2
 local LABEL_H        = 12
 
--- Grid: 3 reference levels at 25 % / 50 % / 75 % of max value
-local N_HGRID    = 3
-local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.22 }
-local C_GRID_LBL  = { r = 0.55, g = 0.58, b = 0.62, a = 0.80 }
-local C_TIME_LBL  = { r = 0.45, g = 0.48, b = 0.52, a = 0.70 }
+-- Grid: 3 horizontal + 3 vertical reference lines
+local N_HGRID     = 3
+local N_VGRID     = 3
+local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.25 }
+local C_GRID_LBL  = { r = 0.82, g = 0.85, b = 0.90, a = 0.92 }   -- bright, readable
+local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
 
 -- ── state ─────────────────────────────────────────────────────────────────
 local controls           = {}
@@ -110,13 +111,14 @@ local function make_skill_line_pool(name_prefix, canvas_key)
 end
 
 -- ── grid system ───────────────────────────────────────────────────────────
--- Creates N_HGRID horizontal reference lines + Y-axis labels + two time labels.
--- Controls are children of parent_ctrl so they render behind any pool objects
--- acquired afterwards.  All start hidden.
+-- Creates N_HGRID horizontal + N_VGRID vertical reference lines,
+-- Y-axis value labels (one per H-line), and 3 X-axis time labels.
+-- All controls are children of parent_ctrl so they render behind pool objects.
 local function create_grid(prefix, parent_ctrl)
   local WM  = WINDOW_MANAGER
-  local obj = { lines = {}, ylabels = {} }
+  local obj = { hlines = {}, vlines = {}, ylabels = {} }
 
+  -- Horizontal lines + Y-axis value labels
   for i = 1, N_HGRID do
     local gl = WM:CreateControl(prefix .. "H" .. i, parent_ctrl, CT_TEXTURE)
     gl:SetTexture(FILL_TEXTURE)
@@ -124,50 +126,63 @@ local function create_grid(prefix, parent_ctrl)
     gl:SetHeight(1)
     gl:SetColor(C_GRID_LINE.r, C_GRID_LINE.g, C_GRID_LINE.b, C_GRID_LINE.a)
     gl:SetHidden(true)
-    obj.lines[i] = gl
+    obj.hlines[i] = gl
 
     local lbl = WM:CreateControl(prefix .. "YL" .. i, parent_ctrl, CT_LABEL)
     lbl:SetFont("ZoFontGameSmall")
     lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     lbl:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
     lbl:SetColor(C_GRID_LBL.r, C_GRID_LBL.g, C_GRID_LBL.b, C_GRID_LBL.a)
-    lbl:SetDimensions(50, 10)
+    lbl:SetDimensions(54, 10)
     lbl:SetHidden(true)
     obj.ylabels[i] = lbl
   end
 
-  local tl = WM:CreateControl(prefix .. "TL", parent_ctrl, CT_LABEL)
-  tl:SetFont("ZoFontGameSmall")
-  tl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-  tl:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
-  tl:SetColor(C_TIME_LBL.r, C_TIME_LBL.g, C_TIME_LBL.b, C_TIME_LBL.a)
-  tl:SetDimensions(40, 10)
-  tl:SetHidden(true)
-  obj.time_l = tl
+  -- Vertical lines (X-axis grid)
+  for i = 1, N_VGRID do
+    local vl = WM:CreateControl(prefix .. "V" .. i, parent_ctrl, CT_TEXTURE)
+    vl:SetTexture(FILL_TEXTURE)
+    vl:SetTextureCoords(0, 0.05, 0, 1)
+    vl:SetWidth(1)
+    vl:SetColor(C_GRID_LINE.r, C_GRID_LINE.g, C_GRID_LINE.b, C_GRID_LINE.a)
+    vl:SetHidden(true)
+    obj.vlines[i] = vl
+  end
 
-  local tr = WM:CreateControl(prefix .. "TR", parent_ctrl, CT_LABEL)
-  tr:SetFont("ZoFontGameSmall")
-  tr:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-  tr:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
-  tr:SetColor(C_TIME_LBL.r, C_TIME_LBL.g, C_TIME_LBL.b, C_TIME_LBL.a)
-  tr:SetDimensions(40, 10)
-  tr:SetHidden(true)
-  obj.time_r = tr
+  -- X-axis time labels: left (0s), centre (T/2), right (T)
+  local function make_time_lbl(name, align)
+    local t = WM:CreateControl(name, parent_ctrl, CT_LABEL)
+    t:SetFont("ZoFontGameSmall")
+    t:SetHorizontalAlignment(align)
+    t:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
+    t:SetColor(C_TIME_LBL.r, C_TIME_LBL.g, C_TIME_LBL.b, C_TIME_LBL.a)
+    t:SetDimensions(44, 10)
+    t:SetHidden(true)
+    return t
+  end
+  obj.time_l = make_time_lbl(prefix .. "TL", TEXT_ALIGN_LEFT)
+  obj.time_m = make_time_lbl(prefix .. "TM", TEXT_ALIGN_CENTER)
+  obj.time_r = make_time_lbl(prefix .. "TR", TEXT_ALIGN_RIGHT)
 
   return obj
 end
 
 local function hide_grid(grid)
   for i = 1, N_HGRID do
-    grid.lines[i]:SetHidden(true)
+    grid.hlines[i]:SetHidden(true)
     grid.ylabels[i]:SetHidden(true)
   end
+  for i = 1, N_VGRID do
+    grid.vlines[i]:SetHidden(true)
+  end
   grid.time_l:SetHidden(true)
+  grid.time_m:SetHidden(true)
   grid.time_r:SetHidden(true)
 end
 
 -- Positions and shows the grid for a given canvas.
--- span_ms <= 0 suppresses time labels (useful for the top sub-canvas).
+-- span_ms <= 0 suppresses all time/vertical labels (used on the eHPS sub-canvas
+-- when the MPS sub-canvas below already carries them).
 local function draw_grid(grid, canvas, max_val, span_ms)
   local cw = canvas:GetWidth()
   local ch = canvas:GetHeight()
@@ -176,11 +191,12 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     return
   end
 
+  -- Horizontal lines + Y-axis labels
   for i = 1, N_HGRID do
     local frac = i / (N_HGRID + 1)   -- 0.25, 0.50, 0.75
     local y    = math_floor(ch * frac)
 
-    local gl = grid.lines[i]
+    local gl = grid.hlines[i]
     gl:ClearAnchors()
     gl:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  0, -y)
     gl:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, 0, -y)
@@ -193,11 +209,29 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     lbl:SetHidden(false)
   end
 
+  -- Vertical lines
+  for i = 1, N_VGRID do
+    local frac = i / (N_VGRID + 1)
+    local x    = math_floor(cw * frac)
+
+    local vl = grid.vlines[i]
+    vl:ClearAnchors()
+    vl:SetAnchor(TOPLEFT,    canvas, TOPLEFT,    x, 0)
+    vl:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
+    vl:SetHidden(false)
+  end
+
+  -- X-axis time labels (only when there is a time span to show)
   if span_ms > 0 then
     grid.time_l:ClearAnchors()
-    grid.time_l:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, 0)
+    grid.time_l:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  2, 0)
     grid.time_l:SetText("0s")
     grid.time_l:SetHidden(false)
+
+    grid.time_m:ClearAnchors()
+    grid.time_m:SetAnchor(BOTTOM, canvas, BOTTOM, 0, 0)
+    grid.time_m:SetText(fmt_secs(span_ms / 2))
+    grid.time_m:SetHidden(false)
 
     grid.time_r:ClearAnchors()
     grid.time_r:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, -2, 0)
@@ -205,6 +239,7 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     grid.time_r:SetHidden(false)
   else
     grid.time_l:SetHidden(true)
+    grid.time_m:SetHidden(true)
     grid.time_r:SetHidden(true)
   end
 end
@@ -655,6 +690,13 @@ function M.init()
   make_bg("VerdantGraphCanvasBg",  controls.canvas)
   make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
   make_bg("VerdantSkillBgBot",     controls.mps_canvas)
+
+  -- ── outer frame: lighter than the canvas so it reads as a surface above ──
+  -- SetCenterColor tints UI-TooltipCenter.dds; SetEdgeColor tints the border.
+  -- The dark canvas BG sits inside this lighter panel, creating depth.
+  local bd = VerdantGraphWindowBg
+  bd:SetCenterColor(0.20, 0.21, 0.27, 0.95)
+  bd:SetEdgeColor(0.42, 0.46, 0.58, 0.90)
 
   -- ── grids (behind pools, created after BGs) ───────────────────────────
   controls.grid_ems = create_grid("VerdantGridEms", controls.canvas)
