@@ -27,16 +27,19 @@ function M.init(capacity)
   state.count    = 0
   state.data     = {}
   for i = 1, capacity do
-    state.data[i] = { t = 0, eHPS = 0, MPS = 0 }
+    state.data[i] = { t = 0, eHPS = 0, MPS = 0, ehps_groups = {}, mps_groups = {} }
   end
 end
 
 -- Record one sample.  Overwrites the oldest entry when full.
-function M.push(timestamp, eHPS, MPS)
-  local slot  = state.data[state.write]
-  slot.t      = timestamp
-  slot.eHPS   = eHPS
-  slot.MPS    = MPS
+-- ehps_groups / mps_groups are arrays of { r, g, b, a, share } from SkillColors.group_shares.
+function M.push(timestamp, eHPS, MPS, ehps_groups, mps_groups)
+  local slot          = state.data[state.write]
+  slot.t              = timestamp
+  slot.eHPS           = eHPS
+  slot.MPS            = MPS
+  slot.ehps_groups    = ehps_groups or {}
+  slot.mps_groups     = mps_groups  or {}
   state.write = (state.write % state.capacity) + 1
   if state.count < state.capacity then
     state.count = state.count + 1

@@ -11,17 +11,19 @@
 
     <!--
       Temporal Analytics graph window.
-      Movable, position persisted in sv.temporal.graph_x / graph_y.
+      Movable, resizable.  Position and size persisted in sv.temporal.
       Pools are released on hide to free texture memory.
     -->
     <TopLevelControl name="VerdantGraphWindow"
                      hidden="true"
                      clampedToScreen="true"
                      movable="true"
-                     mouseEnabled="true">
+                     mouseEnabled="true"
+                     resizeHandleSize="8">
 
       <Dimensions x="400" y="280"/>
       <OnMoveStop>Verdant.Graph.on_move_stop()</OnMoveStop>
+      <OnResizeStop>Verdant.Graph.on_resize_stop()</OnResizeStop>
 
       <Controls>
 
@@ -76,21 +78,95 @@
           <OnMouseUp>Verdant.Graph.on_stop_click()</OnMouseUp>
         </Label>
 
+        <Label name="$(parent)FlushBtn"
+               font="ZoFontGameSmall"
+               mouseEnabled="true"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="96" offsetY="26"/>
+          <Dimensions x="36" y="14"/>
+          <OnMouseUp>Verdant.Graph.on_flush_click()</OnMouseUp>
+        </Label>
+
         <Label name="$(parent)StatusLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="100" offsetY="26"/>
-          <Dimensions x="120" y="14"/>
+          <Anchor point="TOPLEFT" offsetX="136" offsetY="26"/>
+          <Dimensions x="80" y="14"/>
         </Label>
 
-        <!-- ── Canvas ─────────────────────────────────────────────────── -->
+        <!-- View navigation (right-aligned): [<] [EMS] [>] -->
+        <Label name="$(parent)PrevViewBtn"
+               font="ZoFontGameSmall"
+               mouseEnabled="true"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-54" offsetY="26"/>
+          <Dimensions x="16" y="14"/>
+          <OnMouseUp>Verdant.Graph.prev_view()</OnMouseUp>
+        </Label>
+
+        <Label name="$(parent)ViewLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="26"/>
+          <Dimensions x="30" y="14"/>
+        </Label>
+
+        <Label name="$(parent)NextViewBtn"
+               font="ZoFontGameSmall"
+               mouseEnabled="true"
+               horizontalAlignment="CENTER"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="26"/>
+          <Dimensions x="16" y="14"/>
+          <OnMouseUp>Verdant.Graph.next_view()</OnMouseUp>
+        </Label>
+
+        <!-- ── Canvas: EMS view ───────────────────────────────────────── -->
         <Control name="$(parent)Canvas" mouseEnabled="false">
           <Anchor point="TOPLEFT"     offsetX="8"  offsetY="46"/>
           <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8"/>
         </Control>
 
-        <!-- Shown when buffer is empty -->
+        <!-- ── SkillArea: SKILL view (hidden by default) ──────────────── -->
+        <Control name="$(parent)SkillArea" mouseEnabled="false" hidden="true">
+          <Anchor point="TOPLEFT"     offsetX="8"  offsetY="46"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8"/>
+          <Controls>
+
+            <Label name="$(parent)EhpsLabel"
+                   font="ZoFontGameSmall"
+                   horizontalAlignment="LEFT"
+                   verticalAlignment="CENTER">
+              <Anchor point="TOPLEFT" offsetX="0" offsetY="0"/>
+              <Dimensions x="200" y="12"/>
+            </Label>
+
+            <Control name="$(parent)EhpsCanvas" mouseEnabled="false">
+              <Anchor point="TOPLEFT" offsetX="0" offsetY="14"/>
+              <Dimensions x="200" y="80"/>
+            </Control>
+
+            <Label name="$(parent)MpsLabel"
+                   font="ZoFontGameSmall"
+                   horizontalAlignment="LEFT"
+                   verticalAlignment="CENTER">
+              <Anchor point="TOPLEFT" offsetX="0" offsetY="96"/>
+              <Dimensions x="200" y="12"/>
+            </Label>
+
+            <Control name="$(parent)MpsCanvas" mouseEnabled="false">
+              <Anchor point="TOPLEFT" offsetX="0" offsetY="110"/>
+              <Dimensions x="200" y="80"/>
+            </Control>
+
+          </Controls>
+        </Control>
+
+        <!-- Shown when buffer is empty (spans entire window) -->
         <Label name="$(parent)NoDataLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
