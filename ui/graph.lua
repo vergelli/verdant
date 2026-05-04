@@ -17,13 +17,20 @@ local C_EHPS      = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 }  -- pastel green 
 local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink fill
 local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
 local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
-local C_BG        = { r = 0.06, g = 0.06, b = 0.08, a = 1.00 }
+-- Slightly lifted from pitch-black so the canvas reads as a panel, not a void
+local C_BG        = { r = 0.10, g = 0.10, b = 0.13, a = 0.97 }
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local BG_TEXTURE     = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local FILL_T, FILL_B = 0, 0.53125
 local LINE_THICKNESS = 2
 local LABEL_H        = 12
+
+-- Grid: 3 reference levels at 25 % / 50 % / 75 % of max value
+local N_HGRID    = 3
+local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.22 }
+local C_GRID_LBL  = { r = 0.55, g = 0.58, b = 0.62, a = 0.80 }
+local C_TIME_LBL  = { r = 0.45, g = 0.48, b = 0.52, a = 0.70 }
 
 -- ── state ─────────────────────────────────────────────────────────────────
 local controls           = {}
@@ -33,6 +40,18 @@ local VIEW_EMS    = 1
 local VIEW_SKILL  = 2
 local VIEW_LABELS = { "EMS", "SKILL" }
 local current_view = VIEW_EMS
+
+-- ── small helpers ─────────────────────────────────────────────────────────
+local function fmt_val(v)
+  if v >= 1000 then return string_format("%.0fk", v / 1000) end
+  return tostring(math_floor(v))
+end
+
+local function fmt_secs(ms)
+  local s = math_floor(ms / 1000)
+  if s >= 60 then return string_format("%d:%02d", math_floor(s / 60), s % 60) end
+  return s .. "s"
+end
 
 -- ── pool factories ────────────────────────────────────────────────────────
 local function make_fill_pool(name_prefix)
@@ -49,8 +68,7 @@ local function make_fill_pool(name_prefix)
   )
 end
 
--- Skill-view fill pool: canvas_key is the key in controls{} for the parent canvas.
--- The factory runs lazily so controls[canvas_key] is valid by first AcquireObject call.
+-- canvas_key: key in controls{} for the parent canvas (resolved lazily at first acquire).
 local function make_skill_fill_pool(name_prefix, canvas_key)
   local counter = 0
   return ZO_ObjectPool:New(
@@ -78,6 +96,119 @@ local function make_line_pool(name_prefix)
   )
 end
 
+local function make_skill_line_pool(name_prefix, canvas_key)
+  local counter = 0
+  return ZO_ObjectPool:New(
+    function(pool, key)
+      counter = counter + 1
+      local line = CreateControlFromVirtual(name_prefix .. counter, controls[canvas_key], "VerdantGraphLineTemplate")
+      line:SetThickness(LINE_THICKNESS)
+      return line
+    end,
+    function(line) line:SetHidden(true) end
+  )
+end
+
+-- ── grid system ───────────────────────────────────────────────────────────
+-- Creates N_HGRID horizontal reference lines + Y-axis labels + two time labels.
+-- Controls are children of parent_ctrl so they render behind any pool objects
+-- acquired afterwards.  All start hidden.
+local function create_grid(prefix, parent_ctrl)
+  local WM  = WINDOW_MANAGER
+  local obj = { lines = {}, ylabels = {} }
+
+  for i = 1, N_HGRID do
+    local gl = WM:CreateControl(prefix .. "H" .. i, parent_ctrl, CT_TEXTURE)
+    gl:SetTexture(FILL_TEXTURE)
+    gl:SetTextureCoords(0, 1, 0, 0.05)
+    gl:SetHeight(1)
+    gl:SetColor(C_GRID_LINE.r, C_GRID_LINE.g, C_GRID_LINE.b, C_GRID_LINE.a)
+    gl:SetHidden(true)
+    obj.lines[i] = gl
+
+    local lbl = WM:CreateControl(prefix .. "YL" .. i, parent_ctrl, CT_LABEL)
+    lbl:SetFont("ZoFontGameSmall")
+    lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    lbl:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
+    lbl:SetColor(C_GRID_LBL.r, C_GRID_LBL.g, C_GRID_LBL.b, C_GRID_LBL.a)
+    lbl:SetDimensions(50, 10)
+    lbl:SetHidden(true)
+    obj.ylabels[i] = lbl
+  end
+
+  local tl = WM:CreateControl(prefix .. "TL", parent_ctrl, CT_LABEL)
+  tl:SetFont("ZoFontGameSmall")
+  tl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  tl:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
+  tl:SetColor(C_TIME_LBL.r, C_TIME_LBL.g, C_TIME_LBL.b, C_TIME_LBL.a)
+  tl:SetDimensions(40, 10)
+  tl:SetHidden(true)
+  obj.time_l = tl
+
+  local tr = WM:CreateControl(prefix .. "TR", parent_ctrl, CT_LABEL)
+  tr:SetFont("ZoFontGameSmall")
+  tr:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+  tr:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
+  tr:SetColor(C_TIME_LBL.r, C_TIME_LBL.g, C_TIME_LBL.b, C_TIME_LBL.a)
+  tr:SetDimensions(40, 10)
+  tr:SetHidden(true)
+  obj.time_r = tr
+
+  return obj
+end
+
+local function hide_grid(grid)
+  for i = 1, N_HGRID do
+    grid.lines[i]:SetHidden(true)
+    grid.ylabels[i]:SetHidden(true)
+  end
+  grid.time_l:SetHidden(true)
+  grid.time_r:SetHidden(true)
+end
+
+-- Positions and shows the grid for a given canvas.
+-- span_ms <= 0 suppresses time labels (useful for the top sub-canvas).
+local function draw_grid(grid, canvas, max_val, span_ms)
+  local cw = canvas:GetWidth()
+  local ch = canvas:GetHeight()
+  if cw <= 0 or ch <= 0 or max_val <= 0 then
+    hide_grid(grid)
+    return
+  end
+
+  for i = 1, N_HGRID do
+    local frac = i / (N_HGRID + 1)   -- 0.25, 0.50, 0.75
+    local y    = math_floor(ch * frac)
+
+    local gl = grid.lines[i]
+    gl:ClearAnchors()
+    gl:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  0, -y)
+    gl:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, 0, -y)
+    gl:SetHidden(false)
+
+    local lbl = grid.ylabels[i]
+    lbl:ClearAnchors()
+    lbl:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, -(y + 1))
+    lbl:SetText(fmt_val(max_val * frac))
+    lbl:SetHidden(false)
+  end
+
+  if span_ms > 0 then
+    grid.time_l:ClearAnchors()
+    grid.time_l:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, 0)
+    grid.time_l:SetText("0s")
+    grid.time_l:SetHidden(false)
+
+    grid.time_r:ClearAnchors()
+    grid.time_r:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, -2, 0)
+    grid.time_r:SetText(fmt_secs(span_ms))
+    grid.time_r:SetHidden(false)
+  else
+    grid.time_l:SetHidden(true)
+    grid.time_r:SetHidden(true)
+  end
+end
+
 -- ── release all pools ─────────────────────────────────────────────────────
 local function release_all_pools()
   controls.pool_ehps:ReleaseAllObjects()
@@ -86,18 +217,24 @@ local function release_all_pools()
   controls.pool_line_ems:ReleaseAllObjects()
   controls.pool_skill_top:ReleaseAllObjects()
   controls.pool_skill_bot:ReleaseAllObjects()
+  controls.pool_line_skill_top:ReleaseAllObjects()
+  controls.pool_line_skill_bot:ReleaseAllObjects()
+end
+
+local function hide_all_grids()
+  hide_grid(controls.grid_ems)
+  hide_grid(controls.grid_top)
+  hide_grid(controls.grid_bot)
 end
 
 -- ── skill area layout ─────────────────────────────────────────────────────
--- Splits skill_area into two equal sub-canvases (top = eHPS, bot = MPS),
--- each preceded by a small label.  Called on every resize and before rendering.
 local function layout_skill_area()
   local sa = controls.skill_area
   local sw = sa:GetWidth()
   local sh = sa:GetHeight()
   if sw <= 0 or sh <= 0 then return end
 
-  local usable = sh - LABEL_H * 2 - 4   -- 4 px gap between the two sections
+  local usable = sh - LABEL_H * 2 - 4
   if usable < 2 then return end
   local top_h = math_floor(usable / 2)
   local bot_h = usable - top_h
@@ -120,7 +257,7 @@ local function layout_skill_area()
   controls.mps_canvas:SetDimensions(sw, bot_h)
 end
 
--- ── rendering: View 1 — EMS stacked fills + polylines ─────────────────────
+-- ── rendering: View 1 — EMS stacked fills + polylines + grid ──────────────
 local function render_view1()
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -130,6 +267,7 @@ local function render_view1()
   local n = Verdant.TemporalBuffer.count()
   if n == 0 then
     controls.no_data:SetHidden(false)
+    hide_grid(controls.grid_ems)
     return
   end
   controls.no_data:SetHidden(true)
@@ -140,11 +278,16 @@ local function render_view1()
   if cw <= 4 or ch <= 4 then return end
 
   local max_ems = 0
+  local t_first, t_last = 0, 0
   Verdant.TemporalBuffer.iterate(function(i, s)
     local ems = s.eHPS + s.MPS
     if ems > max_ems then max_ems = ems end
+    if i == 1 then t_first = s.t end
+    t_last = s.t
   end)
   if max_ems <= 0 then return end
+
+  draw_grid(controls.grid_ems, canvas, max_ems, t_last - t_first)
 
   local bar_w   = cw / n
   local xs      = {}
@@ -203,14 +346,18 @@ local function render_view1()
   end
 end
 
--- ── rendering: View 2 — skill breakdown sub-plots ─────────────────────────
+-- ── rendering: View 2 — skill breakdown + polylines + grid ────────────────
 local function render_view2()
   controls.pool_skill_top:ReleaseAllObjects()
   controls.pool_skill_bot:ReleaseAllObjects()
+  controls.pool_line_skill_top:ReleaseAllObjects()
+  controls.pool_line_skill_bot:ReleaseAllObjects()
 
   local n = Verdant.TemporalBuffer.count()
   if n == 0 then
     controls.no_data:SetHidden(false)
+    hide_grid(controls.grid_top)
+    hide_grid(controls.grid_bot)
     return
   end
   controls.no_data:SetHidden(true)
@@ -221,20 +368,33 @@ local function render_view2()
   if cw <= 0 then return end
 
   local max_ehps, max_mps = 0, 0
+  local t_first, t_last   = 0, 0
   Verdant.TemporalBuffer.iterate(function(i, s)
     if s.eHPS > max_ehps then max_ehps = s.eHPS end
     if s.MPS  > max_mps  then max_mps  = s.MPS  end
+    if i == 1 then t_first = s.t end
+    t_last = s.t
   end)
+  local span_ms = t_last - t_first
+
+  draw_grid(controls.grid_top, ec, max_ehps, 0)          -- no time labels on top
+  draw_grid(controls.grid_bot, mc, max_mps,  span_ms)    -- time labels on bottom
 
   local bar_w = cw / n
 
+  -- ── eHPS sub-plot ──
   if max_ehps > 0 then
-    local ch = ec:GetHeight()
+    local ch     = ec:GetHeight()
+    local xs     = {}
+    local col_hs = {}
+
     Verdant.TemporalBuffer.iterate(function(i, s)
-      if #s.ehps_groups == 0 then return end
       local x     = (i - 1) * bar_w
       local bw    = math_max(1, math_floor(bar_w))
       local col_h = math_max(0, math_floor(ch * (s.eHPS / max_ehps) + 0.5))
+      xs[i]      = x + bar_w * 0.5
+      col_hs[i]  = col_h
+
       local y_off = 0
       for _, grp in ipairs(s.ehps_groups) do
         local seg_h = math_max(1, math_floor(col_h * grp.share + 0.5))
@@ -248,15 +408,30 @@ local function render_view2()
         y_off = y_off + seg_h
       end
     end)
+
+    for i = 2, n do
+      local le = controls.pool_line_skill_top:AcquireObject()
+      le:ClearAnchors()
+      le:SetAnchor(BOTTOMLEFT,  ec, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
+      le:SetAnchor(BOTTOMRIGHT, ec, BOTTOMLEFT, xs[i],   -col_hs[i])
+      le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+      le:SetHidden(false)
+    end
   end
 
+  -- ── MPS sub-plot ──
   if max_mps > 0 then
-    local ch = mc:GetHeight()
+    local ch     = mc:GetHeight()
+    local xs     = {}
+    local col_hs = {}
+
     Verdant.TemporalBuffer.iterate(function(i, s)
-      if #s.mps_groups == 0 then return end
       local x     = (i - 1) * bar_w
       local bw    = math_max(1, math_floor(bar_w))
       local col_h = math_max(0, math_floor(ch * (s.MPS / max_mps) + 0.5))
+      xs[i]      = x + bar_w * 0.5
+      col_hs[i]  = col_h
+
       local y_off = 0
       for _, grp in ipairs(s.mps_groups) do
         local seg_h = math_max(1, math_floor(col_h * grp.share + 0.5))
@@ -270,6 +445,15 @@ local function render_view2()
         y_off = y_off + seg_h
       end
     end)
+
+    for i = 2, n do
+      local lm = controls.pool_line_skill_bot:AcquireObject()
+      lm:ClearAnchors()
+      lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
+      lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -col_hs[i])
+      lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
+      lm:SetHidden(false)
+    end
   end
 end
 
@@ -338,6 +522,7 @@ function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
   Verdant.TemporalBuffer.clear()
   release_all_pools()
+  hide_all_grids()
   controls.no_data:SetHidden(false)
   Verdant.TemporalBuffer.start_recording()
   recording_start_ms = GetGameTimeMilliseconds()
@@ -364,6 +549,7 @@ function M.on_flush_click()
   end
   Verdant.TemporalBuffer.clear()
   release_all_pools()
+  hide_all_grids()
   refresh_button_colors()
   controls.status:SetText("")
   controls.no_data:SetHidden(false)
@@ -456,38 +642,36 @@ function M.init()
     controls.window:SetDimensions(sv.temporal.graph_w, sv.temporal.graph_h)
   end
 
-  -- Canvas background (EMS view)
-  local bg = WM:CreateControl("VerdantGraphCanvasBg", controls.canvas, CT_TEXTURE)
-  bg:ClearAnchors()
-  bg:SetAnchor(TOPLEFT,     controls.canvas, TOPLEFT,     0, 0)
-  bg:SetAnchor(BOTTOMRIGHT, controls.canvas, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(BG_TEXTURE)
-  bg:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
+  -- ── canvas backgrounds ────────────────────────────────────────────────
+  -- Created first so they are behind the grid controls and behind pool objects.
+  local function make_bg(name, parent)
+    local bg = WM:CreateControl(name, parent, CT_TEXTURE)
+    bg:ClearAnchors()
+    bg:SetAnchor(TOPLEFT,     parent, TOPLEFT,     0, 0)
+    bg:SetAnchor(BOTTOMRIGHT, parent, BOTTOMRIGHT, 0, 0)
+    bg:SetTexture(BG_TEXTURE)
+    bg:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
+  end
+  make_bg("VerdantGraphCanvasBg",  controls.canvas)
+  make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
+  make_bg("VerdantSkillBgBot",     controls.mps_canvas)
 
-  -- Sub-canvas backgrounds (SKILL view)
-  local bg_top = WM:CreateControl("VerdantSkillBgTop", controls.ehps_canvas, CT_TEXTURE)
-  bg_top:ClearAnchors()
-  bg_top:SetAnchor(TOPLEFT,     controls.ehps_canvas, TOPLEFT,     0, 0)
-  bg_top:SetAnchor(BOTTOMRIGHT, controls.ehps_canvas, BOTTOMRIGHT, 0, 0)
-  bg_top:SetTexture(BG_TEXTURE)
-  bg_top:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
+  -- ── grids (behind pools, created after BGs) ───────────────────────────
+  controls.grid_ems = create_grid("VerdantGridEms", controls.canvas)
+  controls.grid_top = create_grid("VerdantGridTop", controls.ehps_canvas)
+  controls.grid_bot = create_grid("VerdantGridBot", controls.mps_canvas)
 
-  local bg_bot = WM:CreateControl("VerdantSkillBgBot", controls.mps_canvas, CT_TEXTURE)
-  bg_bot:ClearAnchors()
-  bg_bot:SetAnchor(TOPLEFT,     controls.mps_canvas, TOPLEFT,     0, 0)
-  bg_bot:SetAnchor(BOTTOMRIGHT, controls.mps_canvas, BOTTOMRIGHT, 0, 0)
-  bg_bot:SetTexture(BG_TEXTURE)
-  bg_bot:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
+  -- ── object pools (created after grids; pool objects render on top) ─────
+  controls.pool_ehps           = make_fill_pool("VerdantGraphFillEhps")
+  controls.pool_mps            = make_fill_pool("VerdantGraphFillMps")
+  controls.pool_line_ehps      = make_line_pool("VerdantGraphLineEhps")
+  controls.pool_line_ems       = make_line_pool("VerdantGraphLineEms")
+  controls.pool_skill_top      = make_skill_fill_pool("VerdantSkillFillTop", "ehps_canvas")
+  controls.pool_skill_bot      = make_skill_fill_pool("VerdantSkillFillBot", "mps_canvas")
+  controls.pool_line_skill_top = make_skill_line_pool("VerdantSkillLineTop", "ehps_canvas")
+  controls.pool_line_skill_bot = make_skill_line_pool("VerdantSkillLineBot", "mps_canvas")
 
-  -- Object pools
-  controls.pool_ehps      = make_fill_pool("VerdantGraphFillEhps")
-  controls.pool_mps       = make_fill_pool("VerdantGraphFillMps")
-  controls.pool_line_ehps = make_line_pool("VerdantGraphLineEhps")
-  controls.pool_line_ems  = make_line_pool("VerdantGraphLineEms")
-  controls.pool_skill_top = make_skill_fill_pool("VerdantSkillTop", "ehps_canvas")
-  controls.pool_skill_bot = make_skill_fill_pool("VerdantSkillBot", "mps_canvas")
-
-  -- Labels / buttons
+  -- ── label / button text and colors ────────────────────────────────────
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
 
