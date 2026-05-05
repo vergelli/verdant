@@ -466,16 +466,16 @@ local function render_view2()
     end
   end
 
-  -- ── MPS sub-plot ──
+  -- ── MPS sub-plot (carries time labels → reserve TIME_STRIP_H at bottom) ──
   if max_mps > 0 then
-    local ch     = mc:GetHeight()
-    local xs     = {}
-    local col_hs = {}
+    local ch_plot = math_max(1, mc:GetHeight() - TIME_STRIP_H)
+    local xs      = {}
+    local col_hs  = {}
 
     Verdant.TemporalBuffer.iterate(function(i, s)
       local x     = (i - 1) * bar_w
       local bw    = math_max(1, math_floor(bar_w))
-      local col_h = math_max(0, math_floor(ch * (s.MPS / max_mps) + 0.5))
+      local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_mps) + 0.5))
       xs[i]      = x + bar_w * 0.5
       col_hs[i]  = col_h
 
@@ -484,7 +484,7 @@ local function render_view2()
         local seg_h = math_max(1, math_floor(col_h * grp.share + 0.5))
         local t = controls.pool_skill_bot:AcquireObject()
         t:ClearAnchors()
-        t:SetAnchor(BOTTOMLEFT, mc, BOTTOMLEFT, x, -y_off)
+        t:SetAnchor(BOTTOMLEFT, mc, BOTTOMLEFT, x, -(y_off + TIME_STRIP_H))
         t:SetWidth(bw)
         t:SetHeight(seg_h)
         t:SetColor(grp.r, grp.g, grp.b, grp.a)
@@ -496,8 +496,8 @@ local function render_view2()
     for i = 2, n do
       local lm = controls.pool_line_skill_bot:AcquireObject()
       lm:ClearAnchors()
-      lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
-      lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -col_hs[i])
+      lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(col_hs[i-1] + TIME_STRIP_H))
+      lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(col_hs[i]   + TIME_STRIP_H))
       lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
       lm:SetHidden(false)
     end
@@ -703,12 +703,19 @@ function M.init()
   make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
   make_bg("VerdantSkillBgBot",     controls.mps_canvas)
 
-  -- ── outer frame: lighter than the canvas so it reads as a surface above ──
-  -- SetCenterColor tints UI-TooltipCenter.dds; SetEdgeColor tints the border.
-  -- The dark canvas BG sits inside this lighter panel, creating depth.
-  local bd = VerdantGraphWindowBg
-  bd:SetCenterColor(0.20, 0.21, 0.27, 0.95)
-  bd:SetEdgeColor(0.42, 0.46, 0.58, 0.90)
+  -- ── outer "shelf": a lighter panel that hosts the dark canvas ────────────
+  -- Tinting the tooltip Backdrop via SetCenterColor multiplies a near-black
+  -- texture and produces no visible lift.  Instead we add an explicit panel
+  -- on DL_BACKGROUND so it renders behind every DL_CONTROLS child (canvas,
+  -- buttons, labels), giving the inner dark canvas the look of being inset
+  -- into a lighter surface that frames it on every side.
+  local shelf = WM:CreateControl("VerdantGraphShelf", controls.window, CT_TEXTURE)
+  shelf:SetTexture(BG_TEXTURE)
+  shelf:ClearAnchors()
+  shelf:SetAnchor(TOPLEFT,     controls.window, TOPLEFT,      4,  4)
+  shelf:SetAnchor(BOTTOMRIGHT, controls.window, BOTTOMRIGHT, -4, -4)
+  shelf:SetColor(0.22, 0.24, 0.30, 0.97)
+  shelf:SetDrawLayer(DL_BACKGROUND)
 
   -- ── grids (behind pools, created after BGs) ───────────────────────────
   controls.grid_ems = create_grid("VerdantGridEms", controls.canvas)
