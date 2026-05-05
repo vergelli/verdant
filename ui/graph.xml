@@ -50,49 +50,55 @@
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
           <Anchor point="TOPRIGHT" offsetX="-4" offsetY="4"/>
-          <Dimensions x="16" y="16"/>
-          <Textures normal="EsoUI/Art/Buttons/decline_up.dds"
-                    pressed="EsoUI/Art/Buttons/decline_down.dds"
-                    mouseOver="EsoUI/Art/Buttons/decline_over.dds"/>
+          <Dimensions x="18" y="18"/>
+          <Textures normal="EsoUI/Art/Quest/quest_abandon_up.dds"
+                    pressed="EsoUI/Art/Quest/quest_abandon_up.dds"
+                    mouseOver="EsoUI/Art/Quest/quest_abandon_up.dds"/>
           <OnClicked>Verdant.Graph.on_close_click()</OnClicked>
         </Button>
 
         <!-- ── Controls row ───────────────────────────────────────────── -->
-        <Label name="$(parent)RecordBtn"
-               font="ZoFontGameSmall"
-               mouseEnabled="true"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="8" offsetY="26"/>
-          <Dimensions x="40" y="14"/>
-          <OnMouseUp>Verdant.Graph.on_record_click()</OnMouseUp>
-        </Label>
+        <!-- RecordBtn: icon Button (quest_assist_up/down) — text removed, tinted via Lua -->
+        <Button name="$(parent)RecordBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="22"/>
+          <Dimensions x="24" y="24"/>
+          <Textures normal="EsoUI/Art/Quest/quest_assist_up.dds"
+                    pressed="EsoUI/Art/Quest/quest_assist_down.dds"
+                    mouseOver="EsoUI/Art/Quest/quest_assist_down.dds"/>
+          <OnClicked>Verdant.Graph.on_record_click()</OnClicked>
+        </Button>
 
         <Label name="$(parent)StopBtn"
                font="ZoFontGameSmall"
                mouseEnabled="true"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="52" offsetY="26"/>
+          <Anchor point="TOPLEFT" offsetX="36" offsetY="26"/>
           <Dimensions x="40" y="14"/>
           <OnMouseUp>Verdant.Graph.on_stop_click()</OnMouseUp>
         </Label>
 
-        <Label name="$(parent)FlushBtn"
-               font="ZoFontGameSmall"
-               mouseEnabled="true"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="96" offsetY="26"/>
-          <Dimensions x="36" y="14"/>
-          <OnMouseUp>Verdant.Graph.on_flush_click()</OnMouseUp>
-        </Label>
+        <!-- FlushBtn: icon Button (map_popin_normal) -->
+        <Button name="$(parent)FlushBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPLEFT" offsetX="80" offsetY="22"/>
+          <Dimensions x="24" y="24"/>
+          <Textures normal="EsoUI/Art/Quest/map_popin_normal.dds"
+                    pressed="EsoUI/Art/Quest/map_popin_normal.dds"
+                    mouseOver="EsoUI/Art/Quest/map_popin_normal.dds"/>
+          <OnClicked>Verdant.Graph.on_flush_click()</OnClicked>
+        </Button>
 
         <Label name="$(parent)StatusLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="136" offsetY="26"/>
+          <Anchor point="TOPLEFT" offsetX="110" offsetY="26"/>
           <Dimensions x="80" y="14"/>
         </Label>
 

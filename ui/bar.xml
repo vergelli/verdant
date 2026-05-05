@@ -96,9 +96,9 @@
                 inherits="ZO_ButtonBehaviorClickSound">
           <Anchor point="TOPRIGHT" offsetX="-2" offsetY="36"/>
           <Dimensions x="18" y="14"/>
-          <Textures normal="EsoUI/Art/ChatWindow/chat_options_up.dds"
-                    pressed="EsoUI/Art/ChatWindow/chat_options_down.dds"
-                    mouseOver="EsoUI/Art/ChatWindow/chat_options_over.dds"/>
+          <Textures normal="EsoUI/Art/Quest/map_configure_up.dds"
+                    pressed="EsoUI/Art/Quest/map_configure_down.dds"
+                    mouseOver="EsoUI/Art/Quest/map_configure_down.dds"/>
           <OnClicked>Verdant.Settings.toggle()</OnClicked>
         </Button>
 

@@ -184,38 +184,51 @@ local function hide_grid(grid)
 end
 
 -- Positions and shows the grid for a given canvas.
--- span_ms > 0: reserve the bottom TIME_STRIP_H pixels for X-axis time labels;
---              data area = ch - TIME_STRIP_H, time labels sit in the strip.
--- span_ms <= 0: use full canvas height, no time labels (e.g. eHPS sub-canvas).
+-- max_val > 0: draw H-lines + Y-axis value labels.
+-- span_ms > 0: reserve TIME_STRIP_H at canvas bottom and draw X-axis time labels.
+-- The two are INDEPENDENT — the MPS sub-canvas may have time labels even
+-- when max_mps == 0 (eg recording shows healing only but still has duration).
 local function draw_grid(grid, canvas, max_val, span_ms)
   local cw = canvas:GetWidth()
   local ch = canvas:GetHeight()
-  if cw <= 0 or ch <= 0 or max_val <= 0 then
+  if cw <= 0 or ch <= 0 then
     hide_grid(grid)
     return
   end
 
+  local has_y    = (max_val > 0)
   local has_time = (span_ms > 0)
+  if not has_y and not has_time then
+    hide_grid(grid)
+    return
+  end
+
   local y_base   = has_time and TIME_STRIP_H or 0
   local ch_plot  = math_max(1, ch - y_base)
 
-  -- Horizontal lines + Y-axis labels (within the data area above the strip)
-  for i = 1, N_HGRID do
-    local frac = i / (N_HGRID + 1)   -- 0.25, 0.50, 0.75
-    local y    = y_base + math_floor(ch_plot * frac)
+  -- Horizontal lines + Y-axis labels (only when we have a value scale)
+  if has_y then
+    for i = 1, N_HGRID do
+      local frac = i / (N_HGRID + 1)   -- 0.25, 0.50, 0.75
+      local y    = y_base + math_floor(ch_plot * frac)
 
-    local gl = grid.hlines[i]
-    gl:ClearAnchors()
-    gl:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  0, -y)
-    gl:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, 0, -y)
-    gl
-    :SetHidden(false)
+      local gl = grid.hlines[i]
+      gl:ClearAnchors()
+      gl:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  0, -y)
+      gl:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, 0, -y)
+      gl:SetHidden(false)
 
-    local lbl = grid.ylabels[i]
-    lbl:ClearAnchors()
-    lbl:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, -(y + 1))
-    lbl:SetText(fmt_val(max_val * frac))
-    lbl:SetHidden(false)
+      local lbl = grid.ylabels[i]
+      lbl:ClearAnchors()
+      lbl:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, -(y + 1))
+      lbl:SetText(fmt_val(max_val * frac))
+      lbl:SetHidden(false)
+    end
+  else
+    for i = 1, N_HGRID do
+      grid.hlines[i]:SetHidden(true)
+      grid.ylabels[i]:SetHidden(true)
+    end
   end
 
   -- Vertical lines (span data area only, do not intrude into time strip)
@@ -422,10 +435,14 @@ local function render_view2()
     if i == 1 then t_first = s.t end
     t_last = s.t
   end)
-  local span_ms = t_last - t_first
+  local span_ms    = t_last - t_first
+  -- Shared Y-axis range: both sub-plots scale to the SAME max so eHPS and MPS
+  -- bars are directly comparable.  Time labels appear on the MPS canvas even
+  -- when max_mps == 0 (eg. healing-only recording still has duration).
+  local max_shared = math_max(max_ehps, max_mps)
 
-  draw_grid(controls.grid_top, ec, max_ehps, 0)          -- no time labels on top
-  draw_grid(controls.grid_bot, mc, max_mps,  span_ms)    -- time labels on bottom
+  draw_grid(controls.grid_top, ec, max_shared, 0)          -- no time labels on top
+  draw_grid(controls.grid_bot, mc, max_shared, span_ms)    -- time labels on bottom
 
   local bar_w = cw / n
 
@@ -438,7 +455,7 @@ local function render_view2()
     Verdant.TemporalBuffer.iterate(function(i, s)
       local x     = (i - 1) * bar_w
       local bw    = math_max(1, math_floor(bar_w))
-      local col_h = math_max(0, math_floor(ch * (s.eHPS / max_ehps) + 0.5))
+      local col_h = math_max(0, math_floor(ch * (s.eHPS / max_shared) + 0.5))
       xs[i]      = x + bar_w * 0.5
       col_hs[i]  = col_h
 
@@ -475,7 +492,7 @@ local function render_view2()
     Verdant.TemporalBuffer.iterate(function(i, s)
       local x     = (i - 1) * bar_w
       local bw    = math_max(1, math_floor(bar_w))
-      local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_mps) + 0.5))
+      local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_shared) + 0.5))
       xs[i]      = x + bar_w * 0.5
       col_hs[i]  = col_h
 
@@ -703,33 +720,19 @@ function M.init()
   make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
   make_bg("VerdantSkillBgBot",     controls.mps_canvas)
 
-  -- ── outer "shelf": a lighter surface that wraps the dark canvas ─────────
-  -- All ESO panel textures are dark by design, so MULTIPLYING (the default
-  -- blend) any tint over them stays dark.  TEX_BLEND_MODE_ADD instead ADDS
-  -- the shelf colour to whatever is behind, which definitively brightens
-  -- the area.  The shelf lives on DL_BACKGROUND so it renders behind the
-  -- canvas (DL_CONTROLS), only showing through in the margins around it —
-  -- exactly the frame/embedded effect we want.
+  -- ── outer "shelf": a raised lighter surface that wraps the dark canvas ──
+  -- panelbg_focus_512.dds is a real ESO panel texture (gamepad UI focus
+  -- background) — already lighter and pre-styled with subtle gradients/edges.
+  -- One CT_TEXTURE on DL_BACKGROUND is enough; the dark canvas sits opaque
+  -- on top via DL_CONTROLS, naturally producing the "inset into a panel"
+  -- effect without bezel hacks or additive blends.
   local shelf = WM:CreateControl("VerdantGraphShelf", controls.window, CT_TEXTURE)
-  shelf:SetTexture(BG_TEXTURE)
+  shelf:SetTexture("EsoUI/Art/Windows/Gamepad/panelbg_focus_512.dds")
   shelf:ClearAnchors()
   shelf:SetAnchor(TOPLEFT,     controls.window, TOPLEFT,      4,  4)
   shelf:SetAnchor(BOTTOMRIGHT, controls.window, BOTTOMRIGHT, -4, -4)
-  shelf:SetColor(0.22, 0.25, 0.32, 1.00)
-  shelf:SetBlendMode(TEX_BLEND_MODE_ADD)
+  shelf:SetColor(1, 1, 1, 1)
   shelf:SetDrawLayer(DL_BACKGROUND)
-
-  -- 2 px highlight strip along the top edge, also additive — reads as
-  -- "lit from above", cementing the raised-surface illusion.
-  local hl = WM:CreateControl("VerdantGraphShelfHL", controls.window, CT_TEXTURE)
-  hl:SetTexture(BG_TEXTURE)
-  hl:ClearAnchors()
-  hl:SetAnchor(TOPLEFT,  controls.window, TOPLEFT,   6, 6)
-  hl:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -6, 6)
-  hl:SetHeight(2)
-  hl:SetColor(0.45, 0.50, 0.62, 1.00)
-  hl:SetBlendMode(TEX_BLEND_MODE_ADD)
-  hl:SetDrawLayer(DL_BACKGROUND)
 
   -- ── grids (behind pools, created after BGs) ───────────────────────────
   controls.grid_ems = create_grid("VerdantGridEms", controls.canvas)
@@ -750,10 +753,10 @@ function M.init()
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
 
-  controls.btn_record:SetText(GetString(VERDANT_GRAPH_RECORD))
+  -- RecordBtn / FlushBtn are now icon Buttons (XML-defined textures);
+  -- no SetText needed.  refresh_button_colors() still tints RecordBtn red
+  -- to indicate recording state.
   controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
-  controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
-  controls.btn_flush:SetColor(0.80, 0.60, 0.20, 1.00)
 
   controls.status:SetText("")
   controls.status:SetColor(0.65, 0.65, 0.65, 1)

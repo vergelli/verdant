@@ -11,9 +11,11 @@ local math_max           = math.max
 local math_min           = math.min
 local math_floor         = math.floor
 
-local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
-local FILL_T, FILL_B = 0, 0.53125
+-- Slider visuals use eso_subblade textures: track BG = normal blade,
+-- fill = selected blade (active portion), thumb stays as a thin highlight.
+local TRACK_TEXTURE = "EsoUI/Art/Quest/eso_subblade_normal.dds"
+local FILL_TEXTURE  = "EsoUI/Art/Quest/eso_subblade_selected.dds"
+local THUMB_TEXTURE = "EsoUI/Art/Quest/eso_subblade_mouseover.dds"
 
 -- ── presets ───────────────────────────────────────────────────────────────────
 local RATE_PRESETS   = { 50, 100, 200, 500, 1000, 2000 }
@@ -86,19 +88,17 @@ local function setup_slider_visuals(track, name_prefix)
   bg:ClearAnchors()
   bg:SetAnchor(TOPLEFT,     track, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, track, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(BG_TEXTURE)
-  bg:SetColor(0.10, 0.10, 0.12, 1)
+  bg:SetTexture(TRACK_TEXTURE)
+  bg:SetColor(1, 1, 1, 1)
 
   local fill = WM:CreateControl(name_prefix .. "Fill", track, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, track, BOTTOMLEFT, 0, 0)
   fill:SetTexture(FILL_TEXTURE)
-  fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  fill:SetColor(0.95, 0.80, 0.20, 0.90)
+  fill:SetColor(1, 1, 1, 1)
 
   local thumb = WM:CreateControl(name_prefix .. "Thumb", track, CT_TEXTURE)
-  thumb:SetTexture(FILL_TEXTURE)
-  thumb:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  thumb:SetTexture(THUMB_TEXTURE)
   thumb:SetColor(1, 1, 1, 1)
 
   return fill, thumb
