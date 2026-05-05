@@ -531,14 +531,13 @@ local function render_current_view()
 end
 
 -- ── button state visuals ──────────────────────────────────────────────────
--- ESO Button controls don't expose SetColor (only Label/Texture do).  The
--- recording state is signalled solely through the StopBtn label brightness:
--- bright white when recording (Stop is actionable), dim grey when idle.
+-- StopBtn is now an icon Button.  ESO Button has no SetColor, but SetAlpha
+-- works on every control: dim while idle, full brightness while recording.
 local function refresh_button_colors()
   if Verdant.TemporalBuffer.is_recording() then
-    controls.btn_stop:SetColor(0.90, 0.90, 0.90, 1.00)
+    controls.btn_stop:SetAlpha(1.00)
   else
-    controls.btn_stop:SetColor(0.40, 0.40, 0.40, 0.70)
+    controls.btn_stop:SetAlpha(0.40)
   end
 end
 
@@ -708,6 +707,12 @@ function M.init()
     controls.window:SetDimensions(sv.temporal.graph_w, sv.temporal.graph_h)
   end
 
+  -- Lower alpha on both Backdrops so the window reads as semi-transparent
+  -- (consistent with ESO panels) and the inner viewport feels lighter than
+  -- the surrounding container.
+  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.62)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.78)
+
   -- ── canvas backgrounds ────────────────────────────────────────────────
   -- Created first so they are behind the grid controls and behind pool objects.
   local function make_bg(name, parent)
@@ -745,10 +750,8 @@ function M.init()
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
 
-  -- RecordBtn / FlushBtn are now icon Buttons (XML-defined textures);
-  -- no SetText needed.  refresh_button_colors() still tints RecordBtn red
-  -- to indicate recording state.
-  controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
+  -- RecordBtn / StopBtn / FlushBtn are now icon Buttons (textures in XML);
+  -- no SetText needed.  StopBtn alpha toggles via refresh_button_colors().
 
   controls.status:SetText("")
   controls.status:SetColor(0.65, 0.65, 0.65, 1)

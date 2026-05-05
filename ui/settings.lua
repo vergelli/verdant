@@ -11,10 +11,11 @@ local math_max           = math.max
 local math_min           = math.min
 local math_floor         = math.floor
 
--- Plain flat slider visuals — manual rectangles tinted via SetColor.
--- attributeBar_dynamic_bg is a simple opaque rectangle that scales cleanly,
--- which avoids the click-position offset the eso_subblade textures showed.
-local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
+-- Slider visuals: original ESO attributeBar textures with their proper
+-- texture coords (top half of the dynamic_fill is the visible band).
+local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
+local BG_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
+local FILL_T, FILL_B = 0, 0.53125
 
 -- ── presets ───────────────────────────────────────────────────────────────────
 local RATE_PRESETS   = { 50, 100, 200, 500, 1000, 2000 }
@@ -86,24 +87,23 @@ end
 local function setup_slider_visuals(track, name_prefix)
   local WM = WINDOW_MANAGER
 
-  -- Track background: dark grey, full track width
   local bg = WM:CreateControl(name_prefix .. "Bg", track, CT_TEXTURE)
   bg:ClearAnchors()
   bg:SetAnchor(TOPLEFT,     track, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, track, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(FILL_TEXTURE)
+  bg:SetTexture(BG_TEXTURE)
   bg:SetColor(0.10, 0.10, 0.12, 1)
 
-  -- Fill: gold, width set by update_slider() based on value
   local fill = WM:CreateControl(name_prefix .. "Fill", track, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, track, BOTTOMLEFT, 0, 0)
   fill:SetTexture(FILL_TEXTURE)
+  fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
   fill:SetColor(0.95, 0.80, 0.20, 0.90)
 
-  -- Thumb: 3 px white vertical line at the current value position
   local thumb = WM:CreateControl(name_prefix .. "Thumb", track, CT_TEXTURE)
   thumb:SetTexture(FILL_TEXTURE)
+  thumb:SetTextureCoords(0, 1, FILL_T, FILL_B)
   thumb:SetColor(1, 1, 1, 1)
 
   return fill, thumb
