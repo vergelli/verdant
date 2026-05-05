@@ -158,6 +158,13 @@ The rolling time window used to calculate **MPS**. Shields are sparse events, so
 
 A keybinding to toggle the bar can be assigned under **Controls → Verdant**.
 
+
+___
+## Work In Progress
+
+![alt text](doc/assets/skills_1.png)
+![alt text](doc/assets/ems_1.png)
+
 ---
 
 ## Known Limitations
