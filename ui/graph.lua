@@ -531,13 +531,13 @@ local function render_current_view()
 end
 
 -- ── button state visuals ──────────────────────────────────────────────────
+-- ESO Button controls don't expose SetColor (only Label/Texture do).  The
+-- recording state is signalled solely through the StopBtn label brightness:
+-- bright white when recording (Stop is actionable), dim grey when idle.
 local function refresh_button_colors()
-  local recording = Verdant.TemporalBuffer.is_recording()
-  if recording then
-    controls.btn_record:SetColor(0.55, 0.15, 0.15, 0.70)
+  if Verdant.TemporalBuffer.is_recording() then
     controls.btn_stop:SetColor(0.90, 0.90, 0.90, 1.00)
   else
-    controls.btn_record:SetColor(1.00, 0.20, 0.20, 1.00)
     controls.btn_stop:SetColor(0.40, 0.40, 0.40, 0.70)
   end
 end

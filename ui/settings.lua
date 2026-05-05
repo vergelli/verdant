@@ -11,11 +11,10 @@ local math_max           = math.max
 local math_min           = math.min
 local math_floor         = math.floor
 
--- Slider visuals use eso_subblade textures: track BG = normal blade,
--- fill = selected blade (active portion), thumb stays as a thin highlight.
-local TRACK_TEXTURE = "EsoUI/Art/Quest/eso_subblade_normal.dds"
-local FILL_TEXTURE  = "EsoUI/Art/Quest/eso_subblade_selected.dds"
-local THUMB_TEXTURE = "EsoUI/Art/Quest/eso_subblade_mouseover.dds"
+-- Plain flat slider visuals — manual rectangles tinted via SetColor.
+-- attributeBar_dynamic_bg is a simple opaque rectangle that scales cleanly,
+-- which avoids the click-position offset the eso_subblade textures showed.
+local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 
 -- ── presets ───────────────────────────────────────────────────────────────────
 local RATE_PRESETS   = { 50, 100, 200, 500, 1000, 2000 }
@@ -25,19 +24,22 @@ local RATE_LABELS    = {
 }
 local RATE_DEFAULT   = 1000
 
-local HEAL_PRESETS   = { 2000, 3000, 5000, 8000, 10000, 15000 }
-local HEAL_LABELS    = {
-  [2000] = "2s", [3000] = "3s", [5000]  = "5s",
-  [8000] = "8s", [10000] = "10s", [15000] = "15s",
-}
-local HEAL_DEFAULT   = 5000
+-- Heal and Shield windows share the same 1..30 s range with 1 s step so they
+-- can be compared 1:1 in the UI and so users don't have to learn two scales.
+local function range_presets(start_s, end_s)
+  local p, lbls = {}, {}
+  for s = start_s, end_s do
+    local ms = s * 1000
+    p[#p + 1]   = ms
+    lbls[ms]    = s .. "s"
+  end
+  return p, lbls
+end
 
-local SHIELD_PRESETS = { 10000, 15000, 20000, 30000, 45000, 60000 }
-local SHIELD_LABELS  = {
-  [10000] = "10s", [15000] = "15s", [20000] = "20s",
-  [30000] = "30s", [45000] = "45s", [60000] = "60s",
-}
-local SHIELD_DEFAULT = 30000
+local HEAL_PRESETS,   HEAL_LABELS   = range_presets(1, 30)
+local SHIELD_PRESETS, SHIELD_LABELS = range_presets(1, 30)
+local HEAL_DEFAULT   = 5000
+local SHIELD_DEFAULT = 10000
 
 -- Sampling rate (stored as ms interval; label shows Hz)
 local SAMPLE_PRESETS = { 1000, 500, 200, 100 }
@@ -84,21 +86,24 @@ end
 local function setup_slider_visuals(track, name_prefix)
   local WM = WINDOW_MANAGER
 
+  -- Track background: dark grey, full track width
   local bg = WM:CreateControl(name_prefix .. "Bg", track, CT_TEXTURE)
   bg:ClearAnchors()
   bg:SetAnchor(TOPLEFT,     track, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, track, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(TRACK_TEXTURE)
-  bg:SetColor(1, 1, 1, 1)
+  bg:SetTexture(FILL_TEXTURE)
+  bg:SetColor(0.10, 0.10, 0.12, 1)
 
+  -- Fill: gold, width set by update_slider() based on value
   local fill = WM:CreateControl(name_prefix .. "Fill", track, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, track, BOTTOMLEFT, 0, 0)
   fill:SetTexture(FILL_TEXTURE)
-  fill:SetColor(1, 1, 1, 1)
+  fill:SetColor(0.95, 0.80, 0.20, 0.90)
 
+  -- Thumb: 3 px white vertical line at the current value position
   local thumb = WM:CreateControl(name_prefix .. "Thumb", track, CT_TEXTURE)
-  thumb:SetTexture(THUMB_TEXTURE)
+  thumb:SetTexture(FILL_TEXTURE)
   thumb:SetColor(1, 1, 1, 1)
 
   return fill, thumb
