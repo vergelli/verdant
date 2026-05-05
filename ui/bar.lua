@@ -608,10 +608,8 @@ function M.init()
   controls.title_label:SetText("Verdant")
   controls.title_label:SetColor(0.55, 0.55, 0.55, 0.70)
 
-  controls.prev_btn:SetText("<")
-  controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
-  controls.next_btn:SetText(">")
-  controls.next_btn:SetColor(0.75, 0.75, 0.75, 1)
+  -- prev_btn / next_btn are now icon Buttons (textures defined in XML);
+  -- ESO Button has no SetText/SetColor methods, so no Lua styling here.
 
   controls.api_label:SetHidden(true)
   controls.version_label:SetText(string_format("v%s  API %d", C.VERSION, GetAPIVersion()))

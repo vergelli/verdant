@@ -36,16 +36,18 @@
           <Dimensions y="10"/>
         </Label>
 
-        <!-- Prev arrow -->
-        <Label name="$(parent)PrevBtn"
-               mouseEnabled="true"
-               font="ZoFontGameSmall"
-               horizontalAlignment="LEFT"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="8" offsetY="20"/>
-          <Dimensions x="14" y="14"/>
-          <OnMouseUp>Verdant.Bar.prev_metric()</OnMouseUp>
-        </Label>
+        <!-- Prev arrow (icon Button) -->
+        <Button name="$(parent)PrevBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPLEFT" offsetX="6" offsetY="18"/>
+          <Dimensions x="16" y="16"/>
+          <Textures normal="EsoUI/Art/Buttons/large_leftdoublearrow_up.dds"
+                    pressed="EsoUI/Art/Buttons/large_leftdoublearrow_down.dds"
+                    mouseOver="EsoUI/Art/Buttons/large_leftdoublearrow_over.dds"/>
+          <OnClicked>Verdant.Bar.prev_metric()</OnClicked>
+        </Button>
 
         <!-- Metric acronym -->
         <Label name="$(parent)MetricLabel"
@@ -57,16 +59,18 @@
           <Dimensions y="14"/>
         </Label>
 
-        <!-- Next arrow -->
-        <Label name="$(parent)NextBtn"
-               mouseEnabled="true"
-               font="ZoFontGameSmall"
-               horizontalAlignment="RIGHT"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="20"/>
-          <Dimensions x="14" y="14"/>
-          <OnMouseUp>Verdant.Bar.next_metric()</OnMouseUp>
-        </Label>
+        <!-- Next arrow (icon Button) -->
+        <Button name="$(parent)NextBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPRIGHT" offsetX="-6" offsetY="18"/>
+          <Dimensions x="16" y="16"/>
+          <Textures normal="EsoUI/Art/Buttons/large_rightarrow_up.dds"
+                    pressed="EsoUI/Art/Buttons/large_rightarrow_down.dds"
+                    mouseOver="EsoUI/Art/Buttons/large_rightarrow_over.dds"/>
+          <OnClicked>Verdant.Bar.next_metric()</OnClicked>
+        </Button>
 
         <!-- Value display (number or %) — leaves right margin for settings + graph btns -->
         <Label name="$(parent)ValueLabel"
@@ -96,9 +100,9 @@
                 inherits="ZO_ButtonBehaviorClickSound">
           <Anchor point="TOPRIGHT" offsetX="-2" offsetY="36"/>
           <Dimensions x="18" y="14"/>
-          <Textures normal="EsoUI/Art/Quest/map_configure_up.dds"
-                    pressed="EsoUI/Art/Quest/map_configure_down.dds"
-                    mouseOver="EsoUI/Art/Quest/map_configure_down.dds"/>
+          <Textures normal="EsoUI/Art/ChatWindow/chat_options_up.dds"
+                    pressed="EsoUI/Art/ChatWindow/chat_options_up.dds"
+                    mouseOver="EsoUI/Art/ChatWindow/chat_options_up.dds"/>
           <OnClicked>Verdant.Settings.toggle()</OnClicked>
         </Button>
 

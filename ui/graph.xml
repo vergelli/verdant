@@ -1,8 +1,7 @@
 <GuiXml>
   <Controls>
 
-    <!-- Virtual template for polyline segments (one per adjacent data-point pair).
-         Two anchors placed on the canvas define start/end; ESO draws the segment. -->
+    <!-- Virtual template for polyline segments. -->
     <Line name="VerdantGraphLineTemplate"
           thickness="2"
           textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
@@ -10,9 +9,13 @@
           virtual="true"/>
 
     <!--
-      Temporal Analytics graph window.
-      Movable, resizable.  Position and size persisted in sv.temporal.
-      Pools are released on hide to free texture memory.
+      Two-layer architecture:
+      - Outer container (this TopLevelControl): movable/resizable window with
+        its own backdrop, holds the chrome (title, record/stop/flush buttons,
+        view navigation).
+      - Inner viewport (Viewport sub-control): a separate Control with its own
+        Backdrop, hosts only the graph canvases.  The viewport sits inside the
+        container with generous margins, producing the embedded/contained look.
     -->
     <TopLevelControl name="VerdantGraphWindow"
                      hidden="true"
@@ -21,12 +24,13 @@
                      mouseEnabled="true"
                      resizeHandleSize="8">
 
-      <Dimensions x="400" y="280"/>
+      <Dimensions x="420" y="300"/>
       <OnMoveStop>Verdant.Graph.on_move_stop()</OnMoveStop>
       <OnResizeStop>Verdant.Graph.on_resize_stop()</OnResizeStop>
 
       <Controls>
 
+        <!-- Outer container backdrop -->
         <Backdrop name="$(parent)Bg">
           <AnchorFill/>
           <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
@@ -35,13 +39,21 @@
           <Insets left="6" top="6" right="-6" bottom="-6"/>
         </Backdrop>
 
-        <!-- ── Title row ──────────────────────────────────────────────── -->
+        <!-- Header decorator strip (sits behind title + buttons) -->
+        <Texture name="$(parent)HeaderBg"
+                 textureFile="EsoUI/Art/Progression/list_header_bg.dds">
+          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="6"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="6"/>
+          <Dimensions y="44"/>
+        </Texture>
+
+        <!-- Title -->
         <Label name="$(parent)TitleLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT"  offsetX="8" offsetY="6"/>
-          <Anchor point="TOPRIGHT" offsetX="-24" offsetY="6"/>
+          <Anchor point="TOPLEFT"  offsetX="14" offsetY="6"/>
+          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="6"/>
           <Dimensions y="14"/>
         </Label>
 
@@ -49,7 +61,7 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="4"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="4"/>
           <Dimensions x="18" y="18"/>
           <Textures normal="EsoUI/Art/Quest/quest_abandon_up.dds"
                     pressed="EsoUI/Art/Quest/quest_abandon_up.dds"
@@ -57,13 +69,12 @@
           <OnClicked>Verdant.Graph.on_close_click()</OnClicked>
         </Button>
 
-        <!-- ── Controls row ───────────────────────────────────────────── -->
-        <!-- RecordBtn: icon Button (quest_assist_up/down) — text removed, tinted via Lua -->
+        <!-- Controls row: Record / Stop / Flush / Status / View nav -->
         <Button name="$(parent)RecordBtn"
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPLEFT" offsetX="8" offsetY="22"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="22"/>
           <Dimensions x="24" y="24"/>
           <Textures normal="EsoUI/Art/Quest/quest_assist_up.dds"
                     pressed="EsoUI/Art/Quest/quest_assist_down.dds"
@@ -76,17 +87,16 @@
                mouseEnabled="true"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="36" offsetY="26"/>
+          <Anchor point="TOPLEFT" offsetX="42" offsetY="26"/>
           <Dimensions x="40" y="14"/>
           <OnMouseUp>Verdant.Graph.on_stop_click()</OnMouseUp>
         </Label>
 
-        <!-- FlushBtn: icon Button (map_popin_normal) -->
         <Button name="$(parent)FlushBtn"
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPLEFT" offsetX="80" offsetY="22"/>
+          <Anchor point="TOPLEFT" offsetX="86" offsetY="22"/>
           <Dimensions x="24" y="24"/>
           <Textures normal="EsoUI/Art/Quest/map_popin_normal.dds"
                     pressed="EsoUI/Art/Quest/map_popin_normal.dds"
@@ -98,87 +108,108 @@
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="110" offsetY="26"/>
+          <Anchor point="TOPLEFT" offsetX="116" offsetY="26"/>
           <Dimensions x="80" y="14"/>
         </Label>
 
-        <!-- View navigation (right-aligned): [<] [EMS] [>] -->
-        <Label name="$(parent)PrevViewBtn"
-               font="ZoFontGameSmall"
-               mouseEnabled="true"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-54" offsetY="26"/>
-          <Dimensions x="16" y="14"/>
-          <OnMouseUp>Verdant.Graph.prev_view()</OnMouseUp>
-        </Label>
+        <!-- View navigation: [<<] [EMS] [>] -->
+        <Button name="$(parent)PrevViewBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPRIGHT" offsetX="-72" offsetY="22"/>
+          <Dimensions x="24" y="24"/>
+          <Textures normal="EsoUI/Art/Buttons/large_leftdoublearrow_up.dds"
+                    pressed="EsoUI/Art/Buttons/large_leftdoublearrow_down.dds"
+                    mouseOver="EsoUI/Art/Buttons/large_leftdoublearrow_over.dds"/>
+          <OnClicked>Verdant.Graph.prev_view()</OnClicked>
+        </Button>
 
         <Label name="$(parent)ViewLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="26"/>
+          <Anchor point="TOPRIGHT" offsetX="-40" offsetY="26"/>
           <Dimensions x="30" y="14"/>
         </Label>
 
-        <Label name="$(parent)NextViewBtn"
-               font="ZoFontGameSmall"
-               mouseEnabled="true"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="26"/>
-          <Dimensions x="16" y="14"/>
-          <OnMouseUp>Verdant.Graph.next_view()</OnMouseUp>
-        </Label>
+        <Button name="$(parent)NextViewBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="22"/>
+          <Dimensions x="24" y="24"/>
+          <Textures normal="EsoUI/Art/Buttons/large_rightarrow_up.dds"
+                    pressed="EsoUI/Art/Buttons/large_rightarrow_down.dds"
+                    mouseOver="EsoUI/Art/Buttons/large_rightarrow_over.dds"/>
+          <OnClicked>Verdant.Graph.next_view()</OnClicked>
+        </Button>
 
-        <!-- ── Canvas: EMS view ───────────────────────────────────────── -->
-        <Control name="$(parent)Canvas" mouseEnabled="false">
-          <Anchor point="TOPLEFT"     offsetX="8"  offsetY="46"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8"/>
-        </Control>
+        <!-- ── Inner viewport: separate panel that hosts only the graphs ── -->
+        <Control name="$(parent)Viewport" mouseEnabled="false">
+          <Anchor point="TOPLEFT"     offsetX="14"  offsetY="52"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-14"/>
 
-        <!-- ── SkillArea: SKILL view (hidden by default) ──────────────── -->
-        <Control name="$(parent)SkillArea" mouseEnabled="false" hidden="true">
-          <Anchor point="TOPLEFT"     offsetX="8"  offsetY="46"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8"/>
           <Controls>
 
-            <Label name="$(parent)EhpsLabel"
-                   font="ZoFontGameSmall"
-                   horizontalAlignment="LEFT"
-                   verticalAlignment="CENTER">
-              <Anchor point="TOPLEFT" offsetX="0" offsetY="0"/>
-              <Dimensions x="200" y="12"/>
-            </Label>
+            <!-- Inner backdrop: nested inside the outer one for an
+                 embedded/inset look ("frame within frame"). -->
+            <Backdrop name="$(parent)Bg">
+              <AnchorFill/>
+              <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
+                    edgeFileWidth="128" edgeFileHeight="16" edgeSize="4"/>
+              <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+              <Insets left="4" top="4" right="-4" bottom="-4"/>
+            </Backdrop>
 
-            <Control name="$(parent)EhpsCanvas" mouseEnabled="false">
-              <Anchor point="TOPLEFT" offsetX="0" offsetY="14"/>
-              <Dimensions x="200" y="80"/>
+            <Control name="$(parent)Canvas" mouseEnabled="false">
+              <Anchor point="TOPLEFT"     offsetX="6"  offsetY="6"/>
+              <Anchor point="BOTTOMRIGHT" offsetX="-6" offsetY="-6"/>
             </Control>
 
-            <Label name="$(parent)MpsLabel"
-                   font="ZoFontGameSmall"
-                   horizontalAlignment="LEFT"
-                   verticalAlignment="CENTER">
-              <Anchor point="TOPLEFT" offsetX="0" offsetY="96"/>
-              <Dimensions x="200" y="12"/>
-            </Label>
+            <Control name="$(parent)SkillArea" mouseEnabled="false" hidden="true">
+              <Anchor point="TOPLEFT"     offsetX="6"  offsetY="6"/>
+              <Anchor point="BOTTOMRIGHT" offsetX="-6" offsetY="-6"/>
+              <Controls>
 
-            <Control name="$(parent)MpsCanvas" mouseEnabled="false">
-              <Anchor point="TOPLEFT" offsetX="0" offsetY="110"/>
-              <Dimensions x="200" y="80"/>
+                <Label name="$(parent)EhpsLabel"
+                       font="ZoFontGameSmall"
+                       horizontalAlignment="LEFT"
+                       verticalAlignment="CENTER">
+                  <Anchor point="TOPLEFT" offsetX="0" offsetY="0"/>
+                  <Dimensions x="200" y="12"/>
+                </Label>
+
+                <Control name="$(parent)EhpsCanvas" mouseEnabled="false">
+                  <Anchor point="TOPLEFT" offsetX="0" offsetY="14"/>
+                  <Dimensions x="200" y="80"/>
+                </Control>
+
+                <Label name="$(parent)MpsLabel"
+                       font="ZoFontGameSmall"
+                       horizontalAlignment="LEFT"
+                       verticalAlignment="CENTER">
+                  <Anchor point="TOPLEFT" offsetX="0" offsetY="96"/>
+                  <Dimensions x="200" y="12"/>
+                </Label>
+
+                <Control name="$(parent)MpsCanvas" mouseEnabled="false">
+                  <Anchor point="TOPLEFT" offsetX="0" offsetY="110"/>
+                  <Dimensions x="200" y="80"/>
+                </Control>
+
+              </Controls>
             </Control>
+
+            <Label name="$(parent)NoDataLabel"
+                   font="ZoFontGameSmall"
+                   horizontalAlignment="CENTER"
+                   verticalAlignment="CENTER">
+              <AnchorFill/>
+            </Label>
 
           </Controls>
         </Control>
-
-        <!-- Shown when buffer is empty (spans entire window) -->
-        <Label name="$(parent)NoDataLabel"
-               font="ZoFontGameSmall"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
-          <AnchorFill/>
-        </Label>
 
       </Controls>
     </TopLevelControl>

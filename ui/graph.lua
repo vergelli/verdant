@@ -684,16 +684,18 @@ function M.init()
   controls.btn_stop      = VerdantGraphWindowStopBtn
   controls.btn_flush     = VerdantGraphWindowFlushBtn
   controls.status        = VerdantGraphWindowStatusLabel
-  controls.canvas        = VerdantGraphWindowCanvas
-  controls.no_data       = VerdantGraphWindowNoDataLabel
   controls.btn_prev_view = VerdantGraphWindowPrevViewBtn
   controls.view_label    = VerdantGraphWindowViewLabel
   controls.btn_next_view = VerdantGraphWindowNextViewBtn
-  controls.skill_area    = VerdantGraphWindowSkillArea
-  controls.ehps_label    = VerdantGraphWindowSkillAreaEhpsLabel
-  controls.ehps_canvas   = VerdantGraphWindowSkillAreaEhpsCanvas
-  controls.mps_label     = VerdantGraphWindowSkillAreaMpsLabel
-  controls.mps_canvas    = VerdantGraphWindowSkillAreaMpsCanvas
+  -- Graph canvases now live inside the inner Viewport sub-control:
+  controls.viewport      = VerdantGraphWindowViewport
+  controls.canvas        = VerdantGraphWindowViewportCanvas
+  controls.no_data       = VerdantGraphWindowViewportNoDataLabel
+  controls.skill_area    = VerdantGraphWindowViewportSkillArea
+  controls.ehps_label    = VerdantGraphWindowViewportSkillAreaEhpsLabel
+  controls.ehps_canvas   = VerdantGraphWindowViewportSkillAreaEhpsCanvas
+  controls.mps_label     = VerdantGraphWindowViewportSkillAreaMpsLabel
+  controls.mps_canvas    = VerdantGraphWindowViewportSkillAreaMpsCanvas
 
   -- Restore saved position and size
   local sv = Verdant.SavedVars
@@ -720,19 +722,9 @@ function M.init()
   make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
   make_bg("VerdantSkillBgBot",     controls.mps_canvas)
 
-  -- ── outer "shelf": a raised lighter surface that wraps the dark canvas ──
-  -- panelbg_focus_512.dds is a real ESO panel texture (gamepad UI focus
-  -- background) — already lighter and pre-styled with subtle gradients/edges.
-  -- One CT_TEXTURE on DL_BACKGROUND is enough; the dark canvas sits opaque
-  -- on top via DL_CONTROLS, naturally producing the "inset into a panel"
-  -- effect without bezel hacks or additive blends.
-  local shelf = WM:CreateControl("VerdantGraphShelf", controls.window, CT_TEXTURE)
-  shelf:SetTexture("EsoUI/Art/Windows/Gamepad/panelbg_focus_512.dds")
-  shelf:ClearAnchors()
-  shelf:SetAnchor(TOPLEFT,     controls.window, TOPLEFT,      4,  4)
-  shelf:SetAnchor(BOTTOMRIGHT, controls.window, BOTTOMRIGHT, -4, -4)
-  shelf:SetColor(1, 1, 1, 1)
-  shelf:SetDrawLayer(DL_BACKGROUND)
+  -- The "container above viewport" effect is now driven by the XML structure
+  -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
+  -- that read as "panel containing inset graphs" — no Lua texture hacks.
 
   -- ── grids (behind pools, created after BGs) ───────────────────────────
   controls.grid_ems = create_grid("VerdantGridEms", controls.canvas)
@@ -765,12 +757,9 @@ function M.init()
   controls.no_data:SetColor(0.45, 0.45, 0.45, 1)
   controls.no_data:SetHidden(false)
 
-  controls.btn_prev_view:SetText("<")
-  controls.btn_prev_view:SetColor(0.65, 0.65, 0.65, 1)
+  -- View nav buttons are icon Buttons (textures in XML); no SetText/SetColor.
   controls.view_label:SetText(VIEW_LABELS[current_view])
   controls.view_label:SetColor(0.75, 0.75, 0.75, 1)
-  controls.btn_next_view:SetText(">")
-  controls.btn_next_view:SetColor(0.65, 0.65, 0.65, 1)
 
   controls.ehps_label:SetText("eHPS")
   controls.ehps_label:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, 0.80)
