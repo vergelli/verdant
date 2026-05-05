@@ -163,8 +163,7 @@ ___
 ## Work In Progress
 
 ![alt text](doc/assets/skills_1.png)
-![alt text](doc/assets/ems_1.png)
-
+![alt text](doc/assets/EMS_1.png)
 ---
 
 ## Known Limitations
