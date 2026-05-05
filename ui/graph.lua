@@ -31,7 +31,7 @@ local LABEL_H        = 12
 -- Fills and polylines are shifted up by this amount so they never overlap.
 local N_HGRID      = 3
 local N_VGRID      = 3
-local TIME_STRIP_H = 14
+local TIME_STRIP_H = 18
 local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.25 }
 local C_GRID_LBL  = { r = 0.82, g = 0.85, b = 0.90, a = 0.92 }   -- bright, readable
 local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
@@ -703,19 +703,33 @@ function M.init()
   make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
   make_bg("VerdantSkillBgBot",     controls.mps_canvas)
 
-  -- ── outer "shelf": a lighter panel that hosts the dark canvas ────────────
-  -- Tinting the tooltip Backdrop via SetCenterColor multiplies a near-black
-  -- texture and produces no visible lift.  Instead we add an explicit panel
-  -- on DL_BACKGROUND so it renders behind every DL_CONTROLS child (canvas,
-  -- buttons, labels), giving the inner dark canvas the look of being inset
-  -- into a lighter surface that frames it on every side.
+  -- ── outer "shelf": a lighter surface that wraps the dark canvas ─────────
+  -- All ESO panel textures are dark by design, so MULTIPLYING (the default
+  -- blend) any tint over them stays dark.  TEX_BLEND_MODE_ADD instead ADDS
+  -- the shelf colour to whatever is behind, which definitively brightens
+  -- the area.  The shelf lives on DL_BACKGROUND so it renders behind the
+  -- canvas (DL_CONTROLS), only showing through in the margins around it —
+  -- exactly the frame/embedded effect we want.
   local shelf = WM:CreateControl("VerdantGraphShelf", controls.window, CT_TEXTURE)
   shelf:SetTexture(BG_TEXTURE)
   shelf:ClearAnchors()
   shelf:SetAnchor(TOPLEFT,     controls.window, TOPLEFT,      4,  4)
   shelf:SetAnchor(BOTTOMRIGHT, controls.window, BOTTOMRIGHT, -4, -4)
-  shelf:SetColor(0.22, 0.24, 0.30, 0.97)
+  shelf:SetColor(0.22, 0.25, 0.32, 1.00)
+  shelf:SetBlendMode(TEX_BLEND_MODE_ADD)
   shelf:SetDrawLayer(DL_BACKGROUND)
+
+  -- 2 px highlight strip along the top edge, also additive — reads as
+  -- "lit from above", cementing the raised-surface illusion.
+  local hl = WM:CreateControl("VerdantGraphShelfHL", controls.window, CT_TEXTURE)
+  hl:SetTexture(BG_TEXTURE)
+  hl:ClearAnchors()
+  hl:SetAnchor(TOPLEFT,  controls.window, TOPLEFT,   6, 6)
+  hl:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -6, 6)
+  hl:SetHeight(2)
+  hl:SetColor(0.45, 0.50, 0.62, 1.00)
+  hl:SetBlendMode(TEX_BLEND_MODE_ADD)
+  hl:SetDrawLayer(DL_BACKGROUND)
 
   -- ── grids (behind pools, created after BGs) ───────────────────────────
   controls.grid_ems = create_grid("VerdantGridEms", controls.canvas)
