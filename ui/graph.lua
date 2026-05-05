@@ -27,8 +27,11 @@ local LINE_THICKNESS = 2
 local LABEL_H        = 12
 
 -- Grid: 3 horizontal + 3 vertical reference lines
-local N_HGRID     = 3
-local N_VGRID     = 3
+-- TIME_STRIP_H: pixels reserved at canvas bottom for X-axis time labels.
+-- Fills and polylines are shifted up by this amount so they never overlap.
+local N_HGRID      = 3
+local N_VGRID      = 3
+local TIME_STRIP_H = 14
 local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.25 }
 local C_GRID_LBL  = { r = 0.82, g = 0.85, b = 0.90, a = 0.92 }   -- bright, readable
 local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
@@ -181,8 +184,9 @@ local function hide_grid(grid)
 end
 
 -- Positions and shows the grid for a given canvas.
--- span_ms <= 0 suppresses all time/vertical labels (used on the eHPS sub-canvas
--- when the MPS sub-canvas below already carries them).
+-- span_ms > 0: reserve the bottom TIME_STRIP_H pixels for X-axis time labels;
+--              data area = ch - TIME_STRIP_H, time labels sit in the strip.
+-- span_ms <= 0: use full canvas height, no time labels (e.g. eHPS sub-canvas).
 local function draw_grid(grid, canvas, max_val, span_ms)
   local cw = canvas:GetWidth()
   local ch = canvas:GetHeight()
@@ -191,16 +195,21 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     return
   end
 
-  -- Horizontal lines + Y-axis labels
+  local has_time = (span_ms > 0)
+  local y_base   = has_time and TIME_STRIP_H or 0
+  local ch_plot  = math_max(1, ch - y_base)
+
+  -- Horizontal lines + Y-axis labels (within the data area above the strip)
   for i = 1, N_HGRID do
     local frac = i / (N_HGRID + 1)   -- 0.25, 0.50, 0.75
-    local y    = math_floor(ch * frac)
+    local y    = y_base + math_floor(ch_plot * frac)
 
     local gl = grid.hlines[i]
     gl:ClearAnchors()
     gl:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  0, -y)
     gl:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, 0, -y)
-    gl:SetHidden(false)
+    gl
+    :SetHidden(false)
 
     local lbl = grid.ylabels[i]
     lbl:ClearAnchors()
@@ -209,7 +218,7 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     lbl:SetHidden(false)
   end
 
-  -- Vertical lines
+  -- Vertical lines (span data area only, do not intrude into time strip)
   for i = 1, N_VGRID do
     local frac = i / (N_VGRID + 1)
     local x    = math_floor(cw * frac)
@@ -217,12 +226,12 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     local vl = grid.vlines[i]
     vl:ClearAnchors()
     vl:SetAnchor(TOPLEFT,    canvas, TOPLEFT,    x, 0)
-    vl:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
+    vl:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -y_base)
     vl:SetHidden(false)
   end
 
-  -- X-axis time labels (only when there is a time span to show)
-  if span_ms > 0 then
+  -- X-axis time labels sit in the reserved bottom strip
+  if has_time then
     grid.time_l:ClearAnchors()
     grid.time_l:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  2, 0)
     grid.time_l:SetText("0s")
@@ -307,10 +316,12 @@ local function render_view1()
   end
   controls.no_data:SetHidden(true)
 
-  local canvas = controls.canvas
-  local cw = canvas:GetWidth()
-  local ch = canvas:GetHeight()
+  local canvas  = controls.canvas
+  local cw      = canvas:GetWidth()
+  local ch      = canvas:GetHeight()
   if cw <= 4 or ch <= 4 then return end
+  -- Bottom TIME_STRIP_H pixels reserved for X-axis time labels.
+  local ch_plot = math_max(4, ch - TIME_STRIP_H)
 
   local max_ems = 0
   local t_first, t_last = 0, 0
@@ -334,17 +345,18 @@ local function render_view1()
     local bw = math_max(1, math_floor(bar_w))
     local xc = x + bar_w * 0.5
 
-    local ehps_h = math_max(0, math_floor(ch * (s.eHPS / max_ems) + 0.5))
-    local mps_h  = math_max(0, math_floor(ch * (s.MPS  / max_ems) + 0.5))
+    local ehps_h = math_max(0, math_floor(ch_plot * (s.eHPS / max_ems) + 0.5))
+    local mps_h  = math_max(0, math_floor(ch_plot * (s.MPS  / max_ems) + 0.5))
 
     xs[i]      = xc
     ehps_hs[i] = ehps_h
     ems_hs[i]  = ehps_h + mps_h
 
+    -- Fills start at TIME_STRIP_H above canvas bottom (clear of time labels)
     if ehps_h > 0 then
       local te = controls.pool_ehps:AcquireObject()
       te:ClearAnchors()
-      te:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
+      te:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -TIME_STRIP_H)
       te:SetWidth(bw)
       te:SetHeight(ehps_h)
       te:SetColor(C_EHPS.r, C_EHPS.g, C_EHPS.b, C_EHPS.a)
@@ -354,7 +366,7 @@ local function render_view1()
     if mps_h > 0 then
       local tm = controls.pool_mps:AcquireObject()
       tm:ClearAnchors()
-      tm:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -ehps_h)
+      tm:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -(TIME_STRIP_H + ehps_h))
       tm:SetWidth(bw)
       tm:SetHeight(mps_h)
       tm:SetColor(C_MPS.r, C_MPS.g, C_MPS.b, C_MPS.a)
@@ -367,15 +379,15 @@ local function render_view1()
 
     local le = controls.pool_line_ehps:AcquireObject()
     le:ClearAnchors()
-    le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -ehps_hs[i-1])
-    le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -ehps_hs[i])
+    le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ehps_hs[i-1] + TIME_STRIP_H))
+    le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ehps_hs[i]   + TIME_STRIP_H))
     le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
     le:SetHidden(false)
 
     local lm = controls.pool_line_ems:AcquireObject()
     lm:ClearAnchors()
-    lm:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -ems_hs[i-1])
-    lm:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -ems_hs[i])
+    lm:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ems_hs[i-1] + TIME_STRIP_H))
+    lm:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ems_hs[i]   + TIME_STRIP_H))
     lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
     lm:SetHidden(false)
   end
