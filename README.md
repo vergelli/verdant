@@ -1,5 +1,5 @@
 # Verdant
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![Lua](https://img.shields.io/badge/Lua-5.1-2C2D72?logo=lua&logoColor=white)
 ![ESO API](https://img.shields.io/badge/ESO%20API-101049-orange)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
@@ -123,26 +123,52 @@ Six presets from `0.5 Hz` to `20 Hz`. Default is `1 Hz`.
 
 The rolling time window used to calculate **eHPS**. A shorter window reacts faster; a longer one smooths out burst heals.
 
-| Preset |
-|--------|
-| 2 s |
-| 3 s |
-| **5 s** (default) |
-| 8 s |
-| 10 s |
-| 15 s |
+Range: **1 s → 30 s**, in 1 s steps. Default **5 s**.
 
 ### Shield Window
 
-The rolling time window used to calculate **MPS**. Shields are sparse events, so a wider window sometimes is convenient to avoid the metric collapsing to zero between hits (not an often thing anyway)
+The rolling time window used to calculate **MPS**. Shields are sparse events, so a wider window sometimes is convenient to avoid the metric collapsing to zero between hits.
 
-| Preset |
-|--------|
-| 10 s |
-| 15 s |
-| **30 s** (default) |
-| 45 s |
-| 60 s |
+Range: **1 s → 30 s**, in 1 s steps. Default **10 s**.
+
+### Sampling Rate
+
+How often the temporal buffer captures a snapshot for the graph window.
+
+| Preset | Interval |
+|--------|----------|
+| 10 Hz | 100 ms |
+| 5 Hz  | 200 ms |
+| 2 Hz  | 500 ms |
+| 1 Hz  | 1000 ms (default) |
+
+### Time Window
+
+How far back the graph window remembers samples (= buffer capacity).
+
+Range: **15 s → 5 min**, in 15 s steps. Default **1 min**.
+
+---
+
+## Temporal Analytics (Graph Window)
+
+Click the **graph icon** (next to the gear icon) on the bar to open the dedicated graph window. The graph window is independently movable and resizable.
+
+![metrics on skills](doc/assets/skills_2.2.png)
+
+**Controls**:
+
+| Button | Action |
+|---|---|
+| **Start** | Begin recording samples into the temporal buffer |
+| **Stop**  | Stop recording (the existing samples remain visible) |
+| **Flush** | Stop recording and clear the buffer |
+| **<<** / **>>** | Navigate between the two views |
+
+**Views**:
+
+- **EMS** — stacked fill of eHPS (green) and MPS (pink) per sample.
+- **SKILL** — two sub-plots, eHPS on top and MPS below, each showing colored stacked fills broken down by class / skill-line.
 
 ---
 
@@ -159,11 +185,6 @@ The rolling time window used to calculate **MPS**. Shields are sparse events, so
 A keybinding to toggle the bar can be assigned under **Controls → Verdant**.
 
 
-___
-## Work In Progress
-
-![alt text](doc/assets/skills_1.png)
-![alt text](doc/assets/EMS_1.png)
 ---
 
 ## Known Limitations
@@ -174,4 +195,4 @@ ___
 
 ---
 
-*Verdant v1.0.0 — API 101049*
+*Verdant v1.1.0 — API 101049*
