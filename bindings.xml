@@ -2,7 +2,7 @@
   <Layer name="SI_KEYBINDINGS_LAYER_GENERAL">
     <Category name="Verdant">
       <Action name="VERDANT_TOGGLE">
-        <Down>Verdant.Bar.toggle()</Down>
+        <Down>Verdant.Visibility.master_toggle()</Down>
       </Action>
     </Category>
   </Layer>

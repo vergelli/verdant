@@ -1,13 +1,15 @@
 Verdant = Verdant or {}
 local Verdant = Verdant
 
-local SLASH_COMMANDS = SLASH_COMMANDS
-local ZO_SavedVars   = ZO_SavedVars
-local d              = d
-local string_format  = string.format
-local string_lower   = string.lower
-local string_match   = string.match
+local SLASH_COMMANDS          = SLASH_COMMANDS
+local ZO_SavedVars            = ZO_SavedVars
+local d                       = d
+local string_format           = string.format
+local string_lower            = string.lower
+local string_match            = string.match
 local GetGameTimeMilliseconds = GetGameTimeMilliseconds
+local GetString               = GetString
+local GetWorldName            = GetWorldName
 
 local KNOWN_FILTERS = {
   heal=true, shield=true, shield_raw=true, heal_abs=true,
@@ -16,7 +18,6 @@ local KNOWN_FILTERS = {
 }
 
 local function print_readout()
-  local L = Verdant.L
   local r = Verdant.Metrics.contribution(GetGameTimeMilliseconds())
   local denom_label, denom_val
   if r.mode == "group" then
@@ -24,13 +25,12 @@ local function print_readout()
   else
     denom_label, denom_val = "Oslf", r.O_self
   end
-  d("[V] " .. string_format(L.READOUT_LINE,
+  d("[V] " .. string_format(GetString(VERDANT_READOUT_LINE),
     r.mode, r.eHPS, r.MPS, r.EMS, denom_label, denom_val,
     r.C_self, r.C_heal, r.C_shield))
 end
 
 local function on_slash(input)
-  local L     = Verdant.L
   local DEBUG = Verdant.Constants.DEBUG
   input = input or ""
   local cmd = string_match(string_lower(input), "^%s*(%S+)") or ""
@@ -39,27 +39,27 @@ local function on_slash(input)
   if DEBUG then
     if cmd == "on" then
       Verdant.Probe.set_enabled(true)
-      d("[V] " .. L.PROBE_ON)
+      d("[V] " .. GetString(VERDANT_PROBE_ON))
       return
     elseif cmd == "off" then
       Verdant.Probe.set_enabled(false)
-      d("[V] " .. L.PROBE_OFF)
+      d("[V] " .. GetString(VERDANT_PROBE_OFF))
       return
     elseif cmd == "filter" then
       local val = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
       if KNOWN_FILTERS[val] then
         Verdant.Probe.set_filter(val)
-        d("[V] " .. string_format(L.FILTER_SET, val))
+        d("[V] " .. string_format(GetString(VERDANT_FILTER_SET), val))
       else
-        d("[V] " .. string_format(L.FILTER_UNKNOWN, val))
+        d("[V] " .. string_format(GetString(VERDANT_FILTER_UNKNOWN), val))
       end
       return
     elseif cmd == "metric" then
       local val = string_match(input, "^%s*%S+%s+(%S+)") or ""
       if Verdant.Mode.set(val) then
-        d("[V] " .. string_format(L.METRIC_SET, val))
+        d("[V] " .. string_format(GetString(VERDANT_METRIC_SET), val))
       else
-        d("[V] " .. string_format(L.METRIC_UNKNOWN, val))
+        d("[V] " .. string_format(GetString(VERDANT_METRIC_UNKNOWN), val))
       end
       return
     elseif cmd == "readout" then
@@ -80,7 +80,7 @@ local function on_slash(input)
       return
     elseif cmd == "save" then
       Verdant.Probe.persist_to_savedvars(Verdant.SavedVars)
-      d("[V] " .. L.DUMP_SAVED)
+      d("[V] " .. GetString(VERDANT_DUMP_SAVED))
       return
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
@@ -94,7 +94,7 @@ local function on_slash(input)
       Verdant.GroupSet.reset()
       Verdant.Diagnostics.reset()
       Verdant.Bar.reset_peaks()
-      d("[V] " .. L.BUFFER_CLEARED)
+      d("[V] " .. GetString(VERDANT_BUFFER_CLEARED))
       return
     end
   end
@@ -106,16 +106,21 @@ end
 local function on_addon_loaded()
   local C = Verdant.Constants
 
-  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, nil, { probe = {}, bar = {}, tribar = {} })
+  -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
+  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, tribar = {}, temporal = {} })
   Verdant.Probe.init()
   Verdant.Engine.init()
   Verdant.Bar.init()
   Verdant.TriBar.init()
   Verdant.Settings.init()
+  Verdant.Graph.init()
+  -- Visibility must init AFTER UI controls exist — it reads/applies SetHidden
+  -- on VerdantBarWindow / VerdantGraphWindow / VerdantTriBarWindow.
+  Verdant.Visibility.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
 
-  d("[V] " .. string_format(Verdant.L.LOADED, C.VERSION, C.SLASH_COMMAND))
+  d("[V] " .. string_format(GetString(VERDANT_LOADED), C.VERSION, C.SLASH_COMMAND))
 end
 
 Verdant.Events.register_addon_loaded(Verdant.Constants.ADDON_NAME, on_addon_loaded)

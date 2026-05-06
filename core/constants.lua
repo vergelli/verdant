@@ -3,7 +3,7 @@ local Verdant = Verdant
 
 Verdant.Constants = {
   ADDON_NAME    = "Verdant",
-  VERSION       = "1.0.0",
+  VERSION       = "1.1.0",
   SLASH_COMMAND = "/verdant",
   DEBUG         = false,
 
@@ -37,5 +37,11 @@ Verdant.Constants = {
 
     -- Min ms between auto-saves on combat exit, to avoid disk thrash.
     AUTOSAVE_COOLDOWN_MS = 30000,
+  },
+
+  TEMPORAL = {
+    UPDATE_NAME          = "VerdantTemporalSample",
+    SAMPLE_RATE_DEFAULT  = 1000,   -- ms interval → 1 Hz
+    TIME_WINDOW_DEFAULT  = 60,     -- seconds
   },
 }

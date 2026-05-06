@@ -8,6 +8,7 @@ local GetGameTimeMilliseconds = GetGameTimeMilliseconds
 local GetAPIVersion           = GetAPIVersion
 local PlaySound               = PlaySound
 local WINDOW_MANAGER          = WINDOW_MANAGER
+local ZO_ObjectPool           = ZO_ObjectPool
 local string_format           = string.format
 local math_max                = math.max
 local math_min                = math.min
@@ -45,36 +46,35 @@ local TRI_COL_X   = { EMS = 0, eHPS = TRI_COL_W + TRI_COL_GAP, MPS = (TRI_COL_W 
 local TRI_TOTAL_W = TRI_COL_W * 3 + TRI_COL_GAP * 2   -- 94 px
 
 -- ── skill-color fill pools ────────────────────────────────────────────────
--- Pre-allocated textures for stacked per-skill segments on eHPS / MPS bars.
--- 8 slots covers any realistic number of distinct skills in a 5-second window.
-local POOL_SIZE = 8
+-- ZO_ObjectPool of CT_TEXTURE controls for stacked per-skill segments.
 
 local function make_skill_pool(parent, name_prefix)
-  local WM   = WINDOW_MANAGER
-  local pool = {}
-  for i = 1, POOL_SIZE do
-    local t = WM:CreateControl(name_prefix .. i, parent, CT_TEXTURE)
-    t:ClearAnchors()
-    t:SetAnchor(BOTTOMLEFT, parent, BOTTOMLEFT, 0, 0)
-    t:SetTexture(FILL_TEXTURE)
-    t:SetTextureCoords(0, 1, FILL_T, FILL_B)
-    t:SetHidden(true)
-    pool[i] = t
-  end
-  return pool
+  local counter = 0
+  return ZO_ObjectPool:New(
+    function(pool, key)
+      counter = counter + 1
+      local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, parent, CT_TEXTURE)
+      t:SetTexture(FILL_TEXTURE)
+      t:SetTextureCoords(0, 1, FILL_T, FILL_B)
+      return t
+    end,
+    function(t)
+      t:SetHidden(true)
+    end
+  )
 end
 
 -- Positions and colors pool textures as stacked vertical segments.
 -- segments: array of { r,g,b,a, share } sorted largest-first (from group_shares).
 -- total_frac: 0-1 contribution for this metric.
 local function render_skill_segments(pool, parent, segments, area_w, area_h, total_frac)
+  pool:ReleaseAllObjects()
   local total_h = (total_frac > 0.005) and math_max(2, area_h * math_min(1, total_frac)) or 0
   local cum_h   = 0
-  local n       = math_min(#segments, POOL_SIZE)
-  for i = 1, n do
+  for i = 1, #segments do
     local seg   = segments[i]
     local seg_h = math_max(1, math_floor(total_h * seg.share + 0.5))
-    local t     = pool[i]
+    local t     = pool:AcquireObject()
     t:ClearAnchors()
     t:SetAnchor(BOTTOMLEFT, parent, BOTTOMLEFT, 0, -cum_h)
     t:SetWidth(area_w)
@@ -82,9 +82,6 @@ local function render_skill_segments(pool, parent, segments, area_w, area_h, tot
     t:SetColor(seg.r, seg.g, seg.b, seg.a)
     t:SetHidden(false)
     cum_h = cum_h + seg_h
-  end
-  for i = n + 1, POOL_SIZE do
-    pool[i]:SetHidden(true)
   end
 end
 
@@ -474,8 +471,8 @@ local function refresh()
     if m == "EMS" then
       -- stacked fill: eHPS green (bottom), MPS pink (above); no per-skill coloring
       controls.fill:SetHidden(true)
-      for i = 1, POOL_SIZE do controls.pool_ehps[i]:SetHidden(true) end
-      for i = 1, POOL_SIZE do controls.pool_mps[i]:SetHidden(true)  end
+      controls.pool_ehps:ReleaseAllObjects()
+      controls.pool_mps:ReleaseAllObjects()
 
       local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
       local shield_frac = math_max(0, math_min(1, r.C_shield or 0))
@@ -498,7 +495,7 @@ local function refresh()
       controls.fill:SetHidden(true)
       controls.fill_heal:SetHidden(true)
       controls.fill_shield:SetHidden(true)
-      for i = 1, POOL_SIZE do controls.pool_mps[i]:SetHidden(true) end
+      controls.pool_mps:ReleaseAllObjects()
       local segs = Verdant.Metrics.eHPS_by_group(now)
       render_skill_segments(controls.pool_ehps, controls.bar_area, segs, area_w, area_h, frac)
 
@@ -506,7 +503,7 @@ local function refresh()
       controls.fill:SetHidden(true)
       controls.fill_heal:SetHidden(true)
       controls.fill_shield:SetHidden(true)
-      for i = 1, POOL_SIZE do controls.pool_ehps[i]:SetHidden(true) end
+      controls.pool_ehps:ReleaseAllObjects()
       local segs = Verdant.Metrics.MPS_by_group(now)
       render_skill_segments(controls.pool_mps, controls.bar_area, segs, area_w, area_h, frac)
     end
@@ -540,10 +537,9 @@ function M.toggle_display_mode()
 end
 
 function M.toggle()
-  local hidden = controls.window:IsHidden()
-  controls.window:SetHidden(not hidden)
-  PlaySound(hidden and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
-  save_state()
+  local now_visible = not Verdant.Visibility.get("bar")
+  Verdant.Visibility.set("bar", now_visible)
+  PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
 end
 
 function M.show()
@@ -611,10 +607,8 @@ function M.init()
   controls.title_label:SetText("Verdant")
   controls.title_label:SetColor(0.55, 0.55, 0.55, 0.70)
 
-  controls.prev_btn:SetText("<")
-  controls.prev_btn:SetColor(0.75, 0.75, 0.75, 1)
-  controls.next_btn:SetText(">")
-  controls.next_btn:SetColor(0.75, 0.75, 0.75, 1)
+  -- prev_btn / next_btn are now icon Buttons (textures defined in XML);
+  -- ESO Button has no SetText/SetColor methods, so no Lua styling here.
 
   controls.api_label:SetHidden(true)
   controls.version_label:SetText(string_format("v%s  API %d", C.VERSION, GetAPIVersion()))

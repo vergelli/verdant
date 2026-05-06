@@ -3,9 +3,6 @@ local Verdant = Verdant
 
 Verdant.Mode = {}
 
--- Active metric (SPEC §5). Drives which event classes the engine processes,
--- so the event handler can short-circuit when the data isn't needed.
-
 local M = Verdant.Mode
 
 local METRICS = {

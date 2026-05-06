@@ -11,6 +11,7 @@ local type                       = type
 local tostring                   = tostring
 local GetGameTimeMilliseconds    = GetGameTimeMilliseconds
 local GetAPIVersion              = GetAPIVersion
+local GetString                  = GetString
 local IsUnitGrouped              = IsUnitGrouped
 local GetGroupSize               = GetGroupSize
 local GetUnitName                = GetUnitName
@@ -531,11 +532,10 @@ function M.print_context()
 end
 
 function M.dump()
-  local L = Verdant.L
   local total = 0
   for _, buf in pairs(state.buffers) do total = total + #buf end
-  if total == 0 then d("[V] " .. L.DUMP_EMPTY) return end
-  d("[V] " .. L.DUMP_HEADER)
+  if total == 0 then d("[V] " .. GetString(VERDANT_DUMP_EMPTY)) return end
+  d("[V] " .. GetString(VERDANT_DUMP_HEADER))
   M.print_stats()
   for category, buf in pairs(state.buffers) do
     if #buf > 0 then
