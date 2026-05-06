@@ -359,15 +359,22 @@ local function render_view1()
 
   draw_grid(controls.grid_ems, canvas, max_ems, t_last - t_first)
 
-  local bar_w   = cw / n
-  local xs      = {}
-  local ehps_hs = {}
-  local ems_hs  = {}
+  -- Datadog-style fixed-width bars: slot width is derived from the buffer
+  -- CAPACITY (not current count), so bars don't shrink as samples accumulate
+  -- and the chart "slides" left with a stable cadence once the buffer is full.
+  -- Newest sample is right-aligned; empty slots sit on the left until full.
+  local capacity    = Verdant.TemporalBuffer.capacity()
+  local slot_w      = cw / capacity
+  local bar_gap     = (slot_w > 3) and 1 or 0
+  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local slot_offset = capacity - n  -- leftmost slot of current data
+  local xs          = {}
+  local ehps_hs     = {}
+  local ems_hs      = {}
 
   Verdant.TemporalBuffer.iterate(function(i, s)
-    local x  = (i - 1) * bar_w
-    local bw = math_max(1, math_floor(bar_w))
-    local xc = x + bar_w * 0.5
+    local x  = (slot_offset + i - 1) * slot_w
+    local xc = x + bw * 0.5
 
     local ehps_h = math_max(0, math_floor(ch_plot * (s.eHPS / max_ems) + 0.5))
     local mps_h  = math_max(0, math_floor(ch_plot * (s.MPS  / max_ems) + 0.5))
@@ -406,6 +413,7 @@ local function render_view1()
     le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ehps_hs[i-1] + TIME_STRIP_H))
     le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ehps_hs[i]   + TIME_STRIP_H))
     le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+    le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
     le:SetHidden(false)
 
     local lm = controls.pool_line_ems:AcquireObject()
@@ -413,6 +421,7 @@ local function render_view1()
     lm:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ems_hs[i-1] + TIME_STRIP_H))
     lm:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ems_hs[i]   + TIME_STRIP_H))
     lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
+    lm:SetThickness(LINE_THICKNESS)
     lm:SetHidden(false)
   end
 end
@@ -455,7 +464,12 @@ local function render_view2()
   draw_grid(controls.grid_top, ec, max_shared, 0)          -- no time labels on top
   draw_grid(controls.grid_bot, mc, max_shared, span_ms)    -- time labels on bottom
 
-  local bar_w = cw / n
+  -- Shared slot grid for both sub-plots (same width, same capacity).
+  local capacity    = Verdant.TemporalBuffer.capacity()
+  local slot_w      = cw / capacity
+  local bar_gap     = (slot_w > 3) and 1 or 0
+  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local slot_offset = capacity - n
 
   -- ── eHPS sub-plot ──
   if max_ehps > 0 then
@@ -464,10 +478,9 @@ local function render_view2()
     local col_hs = {}
 
     Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = (i - 1) * bar_w
-      local bw    = math_max(1, math_floor(bar_w))
+      local x     = (slot_offset + i - 1) * slot_w
       local col_h = math_max(0, math_floor(ch * (s.eHPS / max_shared) + 0.5))
-      xs[i]      = x + bar_w * 0.5
+      xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
 
       local y_off = 0
@@ -490,6 +503,7 @@ local function render_view2()
       le:SetAnchor(BOTTOMLEFT,  ec, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
       le:SetAnchor(BOTTOMRIGHT, ec, BOTTOMLEFT, xs[i],   -col_hs[i])
       le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+      le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
       le:SetHidden(false)
     end
   end
@@ -501,10 +515,9 @@ local function render_view2()
     local col_hs  = {}
 
     Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = (i - 1) * bar_w
-      local bw    = math_max(1, math_floor(bar_w))
+      local x     = (slot_offset + i - 1) * slot_w
       local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_shared) + 0.5))
-      xs[i]      = x + bar_w * 0.5
+      xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
 
       local y_off = 0
@@ -527,6 +540,7 @@ local function render_view2()
       lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(col_hs[i-1] + TIME_STRIP_H))
       lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(col_hs[i]   + TIME_STRIP_H))
       lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
+      lm:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
       lm:SetHidden(false)
     end
   end

@@ -62,6 +62,7 @@ function M.iterate(fn)
 end
 
 function M.count()        return state.count     end
+function M.capacity()     return state.capacity  end
 function M.is_recording() return state.recording end
 
 function M.start_recording()
