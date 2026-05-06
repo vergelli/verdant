@@ -39,14 +39,6 @@
           <Insets left="6" top="6" right="-6" bottom="-6"/>
         </Backdrop>
 
-        <!-- Header decorator strip (sits behind title + buttons) -->
-        <Texture name="$(parent)HeaderBg"
-                 textureFile="EsoUI/Art/Progression/list_header_bg.dds">
-          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="6"/>
-          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="6"/>
-          <Dimensions y="44"/>
-        </Texture>
-
         <!-- Title -->
         <Label name="$(parent)TitleLabel"
                font="ZoFontGameSmall"
@@ -69,49 +61,45 @@
           <OnClicked>Verdant.Graph.on_close_click()</OnClicked>
         </Button>
 
-        <!-- Controls row: Record / Stop / Flush / Status / View nav -->
+        <!-- Controls row: Start / Stop / Flush text buttons (ZO_DefaultButton
+             frame, same style as the bar's %/# toggle).  Status label and
+             view navigation sit on the same row. -->
         <Button name="$(parent)RecordBtn"
                 mouseEnabled="true"
-                mouseOverBlendMode="ADD"
-                inherits="ZO_ButtonBehaviorClickSound">
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
           <Anchor point="TOPLEFT" offsetX="14" offsetY="22"/>
-          <Dimensions x="24" y="24"/>
-          <Textures normal="EsoUI/Art/Buttons/tree_closed_up.dds"
-                    pressed="EsoUI/Art/Buttons/tree_closed_down.dds"
-                    mouseOver="EsoUI/Art/Buttons/tree_closed_over.dds"/>
+          <Dimensions x="56" y="22"/>
           <OnClicked>Verdant.Graph.on_record_click()</OnClicked>
         </Button>
 
         <Button name="$(parent)StopBtn"
                 mouseEnabled="true"
-                mouseOverBlendMode="ADD"
-                inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPLEFT" offsetX="42" offsetY="22"/>
-          <Dimensions x="24" y="24"/>
-          <Textures normal="EsoUI/Art/Buttons/swatchframe_selected.dds"
-                    pressed="EsoUI/Art/Buttons/swatchframe_selected_disabled.dds"
-                    mouseOver="EsoUI/Art/Buttons/swatchframe_selected.dds"/>
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="TOPLEFT" offsetX="76" offsetY="22"/>
+          <Dimensions x="56" y="22"/>
           <OnClicked>Verdant.Graph.on_stop_click()</OnClicked>
         </Button>
 
         <Button name="$(parent)FlushBtn"
                 mouseEnabled="true"
-                mouseOverBlendMode="ADD"
-                inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPLEFT" offsetX="70" offsetY="22"/>
-          <Dimensions x="24" y="24"/>
-          <Textures normal="EsoUI/Art/Buttons/scrollbox_downarrow_up.dds"
-                    pressed="EsoUI/Art/Buttons/scrollbox_downarrow_down.dds"
-                    mouseOver="EsoUI/Art/Buttons/scrollbox_downarrow_over.dds"/>
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="TOPLEFT" offsetX="138" offsetY="22"/>
+          <Dimensions x="56" y="22"/>
           <OnClicked>Verdant.Graph.on_flush_click()</OnClicked>
         </Button>
 
+        <!-- StatusLabel spans the gap between Flush and the view nav so it
+             contracts gracefully at the minimum window width. -->
         <Label name="$(parent)StatusLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="100" offsetY="26"/>
-          <Dimensions x="80" y="14"/>
+          <Anchor point="TOPLEFT"  offsetX="200"  offsetY="26"/>
+          <Anchor point="TOPRIGHT" offsetX="-104" offsetY="26"/>
+          <Dimensions y="14"/>
         </Label>
 
         <!-- View navigation: [<<] [EMS] [>] -->
@@ -147,10 +135,10 @@
           <OnClicked>Verdant.Graph.next_view()</OnClicked>
         </Button>
 
-        <!-- ── Inner viewport: separate panel that hosts only the graphs ── -->
+        <!-- ── Inner viewport: centred, generous symmetric padding ──────── -->
         <Control name="$(parent)Viewport" mouseEnabled="false">
-          <Anchor point="TOPLEFT"     offsetX="20"  offsetY="64"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-20" offsetY="-18"/>
+          <Anchor point="TOPLEFT"     offsetX="24"  offsetY="76"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-24" offsetY="-24"/>
 
           <Controls>
 

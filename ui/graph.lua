@@ -531,14 +531,14 @@ local function render_current_view()
 end
 
 -- ── button state visuals ──────────────────────────────────────────────────
--- StopBtn is now an icon Button.  ESO Button has no SetColor, but SetAlpha
--- works on every control: dim while idle, full brightness while recording.
+-- Buttons inherit ZO_DefaultButton: SetEnabled(false) renders the built-in
+-- disabled (greyed) frame, giving clear visual feedback for which action is
+-- currently available without needing custom colour logic.
 local function refresh_button_colors()
-  if Verdant.TemporalBuffer.is_recording() then
-    controls.btn_stop:SetAlpha(1.00)
-  else
-    controls.btn_stop:SetAlpha(0.40)
-  end
+  local recording = Verdant.TemporalBuffer.is_recording()
+  controls.btn_record:SetEnabled(not recording)  -- Start: only when idle
+  controls.btn_stop:SetEnabled(recording)        -- Stop:  only while recording
+  -- Flush is intentionally always enabled (works in both states).
 end
 
 -- ── view switching ────────────────────────────────────────────────────────
@@ -707,11 +707,16 @@ function M.init()
     controls.window:SetDimensions(sv.temporal.graph_w, sv.temporal.graph_h)
   end
 
+  -- Resize bounds: prevent the user from collapsing the window so small
+  -- the chrome (buttons, view nav) overlaps, or expanding it past sensible
+  -- screen sizes.  Min must accommodate the controls row + a usable viewport.
+  controls.window:SetDimensionConstraints(360, 240, 1000, 700)
+
   -- Lower alpha on both Backdrops so the window reads as semi-transparent
   -- (consistent with ESO panels) and the inner viewport feels lighter than
   -- the surrounding container.
-  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.62)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.78)
+  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.80)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.65)
 
   -- ── canvas backgrounds ────────────────────────────────────────────────
   -- Created first so they are behind the grid controls and behind pool objects.
@@ -750,8 +755,11 @@ function M.init()
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
 
-  -- RecordBtn / StopBtn / FlushBtn are now icon Buttons (textures in XML);
-  -- no SetText needed.  StopBtn alpha toggles via refresh_button_colors().
+  -- ZO_DefaultButton supports SetText: the button frame is the texture,
+  -- the label inside renders the text we set here.
+  controls.btn_record:SetText("Start")
+  controls.btn_stop:SetText("Stop")
+  controls.btn_flush:SetText("Flush")
 
   controls.status:SetText("")
   controls.status:SetColor(0.65, 0.65, 0.65, 1)
