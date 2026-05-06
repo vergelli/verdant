@@ -47,9 +47,23 @@ local SAMPLE_PRESETS = { 1000, 500, 200, 100 }
 local SAMPLE_LABELS  = { [1000] = "1 Hz", [500] = "2 Hz", [200] = "5 Hz", [100] = "10 Hz" }
 local SAMPLE_DEFAULT = 1000
 
--- Time window for temporal buffer (stored as seconds)
-local TWINDOW_PRESETS = { 30, 60, 120, 180, 300 }
-local TWINDOW_LABELS  = { [30] = "30s", [60] = "1m", [120] = "2m", [180] = "3m", [300] = "5m" }
+-- Time window for temporal buffer (stored as seconds).
+-- 15 s → 5 min in 15-second steps: 15, 30, 45, 60, ..., 300.
+local function twindow_presets()
+  local p, lbls = {}, {}
+  for s = 15, 300, 15 do
+    p[#p + 1] = s
+    if s % 60 == 0 then
+      lbls[s] = (s / 60) .. "m"
+    elseif s < 60 then
+      lbls[s] = s .. "s"
+    else
+      lbls[s] = string.format("%d:%02d", math.floor(s / 60), s % 60)
+    end
+  end
+  return p, lbls
+end
+local TWINDOW_PRESETS, TWINDOW_LABELS = twindow_presets()
 local TWINDOW_DEFAULT = 60
 
 -- ── state ─────────────────────────────────────────────────────────────────────
