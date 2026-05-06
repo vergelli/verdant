@@ -82,16 +82,18 @@
           <Dimensions y="14"/>
         </Label>
 
-        <!-- Graph window toggle — same row as ValueLabel -->
-        <Label name="$(parent)GraphBtn"
-               mouseEnabled="true"
-               font="ZoFontGameSmall"
-               horizontalAlignment="CENTER"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="36"/>
-          <Dimensions x="16" y="14"/>
-          <OnMouseUp>Verdant.Graph.toggle()</OnMouseUp>
-        </Label>
+        <!-- Graph window toggle — icon Button, same row as ValueLabel -->
+        <Button name="$(parent)GraphBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="35"/>
+          <Dimensions x="16" y="16"/>
+          <Textures normal="EsoUI/Art/Buttons/pointsplus_up.dds"
+                    pressed="EsoUI/Art/Buttons/pointsplus_down.dds"
+                    mouseOver="EsoUI/Art/Buttons/pointsplus_over.dds"/>
+          <OnClicked>Verdant.Graph.toggle()</OnClicked>
+        </Button>
 
         <!-- Settings toggle — gear icon button, same row as ValueLabel -->
         <Button name="$(parent)SettingsBtn"

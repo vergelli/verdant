@@ -789,8 +789,6 @@ function M.init()
   controls.mps_label:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, 0.80)
 
   refresh_button_colors()
-
-  -- Graph toggle button on the main bar
-  VerdantBarWindowGraphBtn:SetText("G")
-  VerdantBarWindowGraphBtn:SetColor(0.55, 0.75, 0.95, 1)
+  -- VerdantBarWindowGraphBtn is now an icon Button (pointsplus_* textures
+  -- defined in bar.xml); no Lua-side text/color setup needed.
 end
