@@ -237,12 +237,10 @@ end
 
 -- ── public API ────────────────────────────────────────────────────────────
 function M.toggle()
-  local hidden = controls.window:IsHidden()
-  controls.window:SetHidden(not hidden)
-  PlaySound(hidden and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
-  if hidden then refresh() end
-  local sv = Verdant.SavedVars
-  if sv then sv.tribar = sv.tribar or {} ; sv.tribar.visible = hidden end
+  local now_visible = not Verdant.Visibility.get("tribar")
+  Verdant.Visibility.set("tribar", now_visible)
+  PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+  if now_visible then refresh() end
 end
 
 function M.show()

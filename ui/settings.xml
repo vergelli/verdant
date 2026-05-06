@@ -11,7 +11,7 @@
                      clampedToScreen="true"
                      mouseEnabled="true">
 
-      <Dimensions x="160" y="126"/>
+      <Dimensions x="160" y="210"/>
 
       <Controls>
 
@@ -93,6 +93,54 @@
           <Anchor point="TOPRIGHT" offsetX="-8" offsetY="104"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_shield_track_click(self)</OnMouseUp>
+        </Control>
+
+        <!-- ── Row 4: Sampling Rate ────────────────────────────────────── -->
+        <Label name="$(parent)SampleTitle"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="132"/>
+          <Dimensions x="88" y="12"/>
+        </Label>
+
+        <Label name="$(parent)SampleLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="132"/>
+          <Dimensions x="54" y="12"/>
+        </Label>
+
+        <Control name="$(parent)SliderTrackSample" mouseEnabled="true">
+          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="147"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="147"/>
+          <Dimensions y="14"/>
+          <OnMouseUp>Verdant.Settings.on_sample_track_click(self)</OnMouseUp>
+        </Control>
+
+        <!-- ── Row 5: Time Window ──────────────────────────────────────── -->
+        <Label name="$(parent)TWindowTitle"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="172"/>
+          <Dimensions x="88" y="12"/>
+        </Label>
+
+        <Label name="$(parent)TWindowLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="172"/>
+          <Dimensions x="54" y="12"/>
+        </Label>
+
+        <Control name="$(parent)SliderTrackTWindow" mouseEnabled="true">
+          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="187"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="187"/>
+          <Dimensions y="14"/>
+          <OnMouseUp>Verdant.Settings.on_twindow_track_click(self)</OnMouseUp>
         </Control>
 
       </Controls>
