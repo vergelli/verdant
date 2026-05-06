@@ -135,10 +135,10 @@
           <OnClicked>Verdant.Graph.next_view()</OnClicked>
         </Button>
 
-        <!-- ── Inner viewport: centred, generous symmetric padding ──────── -->
+        <!-- ── Inner viewport: tighter padding, less chrome presence ────── -->
         <Control name="$(parent)Viewport" mouseEnabled="false">
-          <Anchor point="TOPLEFT"     offsetX="24"  offsetY="76"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-24" offsetY="-24"/>
+          <Anchor point="TOPLEFT"     offsetX="14"  offsetY="50"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-14"/>
 
           <Controls>
 

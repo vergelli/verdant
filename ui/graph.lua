@@ -87,6 +87,11 @@ local function make_skill_fill_pool(name_prefix, canvas_key)
   )
 end
 
+-- Line reset clears anchors as well as hiding.  Without ClearAnchors the
+-- previous segment's endpoints can persist on a Line when it is re-acquired
+-- mid-recording, producing a "ghost" of the old descent that shows alongside
+-- the freshly-positioned line.  Wiping anchors on release forces the next
+-- acquirer to set them from scratch.
 local function make_line_pool(name_prefix)
   local counter = 0
   return ZO_ObjectPool:New(
@@ -96,7 +101,10 @@ local function make_line_pool(name_prefix)
       line:SetThickness(LINE_THICKNESS)
       return line
     end,
-    function(line) line:SetHidden(true) end
+    function(line)
+      line:SetHidden(true)
+      line:ClearAnchors()
+    end
   )
 end
 
@@ -109,7 +117,10 @@ local function make_skill_line_pool(name_prefix, canvas_key)
       line:SetThickness(LINE_THICKNESS)
       return line
     end,
-    function(line) line:SetHidden(true) end
+    function(line)
+      line:SetHidden(true)
+      line:ClearAnchors()
+    end
   )
 end
 
