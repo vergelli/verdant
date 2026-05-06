@@ -405,24 +405,31 @@ local function render_view1()
     end
   end)
 
-  for i = 2, n do
-    local x1, x2 = xs[i-1], xs[i]
+  -- Polylines only draw when bars are wide enough for the line to add
+  -- visual signal beyond the bar edges themselves.  Below ~3 px slot width
+  -- the 2 px line overlaps the 1 px bars and produces no visible benefit
+  -- — skipping ~2(n-1) controls per render is a meaningful FPS win at
+  -- high capacities (eg 10 Hz × 60 s = 600 samples).
+  if slot_w >= 3 then
+    for i = 2, n do
+      local x1, x2 = xs[i-1], xs[i]
 
-    local le = controls.pool_line_ehps:AcquireObject()
-    le:ClearAnchors()
-    le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ehps_hs[i-1] + TIME_STRIP_H))
-    le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ehps_hs[i]   + TIME_STRIP_H))
-    le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
-    le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
-    le:SetHidden(false)
+      local le = controls.pool_line_ehps:AcquireObject()
+      le:ClearAnchors()
+      le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ehps_hs[i-1] + TIME_STRIP_H))
+      le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ehps_hs[i]   + TIME_STRIP_H))
+      le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+      le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
+      le:SetHidden(false)
 
-    local lm = controls.pool_line_ems:AcquireObject()
-    lm:ClearAnchors()
-    lm:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ems_hs[i-1] + TIME_STRIP_H))
-    lm:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ems_hs[i]   + TIME_STRIP_H))
-    lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
-    lm:SetThickness(LINE_THICKNESS)
-    lm:SetHidden(false)
+      local lm = controls.pool_line_ems:AcquireObject()
+      lm:ClearAnchors()
+      lm:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ems_hs[i-1] + TIME_STRIP_H))
+      lm:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ems_hs[i]   + TIME_STRIP_H))
+      lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
+      lm:SetThickness(LINE_THICKNESS)
+      lm:SetHidden(false)
+    end
   end
 end
 
@@ -497,14 +504,16 @@ local function render_view2()
       end
     end)
 
-    for i = 2, n do
-      local le = controls.pool_line_skill_top:AcquireObject()
-      le:ClearAnchors()
-      le:SetAnchor(BOTTOMLEFT,  ec, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
-      le:SetAnchor(BOTTOMRIGHT, ec, BOTTOMLEFT, xs[i],   -col_hs[i])
-      le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
-      le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
-      le:SetHidden(false)
+    if slot_w >= 3 then
+      for i = 2, n do
+        local le = controls.pool_line_skill_top:AcquireObject()
+        le:ClearAnchors()
+        le:SetAnchor(BOTTOMLEFT,  ec, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
+        le:SetAnchor(BOTTOMRIGHT, ec, BOTTOMLEFT, xs[i],   -col_hs[i])
+        le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+        le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
+        le:SetHidden(false)
+      end
     end
   end
 
@@ -534,14 +543,16 @@ local function render_view2()
       end
     end)
 
-    for i = 2, n do
-      local lm = controls.pool_line_skill_bot:AcquireObject()
-      lm:ClearAnchors()
-      lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(col_hs[i-1] + TIME_STRIP_H))
-      lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(col_hs[i]   + TIME_STRIP_H))
-      lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
-      lm:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
-      lm:SetHidden(false)
+    if slot_w >= 3 then
+      for i = 2, n do
+        local lm = controls.pool_line_skill_bot:AcquireObject()
+        lm:ClearAnchors()
+        lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(col_hs[i-1] + TIME_STRIP_H))
+        lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(col_hs[i]   + TIME_STRIP_H))
+        lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
+        lm:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
+        lm:SetHidden(false)
+      end
     end
   end
 end
@@ -644,7 +655,7 @@ function M.on_flush_click()
 end
 
 function M.on_close_click()
-  controls.window:SetHidden(true)
+  Verdant.Visibility.set("graph", false)
   release_all_pools()
 end
 
@@ -685,15 +696,15 @@ function M.next_view()
 end
 
 function M.toggle()
-  local win = controls.window
-  if win:IsHidden() then
-    win:SetHidden(false)
+  local now_visible = not Verdant.Visibility.get("graph")
+  Verdant.Visibility.set("graph", now_visible)
+  if now_visible then
+    -- Sync the EMS/SKILL sub-controls with current_view, then render fresh.
     local is_ems = (current_view == VIEW_EMS)
     controls.canvas:SetHidden(not is_ems)
     controls.skill_area:SetHidden(is_ems)
     render_current_view()
   else
-    win:SetHidden(true)
     release_all_pools()
   end
 end

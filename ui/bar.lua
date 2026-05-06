@@ -537,10 +537,9 @@ function M.toggle_display_mode()
 end
 
 function M.toggle()
-  local hidden = controls.window:IsHidden()
-  controls.window:SetHidden(not hidden)
-  PlaySound(hidden and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
-  save_state()
+  local now_visible = not Verdant.Visibility.get("bar")
+  Verdant.Visibility.set("bar", now_visible)
+  PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
 end
 
 function M.show()
