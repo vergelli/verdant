@@ -58,9 +58,10 @@ jobs:
           fi
 
       - name: Stage release files
-        # Only the files referenced by the manifest plus the repo metadata
-        # (README, CHANGELOG, LICENSE) end up in the zip.  doc/, specs/,
-        # test/, .github/ etc. stay out — they are dev-only.
+        # Only files referenced by the manifest end up in the zip.
+        # README / CHANGELOG / LICENSE live in the GitHub repo — the user's
+        # AddOns/ folder should stay clean.  doc/, specs/, test/, .github/
+        # are dev-only and excluded for the same reason.
         run: |
           mkdir -p staging/Verdant
           cp -r \
@@ -70,9 +71,6 @@ jobs:
             ui \
             Verdant.lua \
             Verdant.txt \
-            README.md \
-            CHANGELOG.md \
-            LICENSE \
             staging/Verdant/
 
       - name: Verify folder casing
