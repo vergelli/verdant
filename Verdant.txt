@@ -15,6 +15,7 @@ bindings.xml
 locales/default.lua
 locales/$(language).lua
 core/constants.lua
+zenimax/constants.lua
 zenimax/events.lua
 core/buffer.lua
 core/shield_registry.lua
