@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![AI Assisted](https://img.shields.io/badge/AI%20Assisted-Claude%20by%20Anthropic-D97757?logo=anthropic&logoColor=white)
 
-![Verdant logo](doc/assets/Verdant%20Logo%204.png)
+![Verdant logo](docs/assets/Verdant%20Logo%204.png)
 
 **Real-time healer contribution bar for The Elder Scrolls Online**
 
@@ -19,19 +19,19 @@ In other words it tracks *contribution*: how much of a meaningful ceiling your o
 
 ### Effective Healing Per Second
 
-![eHPS](doc/assets/eHPS_1.png)
+![eHPS](docs/assets/eHPS_1.png)
 
 Healing that lands on missing HP
 
 ### Mitigation Per Second
 
-![MPS](doc/assets/MPS_1.png)
+![MPS](docs/assets/MPS_1.png)
 
 Damage absorbed by shields you cast
 
 ### Effective Mitigation Score
 
-![EMS](doc/assets/EMS_1.png)
+![EMS](docs/assets/EMS_1.png)
 
 The combined metric. This is what the bar primarily represents.
 
@@ -94,7 +94,7 @@ In **eHPS** and **MPS** modes the bar is split into colored segments — one per
 
 ### In-Game example
 
-![UI example](doc/assets/verdant_ui_example_1.png)
+![UI example](docs/assets/verdant_ui_example_1.png)
 
 ---
 
@@ -154,7 +154,7 @@ Range: **15 s → 5 min**, in 15 s steps. Default **1 min**.
 
 Click the **graph icon** (next to the gear icon) on the bar to open the dedicated graph window. The graph window is independently movable and resizable.
 
-![metrics on skills](doc/assets/skills_2.2.png)
+![metrics on skills](docs/assets/skills_2.2.png)
 
 **Controls**:
 
