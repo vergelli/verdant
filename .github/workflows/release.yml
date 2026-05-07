@@ -60,7 +60,7 @@ jobs:
       - name: Stage release files
         # Only files referenced by the manifest end up in the zip.
         # README / CHANGELOG / LICENSE live in the GitHub repo — the user's
-        # AddOns/ folder should stay clean.  doc/, specs/, test/, .github/
+        # AddOns/ folder should stay clean.  docs/, specs/, test/, .github/
         # are dev-only and excluded for the same reason.
         run: |
           mkdir -p staging/Verdant
