@@ -5,6 +5,11 @@ Verdant.Constants = {
   ADDON_NAME    = "Verdant",
   VERSION       = "1.1.0",
   SLASH_COMMAND = "/verdant",
+
+  -- DEBUG gates developer-only slash subcommands (probe/dump/diag/...) and,
+  -- starting in Phase 6, observability layers (log/profiler/validation).
+  -- Release builds keep this false so the no-op references are wired in
+  -- and the cost of dev instrumentation stays out of the hot path.
   DEBUG         = false,
 
   SV_TABLE   = "VerdantSavedVars",
