@@ -303,6 +303,6 @@ function M.init()
   local visible = b.visible or false
   controls.window:SetHidden(not visible)
 
-  Verdant.Events.register_update("Verdant_TriBarTick", 1000, refresh)
+  Verdant.zenimax.events.register_update("Verdant_TriBarTick", 1000, refresh)
   if visible then refresh() end
 end

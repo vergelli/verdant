@@ -595,7 +595,7 @@ end
 
 function M.init()
   local P = Verdant.Constants.PROBE
-  local E = Verdant.Events
+  local E = Verdant.zenimax.events
 
   -- 1) Heals/shields where I am the source (current §3.4 model assumption).
   E.register(P.SRC_COMBAT_OUT, EVENT_COMBAT_EVENT, on_combat_out)

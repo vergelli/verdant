@@ -123,4 +123,4 @@ local function on_addon_loaded()
   d("[V] " .. string_format(GetString(VERDANT_LOADED), C.VERSION, C.SLASH_COMMAND))
 end
 
-Verdant.Events.register_addon_loaded(Verdant.Constants.ADDON_NAME, on_addon_loaded)
+Verdant.zenimax.events.register_addon_loaded(Verdant.Constants.ADDON_NAME, on_addon_loaded)

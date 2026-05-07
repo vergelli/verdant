@@ -1,14 +1,15 @@
 Verdant = Verdant or {}
+Verdant.zenimax = Verdant.zenimax or {}
 local Verdant = Verdant
 
-Verdant.Events = {}
+Verdant.zenimax.events = {}
 
 local EVENT_MANAGER = EVENT_MANAGER
 local d             = d
 local pcall         = pcall
 local tostring      = tostring
 
-local M = Verdant.Events
+local M = Verdant.zenimax.events
 
 function M.register_addon_loaded(name, callback)
   EVENT_MANAGER:RegisterForEvent(name, EVENT_ADD_ON_LOADED, function(_, addonName)

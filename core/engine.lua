@@ -122,7 +122,7 @@ local function on_group_left()
 end
 
 function M.init()
-  local E = Verdant.Events
+  local E = Verdant.zenimax.events
 
   Verdant.Diagnostics.init()
   Verdant.Metrics.init()

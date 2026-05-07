@@ -163,5 +163,5 @@ end
 -- ── init ──────────────────────────────────────────────────────────────────
 function M.init()
   start_time = GetGameTimeMilliseconds()
-  Verdant.Events.register_update("Verdant_DiagTick", TICK_MS, ts_sample)
+  Verdant.zenimax.events.register_update("Verdant_DiagTick", TICK_MS, ts_sample)
 end

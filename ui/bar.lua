@@ -556,8 +556,8 @@ end
 
 -- Called by Settings when the slider changes
 function M.set_rate(ms)
-  Verdant.Events.unregister_update("Verdant_BarTick")
-  Verdant.Events.register_update("Verdant_BarTick", ms, refresh)
+  Verdant.zenimax.events.unregister_update("Verdant_BarTick")
+  Verdant.zenimax.events.register_update("Verdant_BarTick", ms, refresh)
 end
 
 function M.on_move_stop()
@@ -632,6 +632,6 @@ function M.init()
   controls.window:SetHidden(not visible)
 
   local rate_ms = b.rate_ms or 1000
-  Verdant.Events.register_update("Verdant_BarTick", rate_ms, refresh)
+  Verdant.zenimax.events.register_update("Verdant_BarTick", rate_ms, refresh)
   refresh()
 end
