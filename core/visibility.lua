@@ -2,7 +2,8 @@ Verdant = Verdant or {}
 Verdant.Visibility = {}
 local M = Verdant.Visibility
 
-local SCENE_MANAGER = SCENE_MANAGER
+local Scene = Verdant.zenimax.scene
+local SCENE_SHOWN = Scene.SCENE_SHOWN
 
 -- ── state ─────────────────────────────────────────────────────────────────
 -- in_hud: true while either the gameplay HUD scene or the HUD-overlay scene
@@ -15,10 +16,6 @@ local in_hud = true
 -- state — that way auto-hiding during a non-HUD scene does not erase the
 -- user's preference.  Actual visibility = in_hud AND user_visible[key].
 local user_visible = { bar = false, graph = false, tribar = false }
-
-local function is_hud_scene(name)
-  return name == "hud" or name == "hudui"
-end
 
 -- ── apply / persist ───────────────────────────────────────────────────────
 local function apply()
@@ -80,10 +77,10 @@ function M.init()
     user_visible.tribar = (sv.tribar   and sv.tribar.visible)   or false
   end
 
-  SCENE_MANAGER:RegisterCallback("SceneStateChanged",
+  Scene.register_callback("SceneStateChanged",
     function(scene, oldState, newState)
       if newState ~= SCENE_SHOWN then return end
-      local now = is_hud_scene(scene:GetName())
+      local now = Scene.is_hud_scene(scene:GetName())
       if now == in_hud then return end
       in_hud = now
       apply()
