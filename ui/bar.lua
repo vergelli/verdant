@@ -187,6 +187,7 @@ local function setup_single_bar()
   bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
   bg:SetTexture(BG_TEXTURE)
+  bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
   bg:SetColor(0.10, 0.10, 0.12, 1)
   controls.bg = bg
 
@@ -292,6 +293,7 @@ local function setup_triple_view()
     bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
     bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
     bg:SetTexture(BG_TEXTURE)
+    bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
     bg:SetColor(0.10, 0.10, 0.12, 1)
 
     local fill = WM:CreateControl("VerdantBarTriFill" .. m, area, CT_TEXTURE)

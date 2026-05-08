@@ -121,6 +121,7 @@ local function make_bar(area, name_suffix, color, use_pool, use_stacked)
   bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
   bg:SetTexture(BG_TEXTURE)
+  bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
   bg:SetColor(0.10, 0.10, 0.12, 1)
 
   local fill = WM:CreateControl("VerdantTriBarFill" .. name_suffix, area, CT_TEXTURE)

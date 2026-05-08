@@ -99,6 +99,13 @@ local function on_slash(input)
     end
   end
 
+  -- ── window toggles ───────────────────────────────────────────────────────
+  if cmd == "tribar" then
+    Verdant.TriBar.toggle() ; return
+  elseif cmd == "graph" then
+    Verdant.Graph.toggle() ; return
+  end
+
   -- ── /verdant (any input) → toggle bar ────────────────────────────────────
   Verdant.Bar.toggle()
 end
