@@ -761,7 +761,7 @@ function M.init()
     bg:ClearAnchors()
     bg:SetAnchor(TOPLEFT,     parent, TOPLEFT,     0, 0)
     bg:SetAnchor(BOTTOMRIGHT, parent, BOTTOMRIGHT, 0, 0)
-    bg:SetTexture(BG_TEXTURE)
+    bg:SetTexture(FILL_TEXTURE)
     bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
     bg:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
   end

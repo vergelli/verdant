@@ -186,7 +186,7 @@ local function setup_single_bar()
   bg:ClearAnchors()
   bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(BG_TEXTURE)
+  bg:SetTexture(FILL_TEXTURE)
   bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
   bg:SetColor(0.10, 0.10, 0.12, 1)
   controls.bg = bg
@@ -292,7 +292,7 @@ local function setup_triple_view()
     bg:ClearAnchors()
     bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
     bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-    bg:SetTexture(BG_TEXTURE)
+    bg:SetTexture(FILL_TEXTURE)
     bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
     bg:SetColor(0.10, 0.10, 0.12, 1)
 
@@ -548,6 +548,10 @@ function M.show()
   controls.window:SetHidden(false)
   PlaySound(SOUNDS.ARMORY_OPEN)
   save_state()
+end
+
+function M.on_close_click()
+  M.hide()
 end
 
 function M.hide()

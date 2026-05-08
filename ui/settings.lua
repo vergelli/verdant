@@ -105,7 +105,7 @@ local function setup_slider_visuals(track, name_prefix)
   bg:ClearAnchors()
   bg:SetAnchor(TOPLEFT,     track, TOPLEFT,     0, 0)
   bg:SetAnchor(BOTTOMRIGHT, track, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(BG_TEXTURE)
+  bg:SetTexture(FILL_TEXTURE)
   bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
   bg:SetColor(0.10, 0.10, 0.12, 1)
 
