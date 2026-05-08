@@ -20,6 +20,7 @@ local GROUP_COLORS = {
   undaunted = { r = 0.42, g = 0.42, b = 0.18, a = 0.95 },  -- olive
   support   = { r = 0.42, g = 0.31, b = 0.68, a = 0.95 },  -- muted purple
   other     = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
+  item      = { r = 0.95, g = 0.20, b = 0.80, a = 0.95 },
 }
 
 -- Lowercase English name fragments.  More specific patterns must come first.
@@ -143,6 +144,7 @@ local ABILITY_OVERRIDES = {
   [22228] = "templar",
   [44013] = "resto",
   [45518] = "undaunted",
+  [176922] = "items"
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
