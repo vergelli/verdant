@@ -10,13 +10,13 @@ local string_find    = string.find
 local GROUP_COLORS = {
   templar   = { r = 0.95, g = 0.75, b = 0.15, a = 0.95 },  -- amber gold
   arcanist  = { r = 0.20, g = 0.92, b = 0.35, a = 0.95 },  -- vivid green
-  warden    = { r = 0.20, g = 0.85, b = 0.90, a = 0.95 },  -- sky cyan
+  warden    = { r = 0.10, g = 0.85, b = 0.60, a = 0.95 },  -- sky cyan
   resto     = { r = 0.72, g = 0.50, b = 0.18, a = 0.95 },  -- warm brown
   dk        = { r = 0.88, g = 0.28, b = 0.08, a = 0.95 },  -- rust orange
   sorc      = { r = 0.28, g = 0.38, b = 0.95, a = 0.95 },  -- electric blue
   nb        = { r = 0.82, g = 0.10, b = 0.18, a = 0.95 },  -- crimson
   necro     = { r = 0.65, g = 0.18, b = 0.82, a = 0.95 },  -- violet
-  scribing  = { r = 0.00, g = 0.75, b = 1.00, a = 0.95 },  -- arcane blue
+  scribing  = { r = 0.50, g = 0.35, b = 1.00, a = 0.95 },  -- arcane blue
   undaunted = { r = 0.42, g = 0.42, b = 0.18, a = 0.95 },  -- olive
   support   = { r = 0.42, g = 0.31, b = 0.68, a = 0.95 },  -- muted purple
   other     = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
@@ -144,7 +144,8 @@ local ABILITY_OVERRIDES = {
   [22228] = "templar",
   [44013] = "resto",
   [45518] = "undaunted",
-  [176922] = "item"
+  [176922] = "item",
+  [217469] = "scribing"
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
