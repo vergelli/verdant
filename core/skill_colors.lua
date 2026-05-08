@@ -12,6 +12,7 @@ local GROUP_COLORS = {
   arcanist  = { r = 0.50, g = 1.00, b = 0.00, a = 0.95 },  -- vivid green
   warden    = { r = 0.00, g = 0.75, b = 0.50, a = 0.95 },  -- sky cyan
   resto     = { r = 0.72, g = 0.50, b = 0.18, a = 0.95 },  -- warm brown
+  destru    = { r = 0.75, g = 0.90, b = 1.00, a = 0.95 },
   dk        = { r = 0.88, g = 0.28, b = 0.08, a = 0.95 },  -- rust orange
   sorc      = { r = 0.28, g = 0.38, b = 0.95, a = 0.95 },  -- electric blue
   nb        = { r = 0.82, g = 0.10, b = 0.18, a = 0.95 },  -- crimson
@@ -145,7 +146,8 @@ local ABILITY_OVERRIDES = {
   [44013] = "resto",
   [45518] = "undaunted",
   [176922] = "item",
-  [217469] = "scribing"
+  [217469] = "scribing",
+  [69774] = "destru",
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
