@@ -112,6 +112,19 @@ for i = 1, RING_CAPACITY do
   ring[i] = { t = 0, level = "", key = "", data = nil }
 end
 
+-- Format a data payload (often a table of {k=v}) into a human-readable
+-- "k=v k=v" string. Plain tostring() on a table returns its hex address,
+-- which is useless in the CopyBox.
+local function format_data(data)
+  if data == nil then return "" end
+  if type(data) ~= "table" then return tostring(data) end
+  local parts = {}
+  for k, v in pairs(data) do
+    parts[#parts+1] = tostring(k) .. "=" .. tostring(v)
+  end
+  return table.concat(parts, " ")
+end
+
 function M.write(level, key, data)
   ring_head = (ring_head % RING_CAPACITY) + 1
   local rec = ring[ring_head]
@@ -123,7 +136,9 @@ function M.write(level, key, data)
   -- Mirror to CopyBox at warn/error so the dev sees them live.
   if (level == "warn" or level == "error") and Verdant.CopyBox then
     local body = "[" .. level .. ":" .. key .. "]"
-    if data ~= nil then body = body .. " " .. tostring(data) end
+    if data ~= nil then
+      body = body .. " " .. format_data(data)
+    end
     Verdant.CopyBox.append(body)
   end
 end
@@ -171,7 +186,7 @@ function M.show_recent(n)
     end
     local r = ring[idx]
     lines[#lines+1] = string.format("[%d %s:%s] %s",
-      r.t, r.level, r.key, tostring(r.data))
+      r.t, r.level, r.key, format_data(r.data))
   end
   if Verdant.CopyBox and Verdant.CopyBox.show then
     Verdant.CopyBox.show("Verdant /log show", table.concat(lines, "\n"))

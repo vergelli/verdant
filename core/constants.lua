@@ -66,15 +66,19 @@ Verdant.Constants = {
   },
 
   -- Per-stage profiler budgets in ms. A sample exceeding the budget
-  -- emits log.write("warn", "profiler.budget_exceeded", ...). Values
-  -- are conservative; tighten once the profiler has run in real combat.
+  -- emits log.write("warn", "profiler.budget_exceeded", ...).
+  --
+  -- Values calibrated against a real DEBUG=true delve session
+  -- (Phase 6 validation). Set to ~2x measured max so transient spikes
+  -- don't spam; warnings should mean "something is wrong", not
+  -- "normal high-end of the distribution".
   PROFILER_BUDGETS_MS = {
-    ["pipeline.combat_event"]            = 1.0,
-    ["pipeline.combat_event.acquisition"] = 0.3,
-    ["pipeline.combat_event.filter"]     = 0.2,
-    ["pipeline.combat_event.processing"] = 0.5,
-    ["pipeline.render_tick"]             = 5.0,
-    ["bar.refresh"]                      = 3.0,
-    ["graph.sample_tick"]                = 4.0,
+    ["pipeline.combat_event"]            = 5.0,   -- measured max=1
+    ["pipeline.combat_event.acquisition"] = 2.0,
+    ["pipeline.combat_event.filter"]     = 2.0,
+    ["pipeline.combat_event.processing"] = 3.0,
+    ["pipeline.render_tick"]             = 10.0,
+    ["bar.refresh"]                      = 5.0,   -- measured max=1
+    ["graph.sample_tick"]                = 15.0,  -- measured max=7 with full pool
   },
 }
