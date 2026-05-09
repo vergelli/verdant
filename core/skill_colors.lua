@@ -187,7 +187,6 @@ end
 -- Print all unclassified abilities seen so far.
 -- Use /verdant skills after a heal session to discover what to add to ABILITY_OVERRIDES.
 function M.print_unknown()
-  local d      = d
   local lines  = {}
   local count  = 0
   for id, info in pairs(unknown_log) do
@@ -199,8 +198,13 @@ function M.print_unknown()
     return
   end
   table.sort(lines)
-  d("[V] Unclassified abilities (" .. count .. ") — add to ABILITY_OVERRIDES in skill_colors.lua:")
-  for _, line in ipairs(lines) do d(line) end
+  local header = "[V] Unclassified abilities (" .. count .. ") — add to ABILITY_OVERRIDES in skill_colors.lua:"
+  if Verdant.Constants.DEBUG and Verdant.CopyBox then
+    Verdant.CopyBox.show("Verdant /skills", header .. "\n" .. table.concat(lines, "\n"))
+  else
+    d(header)
+    for _, line in ipairs(lines) do d(line) end
+  end
 end
 
 local FALLBACK = GROUP_COLORS.other

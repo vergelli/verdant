@@ -84,6 +84,12 @@ local function on_slash(input)
       return
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
+    elseif cmd == "copy" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "clear" then Verdant.CopyBox.clear()
+      elseif sub == "hide" then Verdant.CopyBox.hide()
+      else Verdant.CopyBox.show("Verdant Copy", "") end
+      return
     elseif cmd == "skills" then
       Verdant.SkillColors.print_unknown() ; return
     elseif cmd == "clear" then
@@ -113,7 +119,7 @@ local function on_addon_loaded()
 
   -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
-    C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, temporal = {} })
+    C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, temporal = {}, copybox = {} })
   Verdant.Probe.init()
   Verdant.Engine.init()
   Verdant.Bar.init()

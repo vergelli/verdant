@@ -115,40 +115,49 @@ function M.snapshot()
   }
 end
 
--- ── chat dump (/verdant diag) ─────────────────────────────────────────────
-function M.print_diag()
-  d("[V:diag] uptime=" .. (GetGameTimeMilliseconds() - start_time) .. "ms"
-    .. "  ev_total=" .. ev_count
-    .. "  ts_samples=" .. ts_count)
-  -- counters grouped by prefix
-  d("[V:diag] counters:")
+-- ── diag dump (/verdant diag) ─────────────────────────────────────────────
+-- In DEBUG, output goes to the CopyBox (selectable / copyable). Otherwise
+-- chat output as before. The CopyBox itself also no-ops outside DEBUG.
+local function build_diag_lines()
+  local lines = {}
+  lines[#lines+1] = "[V:diag] uptime=" .. (GetGameTimeMilliseconds() - start_time)
+                    .. "ms  ev_total=" .. ev_count .. "  ts_samples=" .. ts_count
+  lines[#lines+1] = "[V:diag] counters:"
   local keys = {}
   for k in pairs(counters) do keys[#keys+1] = k end
   table_sort(keys)
   for _, k in ipairs(keys) do
-    d("  " .. k .. " = " .. tostring(counters[k]))
+    lines[#lines+1] = "  " .. k .. " = " .. tostring(counters[k])
   end
-  -- last 10 events
-  d("[V:diag] last events (up to 10):")
+  lines[#lines+1] = "[V:diag] last events (up to 10):"
   local n_show = math_min(ev_count, 10)
   local base   = math_min(ev_count, EVENT_CAP)
   for i = base - n_show + 1, base do
     local idx = (ev_head - base + i - 1 + EVENT_CAP) % EVENT_CAP + 1
     local e = ev_buf[idx]
     if e then
-      d("  t=" .. e.t .. " [" .. (e.cat or "?") .. "] " .. tostring(e.p))
+      lines[#lines+1] = "  t=" .. e.t .. " [" .. (e.cat or "?") .. "] " .. tostring(e.p)
     end
   end
-  -- mode + group size
   if Verdant.Mode then
-    d("[V:diag] mode=" .. tostring(Verdant.Mode.current()))
+    lines[#lines+1] = "[V:diag] mode=" .. tostring(Verdant.Mode.current())
   end
   if Verdant.GroupSet then
-    d("[V:diag] group_set.size=" .. Verdant.GroupSet.size())
+    lines[#lines+1] = "[V:diag] group_set.size=" .. Verdant.GroupSet.size()
   end
   if Verdant.Metrics and Verdant.Metrics.pool_capacity then
-    d("[V:diag] event_pool=" .. Verdant.Metrics.pool_in_use()
-      .. "/" .. Verdant.Metrics.pool_capacity())
+    lines[#lines+1] = "[V:diag] event_pool=" .. Verdant.Metrics.pool_in_use()
+                      .. "/" .. Verdant.Metrics.pool_capacity()
+  end
+  return lines
+end
+
+function M.print_diag()
+  local lines = build_diag_lines()
+  if Verdant.Constants.DEBUG and Verdant.CopyBox then
+    Verdant.CopyBox.show("Verdant /diag", table.concat(lines, "\n"))
+  else
+    for _, line in ipairs(lines) do d(line) end
   end
 end
 
