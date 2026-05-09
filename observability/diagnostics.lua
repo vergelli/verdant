@@ -146,6 +146,10 @@ function M.print_diag()
   if Verdant.GroupSet then
     d("[V:diag] group_set.size=" .. Verdant.GroupSet.size())
   end
+  if Verdant.Metrics and Verdant.Metrics.pool_capacity then
+    d("[V:diag] event_pool=" .. Verdant.Metrics.pool_in_use()
+      .. "/" .. Verdant.Metrics.pool_capacity())
+  end
 end
 
 -- ── reset ─────────────────────────────────────────────────────────────────

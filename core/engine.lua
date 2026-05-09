@@ -74,9 +74,32 @@ local function on_heal_out(result, isError, _name, _g, _slot,
     .. " ttype=" .. tostring(targetType))
 
   local t = now()
-  Verdant.Metrics.ingest_heal(t, hit, overflow, targetUnitId, targetType, abilityId)
   if (hit or 0) > 0 then
+    local ev = Verdant.Metrics.acquire_event()
+    if ev then
+      ev.t              = t
+      ev.amount         = hit
+      ev.target_unit_id = targetUnitId or 0
+      ev.target_type    = targetType or 0
+      ev.ability_id     = abilityId or 0
+      Verdant.Metrics.ingest_heal(ev)
+    else
+      bump("engine.pool.exhausted")
+    end
     Verdant.Coverage.touch(targetUnitId, t)
+  end
+  if (overflow or 0) > 0 then
+    local ev = Verdant.Metrics.acquire_event()
+    if ev then
+      ev.t              = t
+      ev.amount         = overflow
+      ev.target_unit_id = targetUnitId or 0
+      ev.target_type    = targetType or 0
+      ev.ability_id     = abilityId or 0
+      Verdant.Metrics.ingest_overheal(ev)
+    else
+      bump("engine.pool.exhausted")
+    end
   end
 end
 
@@ -100,7 +123,19 @@ local function on_shield_abs(result, isError, _name, _g, _slot,
     .. " ttype=" .. tostring(targetType))
 
   local t = now()
-  Verdant.Metrics.ingest_shield(t, hit, targetUnitId, targetType, abilityId)
+  if (hit or 0) > 0 then
+    local ev = Verdant.Metrics.acquire_event()
+    if ev then
+      ev.t              = t
+      ev.amount         = hit
+      ev.target_unit_id = targetUnitId or 0
+      ev.target_type    = targetType or 0
+      ev.ability_id     = abilityId or 0
+      Verdant.Metrics.ingest_shield(ev)
+    else
+      bump("engine.pool.exhausted")
+    end
+  end
   Verdant.Coverage.touch(targetUnitId, t)
 end
 
@@ -120,7 +155,19 @@ local function on_group_damage(result, isError, _name, _g, _slot,
   bump("engine.damage.accepted")
   log("group_dmg", "tgt=" .. tostring(targetUnitId) .. " hit=" .. tostring(hit))
 
-  Verdant.Metrics.ingest_damage_group(now(), hit, targetUnitId)
+  if (hit or 0) > 0 then
+    local ev = Verdant.Metrics.acquire_event()
+    if ev then
+      ev.t              = now()
+      ev.amount         = hit
+      ev.target_unit_id = targetUnitId or 0
+      ev.target_type    = 0
+      ev.ability_id     = 0
+      Verdant.Metrics.ingest_damage_group(ev)
+    else
+      bump("engine.pool.exhausted")
+    end
+  end
 end
 
 local function on_effect_player_src(changeType, _slot, _name, _tag, _bt, endTime,

@@ -9,18 +9,49 @@ local W_MS       = 5000
 local W_SHIELD_MS = 30000   -- shields are sparse; wider window avoids permanent zero
 
 local heal_buf, overheal_buf, shield_buf, damage_buf
+local event_pool
 
 local function in_M(entry)
-  return Verdant.Coverage.is_in_M(entry.targetType)
+  return Verdant.Coverage.is_in_M(entry.target_type)
+end
+
+-- Pool acquired event from the engine. Used by both metrics.ingest_* (when
+-- the engine hands off an event) and metrics.acquire (when a caller needs
+-- to populate a fresh event before calling ingest_*).
+function M.acquire_event()
+  return event_pool:acquire()
+end
+
+function M.release_event(ev)
+  event_pool:release(ev)
+end
+
+function M.pool_in_use()
+  return event_pool:in_use()
+end
+
+function M.pool_capacity()
+  return event_pool:capacity()
+end
+
+-- on_evict for buffers: when an entry leaves a window-trim or capacity
+-- overflow, release the underlying pooled event back to the pool.
+local function release_to_pool(entry)
+  event_pool:release(entry)
 end
 
 function M.init()
   W_MS        = 5000
   W_SHIELD_MS = 30000
-  heal_buf     = Verdant.Buffer.new(W_MS,        1024)
-  overheal_buf = Verdant.Buffer.new(W_MS,        1024)
-  shield_buf   = Verdant.Buffer.new(W_SHIELD_MS,  512)
-  damage_buf   = Verdant.Buffer.new(W_MS,        2048)
+
+  local cap   = (Verdant.Constants.POOL and Verdant.Constants.POOL.EVENT_CAPACITY) or 4096
+  event_pool  = Verdant.lib.mem.BufferPool.new(Verdant.lib.mem.Event.factory, cap)
+
+  local RingBuffer = Verdant.lib.mem.RingBuffer
+  heal_buf     = RingBuffer.new(W_MS,        1024, release_to_pool)
+  overheal_buf = RingBuffer.new(W_MS,        1024, release_to_pool)
+  shield_buf   = RingBuffer.new(W_SHIELD_MS,  512, release_to_pool)
+  damage_buf   = RingBuffer.new(W_MS,        2048, release_to_pool)
 end
 
 function M.set_window(ms)
@@ -38,23 +69,43 @@ end
 
 function M.window_seconds() return W_MS / 1000 end
 
-function M.ingest_heal(t, hit, overflow, targetUnitId, targetType, abilityId)
-  if hit and hit > 0 then
-    heal_buf:push({ t = t, amount = hit, targetUnitId = targetUnitId, targetType = targetType, abilityId = abilityId })
-  end
-  if overflow and overflow > 0 then
-    overheal_buf:push({ t = t, amount = overflow, targetUnitId = targetUnitId, targetType = targetType, abilityId = abilityId })
+-- Ingest a populated VerdantEvent. The event becomes the buffer's owned
+-- entry — callers must NOT release it themselves; the buffer's on_evict
+-- handles release when the entry trims out of the window.
+--
+-- For overheal, the engine acquires a separate event and passes it via
+-- ingest_overheal. Splitting the two avoids buffer entries needing two
+-- amount fields and keeps the heal-vs-overheal selection in the engine.
+function M.ingest_heal(ev)
+  if ev.amount > 0 then
+    heal_buf:push(ev)
+  else
+    event_pool:release(ev)
   end
 end
 
-function M.ingest_shield(t, absorbed, targetUnitId, targetType, abilityId)
-  if not absorbed or absorbed <= 0 then return end
-  shield_buf:push({ t = t, amount = absorbed, targetUnitId = targetUnitId, targetType = targetType, abilityId = abilityId })
+function M.ingest_overheal(ev)
+  if ev.amount > 0 then
+    overheal_buf:push(ev)
+  else
+    event_pool:release(ev)
+  end
 end
 
-function M.ingest_damage_group(t, hit, targetUnitId)
-  if not hit or hit <= 0 then return end
-  damage_buf:push({ t = t, amount = hit, targetUnitId = targetUnitId })
+function M.ingest_shield(ev)
+  if ev.amount > 0 then
+    shield_buf:push(ev)
+  else
+    event_pool:release(ev)
+  end
+end
+
+function M.ingest_damage_group(ev)
+  if ev.amount > 0 then
+    damage_buf:push(ev)
+  else
+    event_pool:release(ev)
+  end
 end
 
 local function rate(buf, now_ms, predicate)

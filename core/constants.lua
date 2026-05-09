@@ -49,4 +49,10 @@ Verdant.Constants = {
     SAMPLE_RATE_DEFAULT  = 1000,   -- ms interval → 1 Hz
     TIME_WINDOW_DEFAULT  = 60,     -- seconds
   },
+
+  POOL = {
+    -- Worst-case sustained ~300 events/sec in 12-man trial × 13 sec headroom.
+    -- Per SPEC_03 §5.2.
+    EVENT_CAPACITY = 4096,
+  },
 }

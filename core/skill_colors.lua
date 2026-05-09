@@ -219,7 +219,7 @@ function M.group_shares(buf, now_ms, predicate)
     local e   = buf.entries[i]
     local amt = e.amount or 0
     if amt > 0 and (not predicate or predicate(e)) then
-      local key = lookup_group(e.abilityId)
+      local key = lookup_group(e.ability_id)
       buckets[key] = (buckets[key] or 0) + amt
       total = total + amt
     end
