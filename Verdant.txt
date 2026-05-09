@@ -18,6 +18,9 @@ core/constants.lua
 lib/mem/buffer_pool.lua
 lib/mem/ring_buffer.lua
 lib/mem/event.lua
+lib/plot/style.lua
+lib/plot/primitives.lua
+lib/plot/pool.lua
 zenimax/constants.lua
 zenimax/api.lua
 zenimax/ui.lua
