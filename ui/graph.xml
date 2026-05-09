@@ -30,14 +30,55 @@
 
       <Controls>
 
-        <!-- Outer container backdrop -->
+        <!-- Outer container backdrop.
+             NOTE: <Center> commented out as part of the "donut" experiment —
+             chrome parchment is now painted by 4 sibling Texture strips
+             below (ChromeTop/Bottom/Left/Right) so the viewport zone has
+             no outer paint and inner alpha is independent.  To revert:
+             uncomment the <Center> line, delete the 4 Chrome textures,
+             and uncomment the SetCenterColor call in graph.lua. -->
         <Backdrop name="$(parent)Bg">
           <AnchorFill/>
           <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
                 edgeFileWidth="128" edgeFileHeight="16" edgeSize="6"/>
-          <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+          <!-- <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/> -->
           <Insets left="6" top="6" right="-6" bottom="-6"/>
         </Backdrop>
+
+        <!-- Chrome donut: 4 strips around the viewport.  Inner edges anchor
+             to $(parent)Viewport (forward XML reference, resolved by ESO at
+             layout time), so the strips follow the Viewport automatically
+             when its anchors change or the window resizes.
+
+             The only magic number is GAP = 8, repeated 4 times.  It is the
+             distance between the Viewport's pad and the outer Backdrop's
+             inset, derived as:
+                 GAP = viewport_pad − parent_inset = 14 − 6 = 8
+             To eliminate it entirely, chrome creation would need to move to
+             Lua so a constant can be defined. -->
+        <Texture name="$(parent)ChromeTop"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)"         relativePoint="TOPLEFT"  offsetX="6" offsetY="6"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Viewport" relativePoint="TOPRIGHT" offsetX="8" offsetY="0"/>
+        </Texture>
+
+        <Texture name="$(parent)ChromeBottom"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)Viewport" relativePoint="BOTTOMLEFT"  offsetX="-8" offsetY="0"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)"         relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-6"/>
+        </Texture>
+
+        <Texture name="$(parent)ChromeLeft"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)Viewport" relativePoint="TOPLEFT"    offsetX="-8" offsetY="0"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Viewport" relativePoint="BOTTOMLEFT" offsetX="0"  offsetY="0"/>
+        </Texture>
+
+        <Texture name="$(parent)ChromeRight"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)Viewport" relativePoint="TOPRIGHT"    offsetX="0" offsetY="0"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Viewport" relativePoint="BOTTOMRIGHT" offsetX="8" offsetY="0"/>
+        </Texture>
 
         <!-- Title -->
         <Label name="$(parent)TitleLabel"

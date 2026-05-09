@@ -746,10 +746,14 @@ function M.init()
   -- screen sizes.  Min must accommodate the controls row + a usable viewport.
   controls.window:SetDimensionConstraints(360, 240, 1000, 700)
 
-  -- Lower alpha on both Backdrops so the window reads as semi-transparent
-  -- (consistent with ESO panels) and the inner viewport feels lighter than
-  -- the surrounding container.
-  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)
+  -- Donut chrome: 4 sibling textures paint the parchment around the viewport,
+  -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
+  -- chrome / viewport alphas are fully independent (no composition overlap).
+  -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
+  VerdantGraphWindowChromeTop   :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
   VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.20)
 
   -- The "container above viewport" effect is now driven by the XML structure
