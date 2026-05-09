@@ -18,9 +18,7 @@ M.is_visible = function() return false end
 
 if not Verdant.Constants.DEBUG then return end
 
--- ─────────────────────────────────────────────────────────────────────────
--- Below this line: only parses when DEBUG=true.
--- ─────────────────────────────────────────────────────────────────────────
+-- ── below this line: only parses when DEBUG=true ────────────────────────
 
 local zui = Verdant.zenimax.ui
 local zc  = Verdant.zenimax.constants
@@ -65,7 +63,6 @@ local function build()
   title:SetAnchor(TOPLEFT, win, TOPLEFT, 16, 10)
   title:SetText("Verdant Debug Copy")
 
-  -- Close (X) — uses ZO virtual ZO_CloseButton
   local close = CreateControlFromVirtual("$(parent)Close", win, "ZO_CloseButton")
   close:SetAnchor(TOPRIGHT, win, TOPRIGHT, -8, 8)
   close:SetHandler("OnClicked", function() M.hide() end)
@@ -83,7 +80,6 @@ local function build()
     self:SetTopLineIndex(zo_clamp(cur - delta, 1, self:GetScrollExtents() + 1))
   end)
 
-  -- Bottom row: [Select All] [Clear] [Close]
   local function mkbtn(name, label, anchor_offset_x, on_click)
     local b = CreateControlFromVirtual("$(parent)" .. name, win, "ZO_DefaultButton")
     b:SetDimensions(120, 26)
