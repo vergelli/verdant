@@ -140,8 +140,23 @@ local function update_slider(track, fill, thumb, label, presets, labels, ms)
   label:SetText(labels[ms] or (math_floor(ms / 1000) .. "s"))
 end
 
+-- Background texture for the empty track. progressbar_frame_bg is a dark
+-- inner panel; stretching it across our 14px slider height makes the
+-- track visible (was previously an invisible Control hosting only fill
+-- and thumb). If it ends up looking off at this scale the texture can be
+-- swapped here in one place.
+local TRACK_BG_TEXTURE = "EsoUI/Art/Miscellaneous/progressbar_frame_bg.dds"
+
 local function setup_slider_visuals(track, name_prefix)
   local WM = WINDOW_MANAGER
+
+  -- Track background: behind the fill so the empty portion of the slider
+  -- still shows a visible panel.
+  local bg = WM:CreateControl(name_prefix .. "Bg", track, CT_TEXTURE)
+  bg:SetAnchorFill(track)
+  bg:SetTexture(TRACK_BG_TEXTURE)
+  bg:SetColor(0.55, 0.55, 0.55, 0.85)
+  bg:SetDrawLevel(0)
 
   local fill = WM:CreateControl(name_prefix .. "Fill", track, CT_TEXTURE)
   fill:ClearAnchors()
@@ -149,11 +164,13 @@ local function setup_slider_visuals(track, name_prefix)
   fill:SetTexture(FILL_TEXTURE)
   fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
   fill:SetColor(0.95, 0.80, 0.20, 0.90)
+  fill:SetDrawLevel(1)
 
   local thumb = WM:CreateControl(name_prefix .. "Thumb", track, CT_TEXTURE)
   thumb:SetTexture(FILL_TEXTURE)
   thumb:SetTextureCoords(0, 1, FILL_T, FILL_B)
   thumb:SetColor(1, 1, 1, 1)
+  thumb:SetDrawLevel(2)
 
   return fill, thumb
 end
