@@ -9,7 +9,7 @@ Verdant.Engine = {}
 
 local M = Verdant.Engine
 
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
+local GetGameTimeMilliseconds = Verdant.zenimax.api.GetGameTimeMilliseconds
 local tostring                = tostring
 
 local C = Verdant.zenimax.constants

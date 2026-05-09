@@ -4,12 +4,23 @@ local Verdant = Verdant
 Verdant.Settings = {}
 local M = Verdant.Settings
 
-local GetUIMousePosition = GetUIMousePosition
-local GetString          = GetString
-local WINDOW_MANAGER     = WINDOW_MANAGER
+local api = Verdant.zenimax.api
+local zui = Verdant.zenimax.ui
+local zc  = Verdant.zenimax.constants
+local GetUIMousePosition = api.GetUIMousePosition
+local GetString          = api.GetString
+local WINDOW_MANAGER     = zui.WINDOW_MANAGER
 local math_max           = math.max
 local math_min           = math.min
 local math_floor         = math.floor
+
+-- ── UI constants ──────────────────────────────────────────────────────────
+local TOP         = zc.TOP
+local TOPLEFT     = zc.TOPLEFT
+local BOTTOM      = zc.BOTTOM
+local BOTTOMLEFT  = zc.BOTTOMLEFT
+local CT_TEXTURE  = zc.CT_TEXTURE
+local GuiRoot     = zc.GuiRoot
 
 -- Slider visuals: original ESO attributeBar textures with their proper
 -- texture coords (top half of the dynamic_fill is the visible band).

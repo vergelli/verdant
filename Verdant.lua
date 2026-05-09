@@ -2,14 +2,14 @@ Verdant = Verdant or {}
 local Verdant = Verdant
 
 local SLASH_COMMANDS          = SLASH_COMMANDS
-local ZO_SavedVars            = ZO_SavedVars
 local d                       = d
 local string_format           = string.format
 local string_lower            = string.lower
 local string_match            = string.match
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
-local GetString               = GetString
-local GetWorldName            = GetWorldName
+local api                     = Verdant.zenimax.api
+local GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
+local GetString               = api.GetString
+local GetWorldName            = api.GetWorldName
 
 local KNOWN_FILTERS = {
   heal=true, shield=true, shield_raw=true, heal_abs=true,
@@ -112,7 +112,8 @@ local function on_addon_loaded()
   local C = Verdant.Constants
 
   -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
-  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, temporal = {} })
+  Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
+    C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, temporal = {} })
   Verdant.Probe.init()
   Verdant.Engine.init()
   Verdant.Bar.init()

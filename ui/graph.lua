@@ -2,15 +2,33 @@ Verdant = Verdant or {}
 Verdant.Graph = {}
 local M = Verdant.Graph
 
-local ZO_ObjectPool              = ZO_ObjectPool
-local WINDOW_MANAGER             = WINDOW_MANAGER
-local EVENT_MANAGER              = EVENT_MANAGER
-local CreateControlFromVirtual   = CreateControlFromVirtual
-local GetGameTimeMilliseconds    = GetGameTimeMilliseconds
-local GetString                  = GetString
+local api  = Verdant.zenimax.api
+local zui  = Verdant.zenimax.ui
+local zc   = Verdant.zenimax.constants
+local zev  = Verdant.zenimax.events
+local ZO_ObjectPool              = zui.ZO_ObjectPool
+local WINDOW_MANAGER             = zui.WINDOW_MANAGER
+local CreateControlFromVirtual   = zui.CreateControlFromVirtual
+local GetGameTimeMilliseconds    = api.GetGameTimeMilliseconds
+local GetString                  = api.GetString
 local math_max                   = math.max
 local math_floor                 = math.floor
 local string_format              = string.format
+
+-- ── UI constants (local cache for hot anchor / type lookups) ──────────────
+local TOPLEFT           = zc.TOPLEFT
+local TOPRIGHT          = zc.TOPRIGHT
+local BOTTOMLEFT        = zc.BOTTOMLEFT
+local BOTTOM            = zc.BOTTOM
+local BOTTOMRIGHT       = zc.BOTTOMRIGHT
+local CENTER            = zc.CENTER
+local GuiRoot           = zc.GuiRoot
+local CT_TEXTURE        = zc.CT_TEXTURE
+local CT_LABEL          = zc.CT_LABEL
+local TEXT_ALIGN_LEFT   = zc.TEXT_ALIGN_LEFT
+local TEXT_ALIGN_CENTER = zc.TEXT_ALIGN_CENTER
+local TEXT_ALIGN_RIGHT  = zc.TEXT_ALIGN_RIGHT
+local TEXT_ALIGN_BOTTOM = zc.TEXT_ALIGN_BOTTOM
 
 -- Colors matching bar.lua
 local C_EHPS      = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 }  -- pastel green fill
@@ -632,7 +650,7 @@ function M.on_record_click()
   local sv       = Verdant.SavedVars
   local interval = (sv and sv.temporal and sv.temporal.sample_rate_ms)
                    or Verdant.Constants.TEMPORAL.SAMPLE_RATE_DEFAULT
-  EVENT_MANAGER:RegisterForUpdate(Verdant.Constants.TEMPORAL.UPDATE_NAME, interval, on_sample_update)
+  zev.register_update(Verdant.Constants.TEMPORAL.UPDATE_NAME, interval, on_sample_update)
   refresh_button_colors()
   controls.status:SetText("0:00")
 end
@@ -640,14 +658,14 @@ end
 function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
   Verdant.TemporalBuffer.stop_recording()
-  EVENT_MANAGER:UnregisterForUpdate(Verdant.Constants.TEMPORAL.UPDATE_NAME)
+  zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
   refresh_button_colors()
   render_current_view()
 end
 
 function M.on_flush_click()
   if Verdant.TemporalBuffer.is_recording() then
-    EVENT_MANAGER:UnregisterForUpdate(Verdant.Constants.TEMPORAL.UPDATE_NAME)
+    zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
     Verdant.TemporalBuffer.stop_recording()
   end
   Verdant.TemporalBuffer.clear()

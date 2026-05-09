@@ -4,7 +4,7 @@ local Verdant = Verdant
 Verdant.Diagnostics = {}
 local M = Verdant.Diagnostics
 
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
+local GetGameTimeMilliseconds = Verdant.zenimax.api.GetGameTimeMilliseconds
 local d           = d
 local pairs       = pairs
 local tostring    = tostring

@@ -2,10 +2,11 @@ Verdant = Verdant or {}
 Verdant.SkillColors = {}
 local M = Verdant.SkillColors
 
-local GetAbilityName                          = GetAbilityName
-local GetAbilityIcon                          = GetAbilityIcon
-local GetSpecificSkillAbilityKeysByAbilityId  = GetSpecificSkillAbilityKeysByAbilityId
-local GetSkillLineId                          = GetSkillLineId
+local api = Verdant.zenimax.api
+local GetAbilityName                          = api.GetAbilityName
+local GetAbilityIcon                          = api.GetAbilityIcon
+local GetSpecificSkillAbilityKeysByAbilityId  = api.GetSpecificSkillAbilityKeysByAbilityId
+local GetSkillLineId                          = api.GetSkillLineId
 local string_find                             = string.find
 
 -- One color per class / skill-line.
