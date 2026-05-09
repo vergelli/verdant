@@ -94,7 +94,7 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-56" offsetY="-1"/>
+          <Anchor point="TOPRIGHT" offsetX="-56" offsetY="4"/>
           <Dimensions x="28" y="28"/>
           <Textures normal="EsoUI/Art/MenuBar/menuBar_mainMenu_over.dds"
                     pressed="EsoUI/Art/MenuBar/menuBar_mainMenu_down.dds"
