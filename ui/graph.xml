@@ -45,39 +45,36 @@
           <Insets left="6" top="6" right="-6" bottom="-6"/>
         </Backdrop>
 
-        <!-- Chrome donut: 4 strips around the viewport.  Inner edges anchor
-             to $(parent)Viewport (forward XML reference, resolved by ESO at
-             layout time), so the strips follow the Viewport automatically
-             when its anchors change or the window resizes.
-
-             The only magic number is GAP = 8, repeated 4 times.  It is the
-             distance between the Viewport's pad and the outer Backdrop's
-             inset, derived as:
-                 GAP = viewport_pad − parent_inset = 14 − 6 = 8
-             To eliminate it entirely, chrome creation would need to move to
-             Lua so a constant can be defined. -->
+        <!-- Chrome donut: 4 strips around the viewport.  Anchors are
+             parent-relative with fixed offsets that mirror the Viewport's
+             anchors (top=50, bottom=-14, left=14, right=-14) so they
+             auto-resize with the window.  Placed before TitleLabel/buttons
+             in document order, so chrome buttons render above them.
+             NOTE: forward reference to $(parent)Viewport doesn't resolve
+             cleanly in ESO XML — keep these in sync with the Viewport's
+             anchors below if you change them. -->
         <Texture name="$(parent)ChromeTop"
                  textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
-          <Anchor point="TOPLEFT"     relativeTo="$(parent)"         relativePoint="TOPLEFT"  offsetX="6" offsetY="6"/>
-          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Viewport" relativePoint="TOPRIGHT" offsetX="8" offsetY="0"/>
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPLEFT"  offsetX="6"  offsetY="6"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="-6" offsetY="50"/>
         </Texture>
 
         <Texture name="$(parent)ChromeBottom"
                  textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
-          <Anchor point="TOPLEFT"     relativeTo="$(parent)Viewport" relativePoint="BOTTOMLEFT"  offsetX="-8" offsetY="0"/>
-          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)"         relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-6"/>
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="BOTTOMLEFT"  offsetX="6"  offsetY="-14"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-6"/>
         </Texture>
 
         <Texture name="$(parent)ChromeLeft"
                  textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
-          <Anchor point="TOPLEFT"     relativeTo="$(parent)Viewport" relativePoint="TOPLEFT"    offsetX="-8" offsetY="0"/>
-          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Viewport" relativePoint="BOTTOMLEFT" offsetX="0"  offsetY="0"/>
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPLEFT"    offsetX="6"  offsetY="50"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMLEFT" offsetX="14" offsetY="-14"/>
         </Texture>
 
         <Texture name="$(parent)ChromeRight"
                  textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
-          <Anchor point="TOPLEFT"     relativeTo="$(parent)Viewport" relativePoint="TOPRIGHT"    offsetX="0" offsetY="0"/>
-          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Viewport" relativePoint="BOTTOMRIGHT" offsetX="8" offsetY="0"/>
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPRIGHT"    offsetX="-14" offsetY="50"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6"  offsetY="-14"/>
         </Texture>
 
         <!-- Title -->
