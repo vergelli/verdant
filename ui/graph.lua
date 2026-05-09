@@ -750,36 +750,17 @@ function M.init()
   -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
   -- chrome / viewport alphas are fully independent (no composition overlap).
   -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
-  -- DIAGNOSTIC slash command: /verdant chrome dumps the state of the chrome
-  -- strips and inner backdrop on demand (deferred from init so chat is ready).
-  SLASH_COMMANDS["/vdiag"] = function()
-    local function tag(name, ctrl)
-      if not ctrl then
-        d("[V] " .. name .. " = nil")
-        return
-      end
-      d("[V] " .. name .. " = " .. tostring(ctrl)
-        .. " hidden=" .. tostring(ctrl:IsHidden())
-        .. " w=" .. tostring(ctrl:GetWidth())
-        .. " h=" .. tostring(ctrl:GetHeight()))
-    end
-    tag("ChromeTop",    VerdantGraphWindowChromeTop)
-    tag("ChromeBottom", VerdantGraphWindowChromeBottom)
-    tag("ChromeLeft",   VerdantGraphWindowChromeLeft)
-    tag("ChromeRight",  VerdantGraphWindowChromeRight)
-    tag("ViewportBg",   VerdantGraphWindowViewportBg)
-    tag("WindowBg",     VerdantGraphWindowBg)
-  end
-
-  -- Hide everything we control to find what's painting white.  Guarded by
-  -- existence checks so missing globals don't error.
-  if VerdantGraphWindowChromeTop    then VerdantGraphWindowChromeTop   :SetHidden(true) end
-  if VerdantGraphWindowChromeBottom then VerdantGraphWindowChromeBottom:SetHidden(true) end
-  if VerdantGraphWindowChromeLeft   then VerdantGraphWindowChromeLeft  :SetHidden(true) end
-  if VerdantGraphWindowChromeRight  then VerdantGraphWindowChromeRight :SetHidden(true) end
-  if VerdantGraphWindowViewportBg   then VerdantGraphWindowViewportBg  :SetHidden(true) end
-  -- Also wipe the outer in case its <Center> wasn't actually disabled.
-  if VerdantGraphWindowBg then VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0) end
+  -- Donut chrome layering.  Outer center is forced to alpha 0 from Lua
+  -- because the XML comment of <Center> doesn't reliably disable it across
+  -- ESO's Backdrop machinery.  Chrome strips paint parchment around the
+  -- viewport; inner Backdrop's edge provides the inner frame, its center
+  -- is the only viewport bg layer (no overlap → independent alphas).
+  VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0)
+  VerdantGraphWindowChromeTop   :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.20)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
