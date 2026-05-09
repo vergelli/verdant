@@ -90,11 +90,12 @@ end
 -- safely; the real implementation only parses when DEBUG=true.
 
 local NOOP = function() end
-M.write       = NOOP
-M.flush       = function() return 0 end
-M.clear       = NOOP
-M.size        = function() return 0, 0 end
-M.show_recent = NOOP
+M.write        = NOOP
+M.flush        = function() return 0 end
+M.clear        = NOOP
+M.size         = function() return 0, 0 end
+M.show_recent  = NOOP
+M.recent_lines = function() return {} end
 
 if not Verdant.Constants.DEBUG then return end
 
@@ -172,7 +173,7 @@ function M.size()
   return math.min(ring_count, RING_CAPACITY), RING_CAPACITY
 end
 
-function M.show_recent(n)
+function M.recent_lines(n)
   n = n or 20
   local lines = {}
   local total = math.min(ring_count, RING_CAPACITY)
@@ -188,6 +189,11 @@ function M.show_recent(n)
     lines[#lines+1] = string.format("[%d %s:%s] %s",
       r.t, r.level, r.key, format_data(r.data))
   end
+  return lines
+end
+
+function M.show_recent(n)
+  local lines = M.recent_lines(n)
   if Verdant.CopyBox and Verdant.CopyBox.show then
     Verdant.CopyBox.show("Verdant /log show", table.concat(lines, "\n"))
   else

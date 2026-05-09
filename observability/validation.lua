@@ -20,6 +20,7 @@ M.check_monotonic_clock = NOOP
 M.check_ring_sane       = NOOP
 M.check_payload_shape   = NOOP
 M.run_all_checks        = function() return { failure_count = 0, pool_outstanding = 0, failures = {} } end
+M.report_lines          = function() return { "[validate] disabled (DEBUG=false)" } end
 M.dump_to_chat          = function() d("[validate] disabled (DEBUG=false)") end
 M.reset                 = NOOP
 
@@ -126,33 +127,32 @@ function M.run_all_checks()
   }
 end
 
-function M.dump_to_chat()
-  local r = M.run_all_checks()
-  d(string.format("[validate] failures=%d  pool_outstanding=%d",
-    r.failure_count, r.pool_outstanding))
-  local n_show = math.min(#failures, 10)
-  for i = #failures - n_show + 1, #failures do
-    local f = failures[i]
-    if f then
-      d(string.format("  t=%d %s %s", f.t, f.check, tostring(f.details)))
+local function format_details(d_)
+  if type(d_) == "table" then
+    local parts = {}
+    for k, v in pairs(d_) do
+      parts[#parts+1] = tostring(k) .. "=" .. tostring(v)
     end
+    return table.concat(parts, " ")
   end
+  return tostring(d_)
+end
+
+function M.report_lines()
+  local r = M.run_all_checks()
+  local lines = { string.format("[validate] failures=%d  pool_outstanding=%d",
+    r.failure_count, r.pool_outstanding) }
+  for _, f in ipairs(failures) do
+    lines[#lines+1] = string.format("  t=%d %s  %s",
+      f.t, f.check, format_details(f.details))
+  end
+  return lines
+end
+
+function M.dump_to_chat()
+  local lines = M.report_lines()
+  for _, l in ipairs(lines) do d(l) end
   if Verdant.CopyBox and Verdant.CopyBox.show then
-    local lines = { string.format("[validate] failures=%d  pool_outstanding=%d",
-      r.failure_count, r.pool_outstanding) }
-    for _, f in ipairs(failures) do
-      local detail_str = ""
-      if type(f.details) == "table" then
-        local parts = {}
-        for k, v in pairs(f.details) do
-          parts[#parts+1] = tostring(k) .. "=" .. tostring(v)
-        end
-        detail_str = table.concat(parts, " ")
-      else
-        detail_str = tostring(f.details)
-      end
-      lines[#lines+1] = string.format("  t=%d %s  %s", f.t, f.check, detail_str)
-    end
     Verdant.CopyBox.show("Verdant /validate", table.concat(lines, "\n"))
   end
 end

@@ -179,6 +179,39 @@ function M.print_diag()
   end
 end
 
+-- Unified one-shot dev report: concatenates /diag + /prof + /validate
+-- + recent log entries into a single CopyBox dump. Saves the dev from
+-- running each command separately when sharing context.
+function M.full_report()
+  if not Verdant.Constants.DEBUG then
+    d("[report] disabled (DEBUG=false)")
+    return
+  end
+  local out = {}
+  local function section(title, lines)
+    out[#out+1] = ""
+    out[#out+1] = "═══ " .. title .. " ═══"
+    for _, l in ipairs(lines) do out[#out+1] = l end
+  end
+  out[#out+1] = "Verdant full report — uptime "
+                .. (GetGameTimeMilliseconds() - start_time) .. "ms"
+  section("diagnostics", build_diag_lines())
+  if Verdant.Profiler and Verdant.Profiler.report_lines then
+    section("profiler",   Verdant.Profiler.report_lines())
+  end
+  if Verdant.Validation and Verdant.Validation.report_lines then
+    section("validation", Verdant.Validation.report_lines())
+  end
+  if Verdant.Log and Verdant.Log.recent_lines then
+    section("log (last 20)", Verdant.Log.recent_lines(20))
+  end
+  if Verdant.CopyBox and Verdant.CopyBox.show then
+    Verdant.CopyBox.show("Verdant /report", table.concat(out, "\n"))
+  else
+    for _, l in ipairs(out) do d(l) end
+  end
+end
+
 -- ── reset ─────────────────────────────────────────────────────────────────
 function M.reset()
   counters = {}

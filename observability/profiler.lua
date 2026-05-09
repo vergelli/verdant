@@ -23,6 +23,7 @@ M.enter        = NOOP
 M.exit         = NOOP
 M.span         = function(_name, fn, ...) return fn(...) end
 M.report       = function() return {}, 0 end
+M.report_lines = function() return { "[prof] disabled (DEBUG=false)" } end
 M.dump_to_chat = function() d("[prof] disabled (DEBUG=false)") end
 M.reset        = NOOP
 
@@ -144,24 +145,24 @@ function M.report()
   return r, (now_ms() - started_at) / 1000
 end
 
-function M.dump_to_chat()
+function M.report_lines()
   local r, window_s = M.report()
-  d(string.format("[prof] window: %.1f sec", window_s))
+  local lines = { string.format("[prof] window: %.1f sec", window_s) }
   local names = {}
   for k in pairs(r) do names[#names+1] = k end
   table.sort(names, function(a, b) return r[a].total_ms > r[b].total_ms end)
   for _, name in ipairs(names) do
     local s = r[name]
-    d(string.format("  %s  count=%d p50=%d p95=%d p99=%d max=%d total=%d",
-      name, s.count, s.p50, s.p95, s.p99, s.max_ms, s.total_ms))
+    lines[#lines+1] = string.format("  %s  count=%d p50=%d p95=%d p99=%d max=%d total=%d",
+      name, s.count, s.p50, s.p95, s.p99, s.max_ms, s.total_ms)
   end
+  return lines
+end
+
+function M.dump_to_chat()
+  local lines = M.report_lines()
+  for _, l in ipairs(lines) do d(l) end
   if Verdant.CopyBox and Verdant.CopyBox.show then
-    local lines = { string.format("[prof] window: %.1f sec", window_s) }
-    for _, name in ipairs(names) do
-      local s = r[name]
-      lines[#lines+1] = string.format("  %s  count=%d p50=%d p95=%d p99=%d max=%d total=%d",
-        name, s.count, s.p50, s.p95, s.p99, s.max_ms, s.total_ms)
-    end
     Verdant.CopyBox.show("Verdant /prof", table.concat(lines, "\n"))
   end
 end

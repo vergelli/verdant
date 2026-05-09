@@ -84,6 +84,8 @@ local function on_slash(input)
       return
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
+    elseif cmd == "report" then
+      Verdant.Diagnostics.full_report() ; return
     elseif cmd == "prof" then
       local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
       if sub == "reset" then Verdant.Profiler.reset(); d("[prof] reset")
