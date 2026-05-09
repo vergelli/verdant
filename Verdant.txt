@@ -21,6 +21,7 @@ lib/mem/event.lua
 lib/plot/style.lua
 lib/plot/primitives.lua
 lib/plot/pool.lua
+lib/plot/plot_stacked_bar.lua
 zenimax/constants.lua
 zenimax/api.lua
 zenimax/ui.lua
