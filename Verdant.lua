@@ -84,6 +84,29 @@ local function on_slash(input)
       return
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
+    elseif cmd == "report" then
+      Verdant.Diagnostics.full_report() ; return
+    elseif cmd == "prof" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "reset" then Verdant.Profiler.reset(); d("[prof] reset")
+      else Verdant.Profiler.dump_to_chat() end
+      return
+    elseif cmd == "log" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "flush" then
+        local n = Verdant.Log.flush()
+        d("[log] flushed " .. tostring(n) .. " records to SavedVars.debug.log")
+      elseif sub == "show" then
+        Verdant.Log.show_recent(20)
+      elseif sub == "clear" then
+        Verdant.Log.clear(); d("[log] cleared")
+      else
+        local cur, cap = Verdant.Log.size()
+        d("[log] size " .. cur .. "/" .. cap .. "  (subcmd: flush | show | clear)")
+      end
+      return
+    elseif cmd == "validate" then
+      Verdant.Validation.dump_to_chat() ; return
     elseif cmd == "copy" then
       local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
       if sub == "clear" then Verdant.CopyBox.clear()

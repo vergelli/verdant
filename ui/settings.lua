@@ -64,10 +64,12 @@ end
 local SAMPLE_DEFAULT = 1000
 
 -- Time window for temporal buffer (stored as seconds).
--- 15 s → 5 min in 15-second steps: 15, 30, 45, 60, ..., 300.
+-- 15 s → 10 min in 15-second steps: 15, 30, 45, 60, ..., 600.
+-- Upper end (>5min) is intended for end-game PvE bosses that run long;
+-- combinations with high sample rate are gated by a capacity warning.
 local function twindow_presets()
   local p, lbls = {}, {}
-  for s = 15, 300, 15 do
+  for s = 15, 600, 15 do
     p[#p + 1] = s
     if s % 60 == 0 then
       lbls[s] = (s / 60) .. "m"
@@ -153,10 +155,28 @@ local function persist_temporal(key, val)
   if sv then sv.temporal = sv.temporal or {} ; sv.temporal[key] = val end
 end
 
+-- Capacity-based safety warning. Render cost scales with the number of
+-- samples the temporal buffer has to draw; a long window combined with
+-- a high sample rate can balloon to thousands of samples and impact FPS.
+-- Threshold tuned for ~600px canvas where slot_w < 3px already disables
+-- per-segment line drawing — fills still cost O(capacity).
+local CAPACITY_WARN_THRESHOLD = 1500
+
+local function warn_if_heavy(capacity, twindow_s, hz)
+  if capacity <= CAPACITY_WARN_THRESHOLD then return end
+  local msg = string.format(
+    "%ss x %s Hz = %d samples may impact FPS. Consider lower sample rate for long windows.",
+    twindow_s, hz, capacity)
+  -- Chat in red so the user notices.
+  d("|cFF4444[V] WARNING:|r " .. msg)
+  log:warn("heavy combo:", msg)
+end
+
 local function reinit_buffer()
   local hz       = math_floor(1000 / current_sample)  -- intervals/s → Hz
   local capacity = current_twindow * hz
   Verdant.TemporalBuffer.init(capacity)
+  warn_if_heavy(capacity, current_twindow, hz)
 end
 
 -- ── public API ────────────────────────────────────────────────────────────────
@@ -268,6 +288,36 @@ function M.on_vpalpha_track_click(control)
 end
 
 -- ── init ──────────────────────────────────────────────────────────────────────
+-- Snapshot of the current configuration for /verdant report and other
+-- introspection. Read-only; do NOT mutate the returned table.
+function M.snapshot()
+  local hz       = math_floor(1000 / current_sample)
+  local capacity = current_twindow * hz
+  return {
+    rate_ms              = current_rate,
+    heal_window_ms       = current_heal,
+    shield_window_ms     = current_shield,
+    sample_rate_ms       = current_sample,
+    sample_rate_hz       = hz,
+    time_window_s        = current_twindow,
+    viewport_alpha_pct   = current_vpalpha,
+    temporal_capacity    = capacity,
+    capacity_warn_above  = CAPACITY_WARN_THRESHOLD,
+  }
+end
+
+function M.report_lines()
+  local s = M.snapshot()
+  local heavy = (s.temporal_capacity > s.capacity_warn_above) and "  [HEAVY]" or ""
+  return {
+    string.format("[config] bar: refresh=%dms heal_window=%dms shield_window=%dms",
+      s.rate_ms, s.heal_window_ms, s.shield_window_ms),
+    string.format("[config] graph: sample=%dms (%dHz) window=%ds capacity=%d%s",
+      s.sample_rate_ms, s.sample_rate_hz, s.time_window_s, s.temporal_capacity, heavy),
+    string.format("[config] viewport_alpha=%d%%", s.viewport_alpha_pct),
+  }
+end
+
 function M.init()
   local sv = Verdant.SavedVars
   sv.bar      = sv.bar      or {}
@@ -338,4 +388,8 @@ function M.init()
   c.fill_twindow, c.thumb_twindow = setup_slider_visuals(c.track_twindow, "VerdantSettingsTWindow")
   c.fill_vpalpha, c.thumb_vpalpha = setup_slider_visuals(c.track_vpalpha, "VerdantSettingsVPAlpha")
   -- slider display deferred to first toggle() — panel is hidden and GetWidth() returns 0
+
+  -- Log the full config snapshot at startup so /verdant report after a
+  -- reload always has the baseline.
+  for _, line in ipairs(M.report_lines()) do log:info(line) end
 end

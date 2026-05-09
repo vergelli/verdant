@@ -149,6 +149,24 @@ local function build_diag_lines()
     lines[#lines+1] = "[diag] event_pool=" .. Verdant.Metrics.pool_in_use()
                       .. "/" .. Verdant.Metrics.pool_capacity()
   end
+  if Verdant.Log and Verdant.Log.size then
+    local cur, cap = Verdant.Log.size()
+    lines[#lines+1] = "[diag] log_ring=" .. cur .. "/" .. cap
+  end
+  if Verdant.Validation and Verdant.Validation.run_all_checks then
+    local v = Verdant.Validation.run_all_checks()
+    lines[#lines+1] = "[diag] validation: failures=" .. v.failure_count
+                      .. " pool_outstanding=" .. v.pool_outstanding
+  end
+  if Verdant.Profiler and Verdant.Profiler.report then
+    local r, window_s = Verdant.Profiler.report()
+    local stages = {}
+    for k in pairs(r) do stages[#stages+1] = k end
+    if #stages > 0 then
+      lines[#lines+1] = "[diag] profiler window=" .. string.format("%.1fs", window_s)
+                        .. " stages=" .. #stages .. " (use /verdant prof for detail)"
+    end
+  end
   return lines
 end
 
@@ -158,6 +176,42 @@ function M.print_diag()
     Verdant.CopyBox.show("Verdant /diag", table.concat(lines, "\n"))
   else
     for _, line in ipairs(lines) do d(line) end
+  end
+end
+
+-- Unified one-shot dev report: concatenates /diag + /prof + /validate
+-- + recent log entries into a single CopyBox dump. Saves the dev from
+-- running each command separately when sharing context.
+function M.full_report()
+  if not Verdant.Constants.DEBUG then
+    d("[report] disabled (DEBUG=false)")
+    return
+  end
+  local out = {}
+  local function section(title, lines)
+    out[#out+1] = ""
+    out[#out+1] = "═══ " .. title .. " ═══"
+    for _, l in ipairs(lines) do out[#out+1] = l end
+  end
+  out[#out+1] = "Verdant full report — uptime "
+                .. (GetGameTimeMilliseconds() - start_time) .. "ms"
+  if Verdant.Settings and Verdant.Settings.report_lines then
+    section("config", Verdant.Settings.report_lines())
+  end
+  section("diagnostics", build_diag_lines())
+  if Verdant.Profiler and Verdant.Profiler.report_lines then
+    section("profiler",   Verdant.Profiler.report_lines())
+  end
+  if Verdant.Validation and Verdant.Validation.report_lines then
+    section("validation", Verdant.Validation.report_lines())
+  end
+  if Verdant.Log and Verdant.Log.recent_lines then
+    section("log (last 20)", Verdant.Log.recent_lines(20))
+  end
+  if Verdant.CopyBox and Verdant.CopyBox.show then
+    Verdant.CopyBox.show("Verdant /report", table.concat(out, "\n"))
+  else
+    for _, l in ipairs(out) do d(l) end
   end
 end
 

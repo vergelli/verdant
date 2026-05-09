@@ -19,9 +19,10 @@ local BufferPool = {}
 BufferPool.__index = BufferPool
 Verdant.lib.mem.BufferPool = BufferPool
 
-function BufferPool.new(factory, capacity)
+function BufferPool.new(factory, capacity, label)
   local self = setmetatable({}, BufferPool)
   self._capacity = capacity
+  self._label    = label or "pool"
   self._records  = {}
   self._free     = {}      -- stack of free indices
   self._in_use   = 0
@@ -42,11 +43,18 @@ function BufferPool:acquire()
   self._free[top] = nil
   self._free_top = top - 1
   self._in_use = self._in_use + 1
-  return self._records[idx]
+  local rec = self._records[idx]
+  if Verdant.Validation then
+    Verdant.Validation.pool_acquired(self._label, rec)
+  end
+  return rec
 end
 
 function BufferPool:release(rec)
   if not rec or not rec._pool_idx then return end
+  if Verdant.Validation then
+    Verdant.Validation.pool_released(self._label, rec)
+  end
   local top = self._free_top + 1
   self._free[top] = rec._pool_idx
   self._free_top = top

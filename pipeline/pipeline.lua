@@ -52,6 +52,9 @@ local EFFECT_RESULT_FADED  = C.EFFECT_RESULT_FADED
 
 local Log = Verdant.Log.for_module("pipeline")
 
+local prof_enter = Verdant.Profiler.enter
+local prof_exit  = Verdant.Profiler.exit
+
 local function bump(key) Verdant.Diagnostics.bump(key) end
 
 local function release(ev)
@@ -65,13 +68,14 @@ function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
                               _src, sourceType, _tgt, targetType, hit,
                               _pt, _dt, _log, sourceUnitId, targetUnitId,
                               abilityId, overflow)
+  prof_enter("pipeline.combat_event")
   bump("engine.heal.in")
-  if isError then bump("engine.heal.dropped_error") return end
+  if isError then bump("engine.heal.dropped_error") prof_exit("pipeline.combat_event") return end
   if (hit or 0) == 0 and (overflow or 0) == 0 then
-    bump("engine.heal.dropped_noise") return
+    bump("engine.heal.dropped_noise") prof_exit("pipeline.combat_event") return
   end
   if not Verdant.Mode.uses("heal") and not Verdant.Mode.uses("overheal") then
-    bump("engine.heal.dropped_mode") return
+    bump("engine.heal.dropped_mode") prof_exit("pipeline.combat_event") return
   end
 
   if sourceType == COMBAT_UNIT_TYPE_PLAYER and sourceUnitId and sourceUnitId ~= 0 then
@@ -86,12 +90,19 @@ function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
   bump("engine.heal.accepted")
 
   local t = now()
+  prof_enter("pipeline.combat_event.acquisition")
   local ev_heal, ev_overheal = Acquisition.acquire_heal_out(
     t, hit, overflow, targetUnitId, targetType, abilityId)
+  prof_exit("pipeline.combat_event.acquisition")
 
   if ev_heal then
-    if Filter.allow(ev_heal) then
+    prof_enter("pipeline.combat_event.filter")
+    local allowed = Filter.allow(ev_heal)
+    prof_exit("pipeline.combat_event.filter")
+    if allowed then
+      prof_enter("pipeline.combat_event.processing")
       Processing.process(ev_heal)
+      prof_exit("pipeline.combat_event.processing")
     else
       release(ev_heal)
     end
@@ -101,8 +112,13 @@ function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
   end
 
   if ev_overheal then
-    if Filter.allow(ev_overheal) then
+    prof_enter("pipeline.combat_event.filter")
+    local allowed = Filter.allow(ev_overheal)
+    prof_exit("pipeline.combat_event.filter")
+    if allowed then
+      prof_enter("pipeline.combat_event.processing")
       Processing.process(ev_overheal)
+      prof_exit("pipeline.combat_event.processing")
     else
       release(ev_overheal)
     end
@@ -110,6 +126,7 @@ function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
     bump("engine.pool.exhausted")
     Log:warn("event pool exhausted (overheal)")
   end
+  prof_exit("pipeline.combat_event")
 end
 
 -- ── combat: shield absorb ─────────────────────────────────────────────────
@@ -117,18 +134,26 @@ function M.dispatch_shield_abs(_result, isError, _name, _g, _slot,
                                 _src, _sourceType, _tgt, targetType, hit,
                                 _pt, _dt, _log, _suid, targetUnitId,
                                 abilityId, _overflow)
+  prof_enter("pipeline.combat_event")
   bump("engine.shield.in")
-  if isError then bump("engine.shield.dropped_error") return end
+  if isError then bump("engine.shield.dropped_error") prof_exit("pipeline.combat_event") return end
   if not Verdant.Mode.uses("shield_abs") then
-    bump("engine.shield.dropped_mode") return
+    bump("engine.shield.dropped_mode") prof_exit("pipeline.combat_event") return
   end
 
   local t = now()
+  prof_enter("pipeline.combat_event.acquisition")
   local ev = Acquisition.acquire_shield_abs(t, hit, targetUnitId, targetType, abilityId)
+  prof_exit("pipeline.combat_event.acquisition")
   if ev then
-    if Filter.allow(ev) then
+    prof_enter("pipeline.combat_event.filter")
+    local allowed = Filter.allow(ev)
+    prof_exit("pipeline.combat_event.filter")
+    if allowed then
       bump("engine.shield.accepted")
+      prof_enter("pipeline.combat_event.processing")
       Processing.process(ev)
+      prof_exit("pipeline.combat_event.processing")
     else
       release(ev)  -- foreign counter bumped inside Filter.allow
     end
@@ -139,6 +164,7 @@ function M.dispatch_shield_abs(_result, isError, _name, _g, _slot,
   -- Coverage tracks shield events regardless of whether they were ours
   -- (mirrors pre-pipeline engine semantics).
   Verdant.Coverage.touch(targetUnitId, t)
+  prof_exit("pipeline.combat_event")
 end
 
 -- ── combat: group damage ──────────────────────────────────────────────────
@@ -146,18 +172,26 @@ function M.dispatch_group_damage(_result, isError, _name, _g, _slot,
                                   _src, _sourceType, _tgt, _targetType, hit,
                                   _pt, _dt, _log, _suid, targetUnitId,
                                   _abilityId, _overflow)
+  prof_enter("pipeline.combat_event")
   bump("engine.damage.in")
-  if isError then bump("engine.damage.dropped_error") return end
+  if isError then bump("engine.damage.dropped_error") prof_exit("pipeline.combat_event") return end
   if not Verdant.Mode.uses("damage") then
-    bump("engine.damage.dropped_mode") return
+    bump("engine.damage.dropped_mode") prof_exit("pipeline.combat_event") return
   end
 
   local t = now()
+  prof_enter("pipeline.combat_event.acquisition")
   local ev = Acquisition.acquire_damage_group(t, hit, targetUnitId)
+  prof_exit("pipeline.combat_event.acquisition")
   if ev then
-    if Filter.allow(ev) then
+    prof_enter("pipeline.combat_event.filter")
+    local allowed = Filter.allow(ev)
+    prof_exit("pipeline.combat_event.filter")
+    if allowed then
       bump("engine.damage.accepted")
+      prof_enter("pipeline.combat_event.processing")
       Processing.process(ev)
+      prof_exit("pipeline.combat_event.processing")
     else
       release(ev)  -- not_in_groupset counter bumped inside Filter.allow
     end
@@ -165,6 +199,7 @@ function M.dispatch_group_damage(_result, isError, _name, _g, _slot,
     bump("engine.pool.exhausted")
     Log:warn("event pool exhausted (damage)")
   end
+  prof_exit("pipeline.combat_event")
 end
 
 -- ── effect (player src): feeds ShieldRegistry ─────────────────────────────
