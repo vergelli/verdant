@@ -13,7 +13,6 @@ local math_min                = math.min
 local math_floor              = math.floor
 
 local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE    = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local GLOSS_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill_gloss.dds"
 local BORDER_EDGE   = "EsoUI/Art/Tooltips/UI-Border.dds"
 local FILL_T, FILL_B = 0, 0.53125
@@ -116,14 +115,6 @@ end
 local function make_bar(area, name_suffix, color, use_pool, use_stacked)
   local WM = WINDOW_MANAGER
 
-  local bg = WM:CreateControl("VerdantTriBarBg" .. name_suffix, area, CT_TEXTURE)
-  bg:ClearAnchors()
-  bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
-  bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(FILL_TEXTURE)
-  bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  bg:SetColor(0.10, 0.10, 0.12, 1)
-
   local fill = WM:CreateControl("VerdantTriBarFill" .. name_suffix, area, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
@@ -174,7 +165,7 @@ local function make_bar(area, name_suffix, color, use_pool, use_stacked)
   -- 4-strip border — last so it renders above all fills and gloss
   make_border(area, "VerdantTriBarBorder" .. name_suffix)
 
-  return { bg=bg, fill=fill, fill_heal=fill_heal, fill_shield=fill_shield, pool=pool, peak_line=pl }
+  return { fill=fill, fill_heal=fill_heal, fill_shield=fill_shield, pool=pool, peak_line=pl }
 end
 
 -- ── refresh (1 Hz tick) ───────────────────────────────────────────────────

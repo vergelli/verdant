@@ -18,10 +18,8 @@ local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink f
 local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
 local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
 -- Canvas is intentionally dark so it contrasts with the lighter outer frame
-local C_BG        = { r = 0.06, g = 0.07, b = 0.09, a = 1.00 }
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE     = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local FILL_T, FILL_B = 0, 0.53125
 local LINE_THICKNESS = 2
 local LABEL_H        = 12
@@ -753,21 +751,6 @@ function M.init()
   -- the surrounding container.
   VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.80)
   VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.65)
-
-  -- ── canvas backgrounds ────────────────────────────────────────────────
-  -- Created first so they are behind the grid controls and behind pool objects.
-  local function make_bg(name, parent)
-    local bg = WM:CreateControl(name, parent, CT_TEXTURE)
-    bg:ClearAnchors()
-    bg:SetAnchor(TOPLEFT,     parent, TOPLEFT,     0, 0)
-    bg:SetAnchor(BOTTOMRIGHT, parent, BOTTOMRIGHT, 0, 0)
-    bg:SetTexture(FILL_TEXTURE)
-    bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
-    bg:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
-  end
-  make_bg("VerdantGraphCanvasBg",  controls.canvas)
-  make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
-  make_bg("VerdantSkillBgBot",     controls.mps_canvas)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames

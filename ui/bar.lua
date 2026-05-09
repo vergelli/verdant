@@ -25,7 +25,6 @@ local COLORS = {
 }
 
 local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE    = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local GLOSS_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill_gloss.dds"
 local FILL_T, FILL_B = 0, 0.53125
 
@@ -182,14 +181,6 @@ local function setup_single_bar()
   local area = controls.bar_area
 
   -- dark background
-  local bg = WM:CreateControl("VerdantBarBg", area, CT_TEXTURE)
-  bg:ClearAnchors()
-  bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
-  bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(FILL_TEXTURE)
-  bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  bg:SetColor(0.10, 0.10, 0.12, 1)
-  controls.bg = bg
 
   -- main fill (single metric, or EMS total placeholder)
   local fill = WM:CreateControl("VerdantBarFill", area, CT_TEXTURE)
@@ -287,14 +278,6 @@ local function setup_triple_view()
     area:SetAnchor(BOTTOMLEFT, container, BOTTOMLEFT, x, -18)
     area:SetWidth(TRI_COL_W)
     col.area = area
-
-    local bg = WM:CreateControl("VerdantBarTriBg" .. m, area, CT_TEXTURE)
-    bg:ClearAnchors()
-    bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
-    bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-    bg:SetTexture(FILL_TEXTURE)
-    bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
-    bg:SetColor(0.10, 0.10, 0.12, 1)
 
     local fill = WM:CreateControl("VerdantBarTriFill" .. m, area, CT_TEXTURE)
     fill:ClearAnchors()

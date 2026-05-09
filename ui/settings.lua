@@ -14,7 +14,6 @@ local math_floor         = math.floor
 -- Slider visuals: original ESO attributeBar textures with their proper
 -- texture coords (top half of the dynamic_fill is the visible band).
 local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local FILL_T, FILL_B = 0, 0.53125
 
 -- ── presets ───────────────────────────────────────────────────────────────────
@@ -100,14 +99,6 @@ end
 
 local function setup_slider_visuals(track, name_prefix)
   local WM = WINDOW_MANAGER
-
-  local bg = WM:CreateControl(name_prefix .. "Bg", track, CT_TEXTURE)
-  bg:ClearAnchors()
-  bg:SetAnchor(TOPLEFT,     track, TOPLEFT,     0, 0)
-  bg:SetAnchor(BOTTOMRIGHT, track, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(FILL_TEXTURE)
-  bg:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  bg:SetColor(0.10, 0.10, 0.12, 1)
 
   local fill = WM:CreateControl(name_prefix .. "Fill", track, CT_TEXTURE)
   fill:ClearAnchors()
