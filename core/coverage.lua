@@ -14,6 +14,7 @@ local pairs            = pairs
 local api              = Verdant.zenimax.api
 local IsUnitGrouped    = api.IsUnitGrouped
 local GetGroupSize     = api.GetGroupSize
+local log              = Verdant.Log.for_module("coverage")
 
 local C = Verdant.zenimax.constants
 local COMBAT_UNIT_TYPE_PLAYER     = C.COMBAT_UNIT_TYPE_PLAYER
@@ -55,7 +56,12 @@ function M.size(now_ms)
 end
 
 function M.refresh_mode()
+  local prev = mode_grouped
   mode_grouped = IsUnitGrouped("player") and (GetGroupSize() or 0) > 1
+  if prev ~= mode_grouped then
+    log:info("mode change ->", mode_grouped and "group" or "solo",
+             "size=", GetGroupSize() or 0)
+  end
   return mode_grouped
 end
 

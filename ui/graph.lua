@@ -16,6 +16,7 @@ local math_floor                 = math.floor
 local string_format              = string.format
 
 -- ── UI constants (local cache for hot anchor / type lookups) ──────────────
+local log               = Verdant.Log.for_module("graph")
 local TOPLEFT           = zc.TOPLEFT
 local TOPRIGHT          = zc.TOPRIGHT
 local BOTTOMLEFT        = zc.BOTTOMLEFT
@@ -641,6 +642,7 @@ end
 -- ── public API ────────────────────────────────────────────────────────────
 function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
+  log:info("record click")
   Verdant.TemporalBuffer.clear()
   release_all_pools()
   hide_all_grids()
@@ -657,6 +659,7 @@ end
 
 function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
+  log:info("stop click")
   Verdant.TemporalBuffer.stop_recording()
   zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
   refresh_button_colors()
@@ -724,6 +727,7 @@ end
 
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
+  log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
   if now_visible then
     -- Sync the EMS/SKILL sub-controls with current_view, then render fresh.

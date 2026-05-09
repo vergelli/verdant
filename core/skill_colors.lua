@@ -187,7 +187,6 @@ end
 -- Print all unclassified abilities seen so far.
 -- Use /verdant skills after a heal session to discover what to add to ABILITY_OVERRIDES.
 function M.print_unknown()
-  local d      = d
   local lines  = {}
   local count  = 0
   for id, info in pairs(unknown_log) do
@@ -195,12 +194,17 @@ function M.print_unknown()
     count = count + 1
   end
   if count == 0 then
-    d("[V] No unclassified heal/shield abilities seen yet.")
+    d("[skill_colors] No unclassified heal/shield abilities seen yet.")
     return
   end
   table.sort(lines)
-  d("[V] Unclassified abilities (" .. count .. ") — add to ABILITY_OVERRIDES in skill_colors.lua:")
-  for _, line in ipairs(lines) do d(line) end
+  local header = "[skill_colors] Unclassified abilities (" .. count .. ") — add to ABILITY_OVERRIDES:"
+  if Verdant.Constants.DEBUG and Verdant.CopyBox then
+    Verdant.CopyBox.show("Verdant /skills", header .. "\n" .. table.concat(lines, "\n"))
+  else
+    d(header)
+    for _, line in ipairs(lines) do d(line) end
+  end
 end
 
 local FALLBACK = GROUP_COLORS.other
@@ -219,7 +223,7 @@ function M.group_shares(buf, now_ms, predicate)
     local e   = buf.entries[i]
     local amt = e.amount or 0
     if amt > 0 and (not predicate or predicate(e)) then
-      local key = lookup_group(e.abilityId)
+      local key = lookup_group(e.ability_id)
       buckets[key] = (buckets[key] or 0) + amt
       total = total + amt
     end

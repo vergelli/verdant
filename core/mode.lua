@@ -13,9 +13,16 @@ local METRICS = {
 }
 
 local active = "EMS"
+local log = Verdant.Log.for_module("mode")
 
 function M.set(name)
-  if METRICS[name] == nil then return false end
+  if METRICS[name] == nil then
+    log:warn("set: unknown metric", name)
+    return false
+  end
+  if name ~= active then
+    log:info("changed", active, "->", name)
+  end
   active = name
   return true
 end

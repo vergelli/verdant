@@ -15,6 +15,7 @@ local math_min           = math.min
 local math_floor         = math.floor
 
 -- ── UI constants ──────────────────────────────────────────────────────────
+local log         = Verdant.Log.for_module("settings")
 local TOP         = zc.TOP
 local TOPLEFT     = zc.TOPLEFT
 local BOTTOM      = zc.BOTTOM
@@ -195,6 +196,7 @@ function M.on_rate_track_click(control)
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#RATE_PRESETS, math_floor(pct * (#RATE_PRESETS - 1) + 0.5) + 1))
   current_rate = RATE_PRESETS[idx]
+  log:info("rate ->", current_rate, "ms")
   Verdant.Bar.set_rate(current_rate)
   persist("rate_ms", current_rate)
   update_slider(controls.track_rate, controls.fill_rate, controls.thumb_rate, controls.label_rate, RATE_PRESETS, RATE_LABELS, current_rate)
@@ -207,6 +209,7 @@ function M.on_heal_track_click(control)
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#HEAL_PRESETS, math_floor(pct * (#HEAL_PRESETS - 1) + 0.5) + 1))
   current_heal = HEAL_PRESETS[idx]
+  log:info("heal_window ->", current_heal, "ms")
   Verdant.Metrics.set_window(current_heal)
   persist("heal_window_ms", current_heal)
   update_slider(controls.track_heal, controls.fill_heal, controls.thumb_heal, controls.label_heal, HEAL_PRESETS, HEAL_LABELS, current_heal)
@@ -219,6 +222,7 @@ function M.on_shield_track_click(control)
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#SHIELD_PRESETS, math_floor(pct * (#SHIELD_PRESETS - 1) + 0.5) + 1))
   current_shield = SHIELD_PRESETS[idx]
+  log:info("shield_window ->", current_shield, "ms")
   Verdant.Metrics.set_shield_window(current_shield)
   persist("shield_window_ms", current_shield)
   update_slider(controls.track_shield, controls.fill_shield, controls.thumb_shield, controls.label_shield, SHIELD_PRESETS, SHIELD_LABELS, current_shield)
@@ -231,6 +235,7 @@ function M.on_sample_track_click(control)
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#SAMPLE_PRESETS, math_floor(pct * (#SAMPLE_PRESETS - 1) + 0.5) + 1))
   current_sample = SAMPLE_PRESETS[idx]
+  log:info("sample_rate ->", current_sample, "ms")
   persist_temporal("sample_rate_ms", current_sample)
   reinit_buffer()
   update_slider(controls.track_sample, controls.fill_sample, controls.thumb_sample, controls.label_sample, SAMPLE_PRESETS, SAMPLE_LABELS, current_sample)
@@ -243,6 +248,7 @@ function M.on_twindow_track_click(control)
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#TWINDOW_PRESETS, math_floor(pct * (#TWINDOW_PRESETS - 1) + 0.5) + 1))
   current_twindow = TWINDOW_PRESETS[idx]
+  log:info("time_window ->", current_twindow, "s")
   persist_temporal("time_window_s", current_twindow)
   reinit_buffer()
   update_slider(controls.track_twindow, controls.fill_twindow, controls.thumb_twindow, controls.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
@@ -255,6 +261,7 @@ function M.on_vpalpha_track_click(control)
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#VPALPHA_PRESETS, math_floor(pct * (#VPALPHA_PRESETS - 1) + 0.5) + 1))
   current_vpalpha = VPALPHA_PRESETS[idx]
+  log:info("viewport_alpha ->", current_vpalpha, "%")
   persist_temporal("viewport_alpha_pct", current_vpalpha)
   Verdant.Graph.set_viewport_alpha(current_vpalpha / 100)
   update_slider(controls.track_vpalpha, controls.fill_vpalpha, controls.thumb_vpalpha, controls.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)

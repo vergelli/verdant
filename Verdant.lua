@@ -84,6 +84,12 @@ local function on_slash(input)
       return
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
+    elseif cmd == "copy" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "clear" then Verdant.CopyBox.clear()
+      elseif sub == "hide" then Verdant.CopyBox.hide()
+      else Verdant.CopyBox.show("Verdant Copy", "") end
+      return
     elseif cmd == "skills" then
       Verdant.SkillColors.print_unknown() ; return
     elseif cmd == "clear" then
@@ -109,22 +115,25 @@ local function on_slash(input)
 end
 
 local function on_addon_loaded()
-  local C = Verdant.Constants
+  local C   = Verdant.Constants
+  local Log = Verdant.Log.for_module("bootstrap")
 
   -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
+  local world = GetWorldName()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
-    C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, temporal = {} })
+    C.SV_TABLE, C.SV_VERSION, world, { probe = {}, bar = {}, temporal = {}, copybox = {} })
+  Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
+
   Verdant.Probe.init()
   Verdant.Engine.init()
   Verdant.Bar.init()
   Verdant.Settings.init()
   Verdant.Graph.init()
-  -- Visibility must init AFTER UI controls exist — it reads/applies SetHidden
-  -- on VerdantBarWindow / VerdantGraphWindow.
   Verdant.Visibility.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
 
+  Log:info("loaded v" .. C.VERSION, "DEBUG=" .. tostring(C.DEBUG))
   d("[V] " .. string_format(GetString(VERDANT_LOADED), C.VERSION, C.SLASH_COMMAND))
 end
 

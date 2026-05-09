@@ -18,6 +18,7 @@ local math_min                = math.min
 local math_floor              = math.floor
 
 -- ── UI constants (local cache for hot anchor / type lookups) ──────────────
+local log              = Verdant.Log.for_module("bar")
 local TOPLEFT          = zc.TOPLEFT
 local TOP              = zc.TOP
 local TOPRIGHT         = zc.TOPRIGHT
@@ -533,6 +534,7 @@ end
 
 function M.toggle_display_mode()
   display_pct = not display_pct
+  log:info("display_mode ->", display_pct and "%" or "#")
   PlaySound(SOUNDS.DIALOG_ACCEPT)
   save_state()
   refresh()
@@ -540,6 +542,7 @@ end
 
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("bar")
+  log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("bar", now_visible)
   PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
 end
@@ -562,6 +565,7 @@ end
 
 -- Called by Settings when the slider changes
 function M.set_rate(ms)
+  log:info("set_rate ->", ms, "ms")
   Verdant.zenimax.events.unregister_update("Verdant_BarTick")
   Verdant.zenimax.events.register_update("Verdant_BarTick", ms, refresh)
 end
