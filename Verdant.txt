@@ -15,6 +15,7 @@ bindings.xml
 locales/default.lua
 locales/$(language).lua
 core/constants.lua
+lib/mem/buffer_pool.lua
 zenimax/constants.lua
 zenimax/api.lua
 zenimax/ui.lua
