@@ -86,27 +86,33 @@ function M.for_module(source)
 end
 
 -- ── structured ring buffer (SPEC_04 §4) ──────────────────────────────────
--- Separate from the human-readable for_module path above. write() stores
--- (t, level, key, data) records in a pre-allocated ring; flush() copies to
--- SavedVars. The ring is mutated in place — no per-write allocation.
+-- Dev-only. Stubs declared here so callers can reference Verdant.Log.write
+-- safely; the real implementation only parses when DEBUG=true.
 
-local DEBUG = Verdant.Constants.DEBUG
+local NOOP = function() end
+M.write       = NOOP
+M.flush       = function() return 0 end
+M.clear       = NOOP
+M.size        = function() return 0, 0 end
+M.show_recent = NOOP
+
+if not Verdant.Constants.DEBUG then return end
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Below this line: only parses when DEBUG=true.
+-- ─────────────────────────────────────────────────────────────────────────
 
 local RING_CAPACITY = 1024
 local ring          = {}
-local ring_head     = 0     -- last-written index (1-based)
-local ring_count    = 0     -- total writes since start
+local ring_head     = 0
+local ring_count    = 0
 local now_ms        = Verdant.zenimax.api.GetGameTimeMilliseconds
 
-if DEBUG then
-  for i = 1, RING_CAPACITY do
-    ring[i] = { t = 0, level = "", key = "", data = nil }
-  end
+for i = 1, RING_CAPACITY do
+  ring[i] = { t = 0, level = "", key = "", data = nil }
 end
 
-local NOOP = function() end
-
-local function real_write(level, key, data)
+function M.write(level, key, data)
   ring_head = (ring_head % RING_CAPACITY) + 1
   local rec = ring[ring_head]
   rec.t     = now_ms()
@@ -122,11 +128,10 @@ local function real_write(level, key, data)
   end
 end
 
-local function real_flush()
+function M.flush()
   if not Verdant.SavedVars then return 0 end
   Verdant.SavedVars.debug = Verdant.SavedVars.debug or {}
   local out = {}
-  -- ordered: oldest → newest
   if ring_count <= RING_CAPACITY then
     for i = 1, ring_count do
       local r = ring[i]
@@ -143,16 +148,16 @@ local function real_flush()
   return #out
 end
 
-local function real_clear()
+function M.clear()
   ring_head  = 0
   ring_count = 0
 end
 
-local function real_size()
+function M.size()
   return math.min(ring_count, RING_CAPACITY), RING_CAPACITY
 end
 
-local function real_show_recent(n)
+function M.show_recent(n)
   n = n or 20
   local lines = {}
   local total = math.min(ring_count, RING_CAPACITY)
@@ -173,18 +178,4 @@ local function real_show_recent(n)
   else
     for _, l in ipairs(lines) do d(l) end
   end
-end
-
-if DEBUG then
-  M.write       = real_write
-  M.flush       = real_flush
-  M.clear       = real_clear
-  M.size        = real_size
-  M.show_recent = real_show_recent
-else
-  M.write       = NOOP
-  M.flush       = function() return 0 end
-  M.clear       = NOOP
-  M.size        = function() return 0, RING_CAPACITY end
-  M.show_recent = NOOP
 end

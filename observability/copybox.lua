@@ -1,16 +1,26 @@
--- Lazy-built debug copy window. Provides a multi-line read-only-ish
--- EditBox the user can SelectAll + Ctrl+C to grab diagnostic output
--- and paste into chat / Claude Code.
---
--- Cost in release builds: zero. The controls are NOT defined in XML
--- and are NOT created at load time. Constants.DEBUG gates show().
--- If DEBUG is false the window is never built.
+-- Dev-only copy window. In release the file defines NOOP stubs and
+-- returns early — the build/show/append machinery is not parsed and
+-- the EditBox is never instantiated.
 
 Verdant = Verdant or {}
 local Verdant = Verdant
 
 Verdant.CopyBox = {}
 local M = Verdant.CopyBox
+
+-- ── public surface stubs ─────────────────────────────────────────────────
+local NOOP = function() end
+M.show       = NOOP
+M.append     = NOOP
+M.clear      = NOOP
+M.hide       = NOOP
+M.is_visible = function() return false end
+
+if not Verdant.Constants.DEBUG then return end
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Below this line: only parses when DEBUG=true.
+-- ─────────────────────────────────────────────────────────────────────────
 
 local zui = Verdant.zenimax.ui
 local zc  = Verdant.zenimax.constants
@@ -105,7 +115,6 @@ local function ensure_built()
 end
 
 function M.show(title, text)
-  if not Verdant.Constants.DEBUG then return end
   ensure_built()
   if title then
     controls.window:GetNamedChild("Title"):SetText(title)
@@ -119,7 +128,6 @@ function M.show(title, text)
 end
 
 function M.append(text)
-  if not Verdant.Constants.DEBUG then return end
   ensure_built()
   if buffer == "" then
     buffer = text or ""
