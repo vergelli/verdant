@@ -46,7 +46,7 @@ function M.init()
   W_SHIELD_MS = 30000
 
   local cap   = (Verdant.Constants.POOL and Verdant.Constants.POOL.EVENT_CAPACITY) or 4096
-  event_pool  = Verdant.lib.mem.BufferPool.new(Verdant.lib.mem.Event.factory, cap)
+  event_pool  = Verdant.lib.mem.BufferPool.new(Verdant.lib.mem.Event.factory, cap, "event_pool")
 
   local RingBuffer = Verdant.lib.mem.RingBuffer
   heal_buf     = RingBuffer.new(W_MS,        1024, release_to_pool)
