@@ -11,6 +11,7 @@ local M = Verdant.Engine
 
 local GetGameTimeMilliseconds = Verdant.zenimax.api.GetGameTimeMilliseconds
 local tostring                = tostring
+local log                     = Verdant.Log.for_module("engine")
 
 local C = Verdant.zenimax.constants
 local EVENT_COMBAT_EVENT          = C.EVENT_COMBAT_EVENT
@@ -85,6 +86,7 @@ local function on_heal_out(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_heal(ev)
     else
       bump("engine.pool.exhausted")
+      log:warn("event pool exhausted")
     end
     Verdant.Coverage.touch(targetUnitId, t)
   end
@@ -99,6 +101,7 @@ local function on_heal_out(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_overheal(ev)
     else
       bump("engine.pool.exhausted")
+      log:warn("event pool exhausted")
     end
   end
 end
@@ -134,6 +137,7 @@ local function on_shield_abs(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_shield(ev)
     else
       bump("engine.pool.exhausted")
+      log:warn("event pool exhausted")
     end
   end
   Verdant.Coverage.touch(targetUnitId, t)
@@ -166,6 +170,7 @@ local function on_group_damage(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_damage_group(ev)
     else
       bump("engine.pool.exhausted")
+      log:warn("event pool exhausted")
     end
   end
 end

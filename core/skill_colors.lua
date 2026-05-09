@@ -194,11 +194,11 @@ function M.print_unknown()
     count = count + 1
   end
   if count == 0 then
-    d("[V] No unclassified heal/shield abilities seen yet.")
+    d("[skill_colors] No unclassified heal/shield abilities seen yet.")
     return
   end
   table.sort(lines)
-  local header = "[V] Unclassified abilities (" .. count .. ") — add to ABILITY_OVERRIDES in skill_colors.lua:"
+  local header = "[skill_colors] Unclassified abilities (" .. count .. ") — add to ABILITY_OVERRIDES:"
   if Verdant.Constants.DEBUG and Verdant.CopyBox then
     Verdant.CopyBox.show("Verdant /skills", header .. "\n" .. table.concat(lines, "\n"))
   else

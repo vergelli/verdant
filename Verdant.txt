@@ -30,8 +30,9 @@ core/group_set.lua
 core/mode.lua
 core/skill_colors.lua
 core/metrics.lua
-observability/diagnostics.lua
 observability/copybox.lua
+observability/log.lua
+observability/diagnostics.lua
 core/engine.lua
 core/probe.lua
 core/temporal_buffer.lua

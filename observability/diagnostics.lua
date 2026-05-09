@@ -120,16 +120,16 @@ end
 -- chat output as before. The CopyBox itself also no-ops outside DEBUG.
 local function build_diag_lines()
   local lines = {}
-  lines[#lines+1] = "[V:diag] uptime=" .. (GetGameTimeMilliseconds() - start_time)
+  lines[#lines+1] = "[diag] uptime=" .. (GetGameTimeMilliseconds() - start_time)
                     .. "ms  ev_total=" .. ev_count .. "  ts_samples=" .. ts_count
-  lines[#lines+1] = "[V:diag] counters:"
+  lines[#lines+1] = "[diag] counters:"
   local keys = {}
   for k in pairs(counters) do keys[#keys+1] = k end
   table_sort(keys)
   for _, k in ipairs(keys) do
     lines[#lines+1] = "  " .. k .. " = " .. tostring(counters[k])
   end
-  lines[#lines+1] = "[V:diag] last events (up to 10):"
+  lines[#lines+1] = "[diag] last events (up to 10):"
   local n_show = math_min(ev_count, 10)
   local base   = math_min(ev_count, EVENT_CAP)
   for i = base - n_show + 1, base do
@@ -140,13 +140,13 @@ local function build_diag_lines()
     end
   end
   if Verdant.Mode then
-    lines[#lines+1] = "[V:diag] mode=" .. tostring(Verdant.Mode.current())
+    lines[#lines+1] = "[diag] mode=" .. tostring(Verdant.Mode.current())
   end
   if Verdant.GroupSet then
-    lines[#lines+1] = "[V:diag] group_set.size=" .. Verdant.GroupSet.size()
+    lines[#lines+1] = "[diag] group_set.size=" .. Verdant.GroupSet.size()
   end
   if Verdant.Metrics and Verdant.Metrics.pool_capacity then
-    lines[#lines+1] = "[V:diag] event_pool=" .. Verdant.Metrics.pool_in_use()
+    lines[#lines+1] = "[diag] event_pool=" .. Verdant.Metrics.pool_in_use()
                       .. "/" .. Verdant.Metrics.pool_capacity()
   end
   return lines
