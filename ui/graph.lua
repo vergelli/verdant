@@ -624,7 +624,11 @@ local function set_view(v)
 end
 
 -- ── sampling loop ─────────────────────────────────────────────────────────
+local prof_enter = Verdant.Profiler.enter
+local prof_exit  = Verdant.Profiler.exit
+
 local function on_sample_update()
+  prof_enter("graph.sample_tick")
   local now = GetGameTimeMilliseconds()
   local r   = Verdant.Metrics.contribution(now)
   local eg  = Verdant.Metrics.eHPS_by_group(now)
@@ -637,6 +641,7 @@ local function on_sample_update()
   if not controls.window:IsHidden() then
     render_current_view()
   end
+  prof_exit("graph.sample_tick")
 end
 
 -- ── public API ────────────────────────────────────────────────────────────

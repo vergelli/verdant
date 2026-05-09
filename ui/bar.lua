@@ -368,9 +368,12 @@ local function setup_triple_view()
 end
 
 -- ── refresh (1 Hz tick + on user input) ──────────────────────────────────
+local prof_enter = Verdant.Profiler.enter
+local prof_exit  = Verdant.Profiler.exit
+
 local function refresh()
   if controls.window:IsHidden() then return end
-
+  prof_enter("bar.refresh")
   local now = GetGameTimeMilliseconds()
   local r   = Verdant.Metrics.contribution(now)
   local m   = current_metric()
@@ -513,6 +516,7 @@ local function refresh()
 
     render_peak_line(controls.peak_line, controls.bar_area, area_w, area_h, peaks[m].frac)
   end
+  prof_exit("bar.refresh")
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
