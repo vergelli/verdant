@@ -125,7 +125,7 @@ local function on_addon_loaded()
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
 
   Verdant.Probe.init()
-  Verdant.Engine.init()
+  Verdant.Pipeline.init()
   Verdant.Bar.init()
   Verdant.Settings.init()
   Verdant.Graph.init()

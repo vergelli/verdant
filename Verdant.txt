@@ -38,7 +38,6 @@ pipeline/filter.lua
 pipeline/processing.lua
 pipeline/presentation.lua
 pipeline/pipeline.lua
-core/engine.lua
 core/probe.lua
 core/temporal_buffer.lua
 core/visibility.lua
