@@ -6,9 +6,7 @@ local api  = Verdant.zenimax.api
 local zui  = Verdant.zenimax.ui
 local zc   = Verdant.zenimax.constants
 local zev  = Verdant.zenimax.events
-local ZO_ObjectPool              = zui.ZO_ObjectPool
 local WINDOW_MANAGER             = zui.WINDOW_MANAGER
-local CreateControlFromVirtual   = zui.CreateControlFromVirtual
 local GetGameTimeMilliseconds    = api.GetGameTimeMilliseconds
 local GetString                  = api.GetString
 local math_max                   = math.max
@@ -76,75 +74,50 @@ end
 
 
 -- ── pool factories ────────────────────────────────────────────────────────
+-- ── pool factories (lib/plot/Pool wrappers) ──────────────────────────────
+-- All four pool kinds (fills + lines × per-canvas variants) share a small
+-- factory closure: bind a parent canvas + on_factory texture/thickness
+-- setup, then defer to Verdant.lib.plot.Pool. Reset semantics differ for
+-- lines: they must clear anchors on release so a re-acquired line starts
+-- fresh (otherwise a "ghost" segment from the previous use can persist).
+local Pool = Verdant.lib.plot.Pool
+
+local function fill_factory(c)
+  c:SetTexture(FILL_TEXTURE)
+  c:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  -- Sub-pixel positioning: prevent ESO from snapping bar edges to integer
+  -- pixels so adjacent bars share a clean float boundary instead of
+  -- producing a periodic "narrow / wide" pattern at fractional slot widths.
+  c:SetPixelRoundingEnabled(false)
+end
+
+local function fill_reset(c)
+  c:SetHidden(true)
+end
+
+local function line_factory(line)
+  line:SetThickness(LINE_THICKNESS)
+end
+
+local function line_reset(line)
+  line:SetHidden(true)
+  line:ClearAnchors()
+end
+
 local function make_fill_pool(name_prefix)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls.canvas, CT_TEXTURE)
-      t:SetTexture(FILL_TEXTURE)
-      t:SetTextureCoords(0, 1, FILL_T, FILL_B)
-      -- Sub-pixel positioning: prevent ESO from snapping bar edges to integer
-      -- pixels, so adjacent bars share a clean float boundary instead of
-      -- producing a periodic "narrow / wide" pattern at fractional slot widths.
-      t:SetPixelRoundingEnabled(false)
-      return t
-    end,
-    function(t) t:SetHidden(true) end
-  )
+  return Pool.new(name_prefix, controls.canvas, CT_TEXTURE, fill_factory, fill_reset)
 end
 
--- canvas_key: key in controls{} for the parent canvas (resolved lazily at first acquire).
 local function make_skill_fill_pool(name_prefix, canvas_key)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls[canvas_key], CT_TEXTURE)
-      t:SetTexture(FILL_TEXTURE)
-      t:SetTextureCoords(0, 1, FILL_T, FILL_B)
-      t:SetPixelRoundingEnabled(false)
-      return t
-    end,
-    function(t) t:SetHidden(true) end
-  )
+  return Pool.new(name_prefix, controls[canvas_key], CT_TEXTURE, fill_factory, fill_reset)
 end
 
--- Line reset clears anchors as well as hiding.  Without ClearAnchors the
--- previous segment's endpoints can persist on a Line when it is re-acquired
--- mid-recording, producing a "ghost" of the old descent that shows alongside
--- the freshly-positioned line.  Wiping anchors on release forces the next
--- acquirer to set them from scratch.
 local function make_line_pool(name_prefix)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local line = CreateControlFromVirtual(name_prefix .. counter, controls.canvas, "VerdantGraphLineTemplate")
-      line:SetThickness(LINE_THICKNESS)
-      return line
-    end,
-    function(line)
-      line:SetHidden(true)
-      line:ClearAnchors()
-    end
-  )
+  return Pool.new_virtual(name_prefix, controls.canvas, "VerdantGraphLineTemplate", line_factory, line_reset)
 end
 
 local function make_skill_line_pool(name_prefix, canvas_key)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local line = CreateControlFromVirtual(name_prefix .. counter, controls[canvas_key], "VerdantGraphLineTemplate")
-      line:SetThickness(LINE_THICKNESS)
-      return line
-    end,
-    function(line)
-      line:SetHidden(true)
-      line:ClearAnchors()
-    end
-  )
+  return Pool.new_virtual(name_prefix, controls[canvas_key], "VerdantGraphLineTemplate", line_factory, line_reset)
 end
 
 -- ── grid system ───────────────────────────────────────────────────────────
