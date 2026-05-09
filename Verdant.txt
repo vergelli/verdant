@@ -16,13 +16,13 @@ locales/default.lua
 locales/$(language).lua
 core/constants.lua
 lib/mem/buffer_pool.lua
+lib/mem/ring_buffer.lua
 zenimax/constants.lua
 zenimax/api.lua
 zenimax/ui.lua
 zenimax/savedvars.lua
 zenimax/events.lua
 zenimax/scene.lua
-core/buffer.lua
 core/shield_registry.lua
 core/coverage.lua
 core/group_set.lua
