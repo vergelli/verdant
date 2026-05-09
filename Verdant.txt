@@ -26,6 +26,7 @@ zenimax/events.lua
 zenimax/scene.lua
 observability/copybox.lua
 observability/log.lua
+observability/profiler.lua
 core/shield_registry.lua
 core/coverage.lua
 core/group_set.lua

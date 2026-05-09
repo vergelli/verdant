@@ -64,4 +64,17 @@ Verdant.Constants = {
     SHIELD       = 3,
     DAMAGE_GROUP = 4,
   },
+
+  -- Per-stage profiler budgets in ms. A sample exceeding the budget
+  -- emits log.write("warn", "profiler.budget_exceeded", ...). Values
+  -- are conservative; tighten once the profiler has run in real combat.
+  PROFILER_BUDGETS_MS = {
+    ["pipeline.combat_event"]            = 1.0,
+    ["pipeline.combat_event.acquisition"] = 0.3,
+    ["pipeline.combat_event.filter"]     = 0.2,
+    ["pipeline.combat_event.processing"] = 0.5,
+    ["pipeline.render_tick"]             = 5.0,
+    ["bar.refresh"]                      = 3.0,
+    ["graph.sample_tick"]                = 4.0,
+  },
 }
