@@ -55,6 +55,19 @@ local function fmt_secs(ms)
   return s .. "s"
 end
 
+-- Pre-computes integer slot edges (length capacity+1).  Bar at slot i has
+-- left edge edges[i] and right edge edges[i+1] (exclusive), so adjacent
+-- bars share an integer boundary and the leftover fractional pixels are
+-- distributed uniformly across the canvas instead of clustering as a
+-- visible periodic pattern.
+local function compute_slot_edges(cw, capacity)
+  local e = {}
+  for i = 0, capacity do
+    e[i] = math_floor(i * cw / capacity + 0.5)
+  end
+  return e
+end
+
 -- ── pool factories ────────────────────────────────────────────────────────
 local function make_fill_pool(name_prefix)
   local counter = 0
@@ -364,15 +377,18 @@ local function render_view1()
   local capacity    = Verdant.TemporalBuffer.capacity()
   local slot_w      = cw / capacity
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local edges       = compute_slot_edges(cw, capacity)
   local slot_offset = capacity - n  -- leftmost slot of current data
   local xs          = {}
   local ehps_hs     = {}
   local ems_hs      = {}
 
   Verdant.TemporalBuffer.iterate(function(i, s)
-    local x  = (slot_offset + i - 1) * slot_w
-    local xc = x + bw * 0.5
+    local left  = edges[slot_offset + i - 1]
+    local right = edges[slot_offset + i]
+    local bw    = math_max(1, right - left - bar_gap)
+    local x     = left
+    local xc    = left + bw * 0.5
 
     local ehps_h = math_max(0, math_floor(ch_plot * (s.eHPS / max_ems) + 0.5))
     local mps_h  = math_max(0, math_floor(ch_plot * (s.MPS  / max_ems) + 0.5))
@@ -473,7 +489,7 @@ local function render_view2()
   local capacity    = Verdant.TemporalBuffer.capacity()
   local slot_w      = cw / capacity
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local edges       = compute_slot_edges(cw, capacity)
   local slot_offset = capacity - n
 
   -- ── eHPS sub-plot ──
@@ -483,9 +499,12 @@ local function render_view2()
     local col_hs = {}
 
     Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = (slot_offset + i - 1) * slot_w
+      local left  = edges[slot_offset + i - 1]
+      local right = edges[slot_offset + i]
+      local bw    = math_max(1, right - left - bar_gap)
+      local x     = left
       local col_h = math_max(0, math_floor(ch * (s.eHPS / max_shared) + 0.5))
-      xs[i]      = x + bw * 0.5
+      xs[i]      = left + bw * 0.5
       col_hs[i]  = col_h
 
       local y_off = 0
@@ -522,9 +541,12 @@ local function render_view2()
     local col_hs  = {}
 
     Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = (slot_offset + i - 1) * slot_w
+      local left  = edges[slot_offset + i - 1]
+      local right = edges[slot_offset + i]
+      local bw    = math_max(1, right - left - bar_gap)
+      local x     = left
       local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_shared) + 0.5))
-      xs[i]      = x + bw * 0.5
+      xs[i]      = left + bw * 0.5
       col_hs[i]  = col_h
 
       local y_off = 0
@@ -760,7 +782,7 @@ function M.init()
   VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
   VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
   VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.20)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.30)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
