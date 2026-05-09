@@ -4,15 +4,31 @@ local Verdant = Verdant
 Verdant.Bar = {}
 local M = Verdant.Bar
 
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
-local GetAPIVersion           = GetAPIVersion
-local PlaySound               = PlaySound
-local WINDOW_MANAGER          = WINDOW_MANAGER
-local ZO_ObjectPool           = ZO_ObjectPool
+local api  = Verdant.zenimax.api
+local zui  = Verdant.zenimax.ui
+local zc   = Verdant.zenimax.constants
+local GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
+local GetAPIVersion           = api.GetAPIVersion
+local PlaySound               = zui.PlaySound
+local WINDOW_MANAGER          = zui.WINDOW_MANAGER
+local ZO_ObjectPool           = zui.ZO_ObjectPool
 local string_format           = string.format
 local math_max                = math.max
 local math_min                = math.min
 local math_floor              = math.floor
+
+-- ── UI constants (local cache for hot anchor / type lookups) ──────────────
+local TOPLEFT          = zc.TOPLEFT
+local TOP              = zc.TOP
+local TOPRIGHT         = zc.TOPRIGHT
+local BOTTOMLEFT       = zc.BOTTOMLEFT
+local BOTTOM           = zc.BOTTOM
+local BOTTOMRIGHT      = zc.BOTTOMRIGHT
+local CT_TEXTURE       = zc.CT_TEXTURE
+local CT_LABEL         = zc.CT_LABEL
+local TEXT_ALIGN_CENTER = zc.TEXT_ALIGN_CENTER
+local GuiRoot          = zc.GuiRoot
+local SOUNDS           = zc.SOUNDS
 
 -- ── display metric cycle ──────────────────────────────────────────────────
 -- "ALL" is the 4th position: shows three columns simultaneously
