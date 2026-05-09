@@ -89,16 +89,17 @@
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
           <Anchor point="TOPLEFT"  offsetX="8"   offsetY="36"/>
-          <Anchor point="TOPRIGHT" offsetX="-40" offsetY="36"/>
+          <Anchor point="TOPRIGHT" offsetX="-58" offsetY="36"/>
           <Dimensions y="14"/>
         </Label>
 
-        <!-- Graph window toggle — icon Button, same row as ValueLabel -->
+        <!-- Graph window toggle — icon Button, same row as ValueLabel.
+             Moved further left to make room for the larger gear. -->
         <Button name="$(parent)GraphBtn"
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="35"/>
+          <Anchor point="TOPRIGHT" offsetX="-34" offsetY="35"/>
           <Dimensions x="16" y="16"/>
           <Textures normal="EsoUI/Art/Buttons/pointsplus_up.dds"
                     pressed="EsoUI/Art/Buttons/pointsplus_down.dds"
@@ -106,16 +107,23 @@
           <OnClicked>Verdant.Graph.toggle()</OnClicked>
         </Button>
 
-        <!-- Settings toggle — gear icon button, same row as ValueLabel -->
+        <!-- Settings toggle — gear icon. 26x26 with menubar texture for
+             prominence; the bar's narrowest size still fits this with
+             room for the +/value/gear chrome row. -->
         <Button name="$(parent)SettingsBtn"
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-2" offsetY="36"/>
-          <Dimensions x="18" y="14"/>
-          <Textures normal="EsoUI/Art/ChatWindow/chat_options_up.dds"
-                    pressed="EsoUI/Art/ChatWindow/chat_options_up.dds"
-                    mouseOver="EsoUI/Art/ChatWindow/chat_options_up.dds"/>
+          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="30"/>
+          <Dimensions x="26" y="26"/>
+          <!-- All three states use the _over texture: the menubar
+               _up is a small inactive circle (designed for ESO's main
+               menu where the icon is collapsed by default), not what
+               we want for a permanent gear. _over is the full-size
+               version we always want visible. -->
+          <Textures normal="EsoUI/Art/MenuBar/menuBar_mainMenu_over.dds"
+                    pressed="EsoUI/Art/MenuBar/menuBar_mainMenu_down.dds"
+                    mouseOver="EsoUI/Art/MenuBar/menuBar_mainMenu_over.dds"/>
           <OnClicked>Verdant.Settings.toggle()</OnClicked>
         </Button>
 
