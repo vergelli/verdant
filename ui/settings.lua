@@ -94,21 +94,6 @@ for pct = 0, 100, 5 do
 end
 local VPALPHA_DEFAULT = 30
 
--- Font scale: 3 discrete sizes mapped to ESO's pre-rendered fonts. Stored
--- as integer index 1..3 so SavedVars carries a stable value across font
--- name renames. Applied to bar value/title labels and graph axis labels.
-local FONT_PRESETS = { 1, 2, 3 }
-local FONT_LABELS  = { [1] = "Small", [2] = "Medium", [3] = "Large" }
-local FONT_DEFAULT = 1   -- preserves current visuals (ZoFontGameSmall everywhere)
--- ESO ships predictable Game-family fonts at three discrete sizes.
--- ZoFontGameMedium does NOT exist in stock ESO and silently falls
--- back to default — that's why "Large" looked unchanged before.
-local FONT_SPECS   = {
-  [1] = "ZoFontGameSmall",
-  [2] = "ZoFontGame",
-  [3] = "ZoFontGameLarge",
-}
-
 -- ── state ─────────────────────────────────────────────────────────────────────
 local controls       = {}
 local current_rate    = RATE_DEFAULT
@@ -117,7 +102,6 @@ local current_shield  = SHIELD_DEFAULT
 local current_sample  = SAMPLE_DEFAULT
 local current_twindow = TWINDOW_DEFAULT
 local current_vpalpha = VPALPHA_DEFAULT
-local current_font    = FONT_DEFAULT
 
 -- ── shared helpers ────────────────────────────────────────────────────────────
 local function nearest_idx(presets, ms)
@@ -215,33 +199,6 @@ local function reinit_buffer()
   warn_if_heavy(capacity, current_twindow, hz)
 end
 
--- Apply the active font scale to bar value/title/metric labels. Settings
--- panel labels themselves intentionally stay at fixed size so the config
--- UI stays compact regardless of accessibility choice.
-local function apply_font_scale()
-  local font = FONT_SPECS[current_font] or FONT_SPECS[FONT_DEFAULT]
-  -- Bar single-view labels.
-  if VerdantBarWindowMetricLabel then VerdantBarWindowMetricLabel:SetFont(font) end
-  if VerdantBarWindowValueLabel  then VerdantBarWindowValueLabel:SetFont(font)  end
-  if VerdantBarWindowTitleLabel  then VerdantBarWindowTitleLabel:SetFont(font)  end
-  -- Bar triple-view labels (one per metric column, created in Lua).
-  for _, m in ipairs({"EMS", "eHPS", "MPS"}) do
-    local lbl = _G["VerdantBarTriLabel"  .. m]
-    local val = _G["VerdantBarTriValue"  .. m]
-    if lbl then lbl:SetFont(font) end
-    if val then val:SetFont(font) end
-  end
-  -- Graph window static chrome labels. Dynamic axis labels (Y-values,
-  -- time-strip) intentionally stay fixed-size: they're meant to be
-  -- compact reference tickmarks.
-  if VerdantGraphWindowTitleLabel  then VerdantGraphWindowTitleLabel:SetFont(font)  end
-  if VerdantGraphWindowStatusLabel then VerdantGraphWindowStatusLabel:SetFont(font) end
-  if VerdantGraphWindowViewLabel   then VerdantGraphWindowViewLabel:SetFont(font)   end
-  if VerdantGraphWindowEhpsLabel   then VerdantGraphWindowEhpsLabel:SetFont(font)   end
-  if VerdantGraphWindowMpsLabel    then VerdantGraphWindowMpsLabel:SetFont(font)    end
-  if VerdantGraphWindowNoDataLabel then VerdantGraphWindowNoDataLabel:SetFont(font) end
-end
-
 local function refresh_all_sliders()
   local c = controls
   update_slider(c.track_rate,    c.fill_rate,    c.thumb_rate,    c.label_rate,    RATE_PRESETS,    RATE_LABELS,    current_rate)
@@ -250,7 +207,6 @@ local function refresh_all_sliders()
   update_slider(c.track_sample,  c.fill_sample,  c.thumb_sample,  c.label_sample,  SAMPLE_PRESETS,  SAMPLE_LABELS,  current_sample)
   update_slider(c.track_twindow, c.fill_twindow, c.thumb_twindow, c.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
   update_slider(c.track_vpalpha, c.fill_vpalpha, c.thumb_vpalpha, c.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
-  update_slider(c.track_font,    c.fill_font,    c.thumb_font,    c.label_font,    FONT_PRESETS,    FONT_LABELS,    current_font)
 end
 
 -- ── public API ────────────────────────────────────────────────────────────────
@@ -351,20 +307,6 @@ function M.on_vpalpha_track_click(control)
   update_slider(controls.track_vpalpha, controls.fill_vpalpha, controls.thumb_vpalpha, controls.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
 end
 
-function M.on_font_track_click(control)
-  local cx      = GetUIMousePosition()
-  local track_w = control:GetWidth()
-  if track_w <= 0 then return end
-  local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
-  local idx = math_max(1, math_min(#FONT_PRESETS, math_floor(pct * (#FONT_PRESETS - 1) + 0.5) + 1))
-  current_font = FONT_PRESETS[idx]
-  log:info("font_scale ->", FONT_LABELS[current_font])
-  local sv = Verdant.SavedVars
-  if sv then sv.settings = sv.settings or {} ; sv.settings.font_scale = current_font end
-  apply_font_scale()
-  update_slider(controls.track_font, controls.fill_font, controls.thumb_font, controls.label_font, FONT_PRESETS, FONT_LABELS, current_font)
-end
-
 -- Restores every setting to its default value, persists, reapplies.
 function M.on_reset_click()
   log:info("reset to defaults")
@@ -374,7 +316,6 @@ function M.on_reset_click()
   current_sample  = SAMPLE_DEFAULT
   current_twindow = TWINDOW_DEFAULT
   current_vpalpha = VPALPHA_DEFAULT
-  current_font    = FONT_DEFAULT
 
   -- Persist all back to SavedVars.
   persist("rate_ms",          current_rate)
@@ -383,16 +324,13 @@ function M.on_reset_click()
   persist_temporal("sample_rate_ms",     current_sample)
   persist_temporal("time_window_s",      current_twindow)
   persist_temporal("viewport_alpha_pct", current_vpalpha)
-  local sv = Verdant.SavedVars
-  if sv then sv.settings = sv.settings or {} ; sv.settings.font_scale = current_font end
 
-  -- Reapply: bar tick, metric windows, temporal buffer, viewport alpha, font.
+  -- Reapply: bar tick, metric windows, temporal buffer, viewport alpha.
   Verdant.Bar.set_rate(current_rate)
   Verdant.Metrics.set_window(current_heal)
   Verdant.Metrics.set_shield_window(current_shield)
   reinit_buffer()
   Verdant.Graph.set_viewport_alpha(current_vpalpha / 100)
-  apply_font_scale()
   refresh_all_sliders()
 end
 
@@ -410,8 +348,6 @@ function M.snapshot()
     sample_rate_hz       = hz,
     time_window_s        = current_twindow,
     viewport_alpha_pct   = current_vpalpha,
-    font_scale           = current_font,
-    font_label           = FONT_LABELS[current_font],
     temporal_capacity    = capacity,
     capacity_warn_above  = CAPACITY_WARN_THRESHOLD,
   }
@@ -425,8 +361,7 @@ function M.report_lines()
       s.rate_ms, s.heal_window_ms, s.shield_window_ms),
     string.format("[config] graph: sample=%dms (%dHz) window=%ds capacity=%d%s",
       s.sample_rate_ms, s.sample_rate_hz, s.time_window_s, s.temporal_capacity, heavy),
-    string.format("[config] viewport_alpha=%d%% font=%s",
-      s.viewport_alpha_pct, s.font_label),
+    string.format("[config] viewport_alpha=%d%%", s.viewport_alpha_pct),
   }
 end
 
@@ -443,7 +378,6 @@ function M.init()
   current_sample  = SAMPLE_PRESETS [nearest_idx(SAMPLE_PRESETS,  sv.temporal.sample_rate_ms    or SAMPLE_DEFAULT)]
   current_twindow = TWINDOW_PRESETS[nearest_idx(TWINDOW_PRESETS, sv.temporal.time_window_s     or TWINDOW_DEFAULT)]
   current_vpalpha = VPALPHA_PRESETS[nearest_idx(VPALPHA_PRESETS, sv.temporal.viewport_alpha_pct or VPALPHA_DEFAULT)]
-  current_font    = FONT_PRESETS   [nearest_idx(FONT_PRESETS,    sv.settings.font_scale         or FONT_DEFAULT)]
 
   Verdant.Metrics.set_window(current_heal)
   Verdant.Metrics.set_shield_window(current_shield)
@@ -470,9 +404,6 @@ function M.init()
   controls.title_vpalpha  = VerdantSettingsPanelVPAlphaTitle
   controls.label_vpalpha  = VerdantSettingsPanelVPAlphaLabel
   controls.track_vpalpha  = VerdantSettingsPanelSliderTrackVPAlpha
-  controls.title_font     = VerdantSettingsPanelFontTitle
-  controls.label_font     = VerdantSettingsPanelFontLabel
-  controls.track_font     = VerdantSettingsPanelSliderTrackFont
   controls.window_title   = VerdantSettingsPanelWindowTitle
   controls.reset_btn      = VerdantSettingsPanelResetBtn
 
@@ -503,10 +434,6 @@ function M.init()
   controls.title_vpalpha:SetColor(0.75, 0.75, 0.75, 1)
   controls.label_vpalpha:SetColor(0.95, 0.80, 0.20, 1)
 
-  controls.title_font:SetText("Font Size")
-  controls.title_font:SetColor(0.75, 0.75, 0.75, 1)
-  controls.label_font:SetColor(0.95, 0.80, 0.20, 1)
-
   local c = controls
   c.fill_rate,    c.thumb_rate    = setup_slider_visuals(c.track_rate,    "VerdantSettingsRate")
   c.fill_heal,    c.thumb_heal    = setup_slider_visuals(c.track_heal,    "VerdantSettingsHeal")
@@ -514,7 +441,6 @@ function M.init()
   c.fill_sample,  c.thumb_sample  = setup_slider_visuals(c.track_sample,  "VerdantSettingsSample")
   c.fill_twindow, c.thumb_twindow = setup_slider_visuals(c.track_twindow, "VerdantSettingsTWindow")
   c.fill_vpalpha, c.thumb_vpalpha = setup_slider_visuals(c.track_vpalpha, "VerdantSettingsVPAlpha")
-  c.fill_font,    c.thumb_font    = setup_slider_visuals(c.track_font,    "VerdantSettingsFont")
   -- slider display deferred to first toggle() — panel is hidden and GetWidth() returns 0
 
   -- Restore window position from SavedVars (centered fallback).
@@ -525,10 +451,6 @@ function M.init()
     controls.window:ClearAnchors()
     controls.window:SetAnchor(zc.CENTER, GuiRoot, zc.CENTER, 0, 0)
   end
-
-  -- Apply font scale once everything else is wired so bar/triple labels
-  -- inherit the saved choice on /reloadui.
-  apply_font_scale()
 
   -- Log the full config snapshot at startup so /verdant report after a
   -- reload always has the baseline.

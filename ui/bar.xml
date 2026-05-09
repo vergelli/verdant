@@ -116,7 +116,12 @@
                 inherits="ZO_ButtonBehaviorClickSound">
           <Anchor point="TOPRIGHT" offsetX="-4" offsetY="30"/>
           <Dimensions x="26" y="26"/>
-          <Textures normal="EsoUI/Art/MenuBar/menuBar_mainMenu_up.dds"
+          <!-- All three states use the _over texture: the menubar
+               _up is a small inactive circle (designed for ESO's main
+               menu where the icon is collapsed by default), not what
+               we want for a permanent gear. _over is the full-size
+               version we always want visible. -->
+          <Textures normal="EsoUI/Art/MenuBar/menuBar_mainMenu_over.dds"
                     pressed="EsoUI/Art/MenuBar/menuBar_mainMenu_down.dds"
                     mouseOver="EsoUI/Art/MenuBar/menuBar_mainMenu_over.dds"/>
           <OnClicked>Verdant.Settings.toggle()</OnClicked>
