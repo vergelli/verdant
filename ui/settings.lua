@@ -94,6 +94,31 @@ for pct = 0, 100, 5 do
 end
 local VPALPHA_DEFAULT = 30
 
+-- ── profiles ─────────────────────────────────────────────────────────────────
+-- Predefined slider combinations targeted at common play modes. Selecting
+-- one applies all five gameplay-related sliders at once. viewport_alpha
+-- intentionally stays out of profiles — it's purely cosmetic and the user
+-- shouldn't lose their alpha preference when switching profile.
+--
+-- "custom" is the catch-all marker; it's selected automatically as soon
+-- as the user touches any slider individually so manual tweaks don't
+-- silently revert when a profile is reapplied.
+local PROFILES = {
+  { id = "solo",     label = "Solo PvE",       rate = 1000, heal = 5000, shield = 10000, sample = 1000, twindow = 60  },
+  { id = "dungeons", label = "Group Dungeons", rate = 500,  heal = 5000, shield = 7000,  sample = 1000, twindow = 180 },
+  { id = "trials",   label = "Trials",         rate = 1000, heal = 5000, shield = 7000,  sample = 1000, twindow = 600 },
+  { id = "pvp",      label = "PvP",            rate = 200,  heal = 3000, shield = 5000,  sample = 200,  twindow = 30  },
+  { id = "custom",   label = "Custom"          },  -- no preset values
+}
+local PROFILE_DEFAULT = "solo"
+
+local function profile_by_id(id)
+  for _, p in ipairs(PROFILES) do
+    if p.id == id then return p end
+  end
+  return nil
+end
+
 -- ── state ─────────────────────────────────────────────────────────────────────
 local controls       = {}
 local current_rate    = RATE_DEFAULT
@@ -102,6 +127,7 @@ local current_shield  = SHIELD_DEFAULT
 local current_sample  = SAMPLE_DEFAULT
 local current_twindow = TWINDOW_DEFAULT
 local current_vpalpha = VPALPHA_DEFAULT
+local current_profile = PROFILE_DEFAULT
 
 -- ── shared helpers ────────────────────────────────────────────────────────────
 local function nearest_idx(presets, ms)
@@ -199,6 +225,57 @@ local function reinit_buffer()
   warn_if_heavy(capacity, current_twindow, hz)
 end
 
+-- ── profile machinery ────────────────────────────────────────────────────────
+-- Combobox handle, populated in init().  May be nil during very early calls.
+local profile_combo
+
+local function persist_profile(id)
+  local sv = Verdant.SavedVars
+  if sv then sv.settings = sv.settings or {} ; sv.settings.profile = id end
+end
+
+-- Switch to "custom" without rewriting any slider values. Called from
+-- every individual slider handler; cheap no-op when already on custom.
+local function mark_custom()
+  if current_profile == "custom" then return end
+  current_profile = "custom"
+  persist_profile("custom")
+  if profile_combo then
+    profile_combo:SetSelectedItemText(profile_by_id("custom").label)
+  end
+end
+
+-- Apply a named profile: writes all slider values + persists + reapplies
+-- side effects (bar tick, metric windows, temporal buffer). Does NOT
+-- touch viewport_alpha. Only meaningful for profile ids that have preset
+-- values (i.e. anything except "custom").
+local function apply_profile(id)
+  local p = profile_by_id(id)
+  if not p or not p.rate then return false end
+
+  current_rate    = p.rate
+  current_heal    = p.heal
+  current_shield  = p.shield
+  current_sample  = p.sample
+  current_twindow = p.twindow
+
+  persist("rate_ms",          current_rate)
+  persist("heal_window_ms",   current_heal)
+  persist("shield_window_ms", current_shield)
+  persist_temporal("sample_rate_ms", current_sample)
+  persist_temporal("time_window_s",  current_twindow)
+
+  Verdant.Bar.set_rate(current_rate)
+  Verdant.Metrics.set_window(current_heal)
+  Verdant.Metrics.set_shield_window(current_shield)
+  reinit_buffer()
+
+  current_profile = id
+  persist_profile(id)
+  log:info("profile ->", p.label)
+  return true
+end
+
 local function refresh_all_sliders()
   local c = controls
   update_slider(c.track_rate,    c.fill_rate,    c.thumb_rate,    c.label_rate,    RATE_PRESETS,    RATE_LABELS,    current_rate)
@@ -229,6 +306,19 @@ function M.on_move_stop()
   sv.settings.y = controls.window:GetTop()
 end
 
+-- Combobox callback: applies the profile and refreshes all slider visuals
+-- so the user immediately sees the new positions.
+function M.on_profile_selected(id)
+  if id == "custom" then
+    -- Picking "custom" from the dropdown is a no-op — the user is just
+    -- inspecting; no values change. The marker stays.
+    current_profile = "custom"
+    persist_profile("custom")
+    return
+  end
+  if apply_profile(id) then refresh_all_sliders() end
+end
+
 function M.on_rate_track_click(control)
   local cx      = GetUIMousePosition()
   local track_w = control:GetWidth()
@@ -239,6 +329,7 @@ function M.on_rate_track_click(control)
   log:info("rate ->", current_rate, "ms")
   Verdant.Bar.set_rate(current_rate)
   persist("rate_ms", current_rate)
+  mark_custom()
   update_slider(controls.track_rate, controls.fill_rate, controls.thumb_rate, controls.label_rate, RATE_PRESETS, RATE_LABELS, current_rate)
 end
 
@@ -252,6 +343,7 @@ function M.on_heal_track_click(control)
   log:info("heal_window ->", current_heal, "ms")
   Verdant.Metrics.set_window(current_heal)
   persist("heal_window_ms", current_heal)
+  mark_custom()
   update_slider(controls.track_heal, controls.fill_heal, controls.thumb_heal, controls.label_heal, HEAL_PRESETS, HEAL_LABELS, current_heal)
 end
 
@@ -265,6 +357,7 @@ function M.on_shield_track_click(control)
   log:info("shield_window ->", current_shield, "ms")
   Verdant.Metrics.set_shield_window(current_shield)
   persist("shield_window_ms", current_shield)
+  mark_custom()
   update_slider(controls.track_shield, controls.fill_shield, controls.thumb_shield, controls.label_shield, SHIELD_PRESETS, SHIELD_LABELS, current_shield)
 end
 
@@ -278,6 +371,7 @@ function M.on_sample_track_click(control)
   log:info("sample_rate ->", current_sample, "ms")
   persist_temporal("sample_rate_ms", current_sample)
   reinit_buffer()
+  mark_custom()
   update_slider(controls.track_sample, controls.fill_sample, controls.thumb_sample, controls.label_sample, SAMPLE_PRESETS, SAMPLE_LABELS, current_sample)
 end
 
@@ -291,6 +385,7 @@ function M.on_twindow_track_click(control)
   log:info("time_window ->", current_twindow, "s")
   persist_temporal("time_window_s", current_twindow)
   reinit_buffer()
+  mark_custom()
   update_slider(controls.track_twindow, controls.fill_twindow, controls.thumb_twindow, controls.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
 end
 
@@ -308,29 +403,19 @@ function M.on_vpalpha_track_click(control)
 end
 
 -- Restores every setting to its default value, persists, reapplies.
+-- Equivalent to selecting the default profile (Solo PvE) plus resetting
+-- viewport_alpha (which lives outside profiles).
 function M.on_reset_click()
   log:info("reset to defaults")
-  current_rate    = RATE_DEFAULT
-  current_heal    = HEAL_DEFAULT
-  current_shield  = SHIELD_DEFAULT
-  current_sample  = SAMPLE_DEFAULT
-  current_twindow = TWINDOW_DEFAULT
+  apply_profile(PROFILE_DEFAULT)
+
   current_vpalpha = VPALPHA_DEFAULT
-
-  -- Persist all back to SavedVars.
-  persist("rate_ms",          current_rate)
-  persist("heal_window_ms",   current_heal)
-  persist("shield_window_ms", current_shield)
-  persist_temporal("sample_rate_ms",     current_sample)
-  persist_temporal("time_window_s",      current_twindow)
   persist_temporal("viewport_alpha_pct", current_vpalpha)
-
-  -- Reapply: bar tick, metric windows, temporal buffer, viewport alpha.
-  Verdant.Bar.set_rate(current_rate)
-  Verdant.Metrics.set_window(current_heal)
-  Verdant.Metrics.set_shield_window(current_shield)
-  reinit_buffer()
   Verdant.Graph.set_viewport_alpha(current_vpalpha / 100)
+
+  if profile_combo then
+    profile_combo:SetSelectedItemText(profile_by_id(PROFILE_DEFAULT).label)
+  end
   refresh_all_sliders()
 end
 
@@ -340,7 +425,10 @@ end
 function M.snapshot()
   local hz       = math_floor(1000 / current_sample)
   local capacity = current_twindow * hz
+  local p        = profile_by_id(current_profile)
   return {
+    profile_id           = current_profile,
+    profile_label        = p and p.label or current_profile,
     rate_ms              = current_rate,
     heal_window_ms       = current_heal,
     shield_window_ms     = current_shield,
@@ -357,6 +445,7 @@ function M.report_lines()
   local s = M.snapshot()
   local heavy = (s.temporal_capacity > s.capacity_warn_above) and "  [HEAVY]" or ""
   return {
+    string.format("[config] profile=%s", s.profile_label),
     string.format("[config] bar: refresh=%dms heal_window=%dms shield_window=%dms",
       s.rate_ms, s.heal_window_ms, s.shield_window_ms),
     string.format("[config] graph: sample=%dms (%dHz) window=%ds capacity=%d%s",
@@ -378,6 +467,11 @@ function M.init()
   current_sample  = SAMPLE_PRESETS [nearest_idx(SAMPLE_PRESETS,  sv.temporal.sample_rate_ms    or SAMPLE_DEFAULT)]
   current_twindow = TWINDOW_PRESETS[nearest_idx(TWINDOW_PRESETS, sv.temporal.time_window_s     or TWINDOW_DEFAULT)]
   current_vpalpha = VPALPHA_PRESETS[nearest_idx(VPALPHA_PRESETS, sv.temporal.viewport_alpha_pct or VPALPHA_DEFAULT)]
+
+  -- Profile is just an id label; the actual slider values come from the
+  -- per-slider keys above. If the saved id is unknown (renamed or removed
+  -- in a future migration) fall back to the default profile.
+  current_profile = profile_by_id(sv.settings.profile or PROFILE_DEFAULT) and (sv.settings.profile or PROFILE_DEFAULT) or PROFILE_DEFAULT
 
   Verdant.Metrics.set_window(current_heal)
   Verdant.Metrics.set_shield_window(current_shield)
@@ -406,9 +500,26 @@ function M.init()
   controls.track_vpalpha  = VerdantSettingsPanelSliderTrackVPAlpha
   controls.window_title   = VerdantSettingsPanelWindowTitle
   controls.reset_btn      = VerdantSettingsPanelResetBtn
+  controls.profile_label  = VerdantSettingsPanelProfileLabel
+  controls.profile_combo  = VerdantSettingsPanelProfileDropdown
 
   controls.window_title:SetText("Verdant Settings")
   controls.reset_btn:SetText("Reset to Defaults")
+  controls.profile_label:SetText("Profile")
+  controls.profile_label:SetColor(0.75, 0.75, 0.75, 1)
+
+  -- Populate the profile combobox.
+  profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)
+  profile_combo:SetSortsItems(false)
+  profile_combo:ClearItems()
+  for _, p in ipairs(PROFILES) do
+    local id = p.id
+    local entry = profile_combo:CreateItemEntry(p.label,
+      function() M.on_profile_selected(id) end)
+    profile_combo:AddItem(entry, ZO_COMBOBOX_SUPPRESS_UPDATE)
+  end
+  profile_combo:UpdateItems()
+  profile_combo:SetSelectedItemText(profile_by_id(current_profile).label)
 
   controls.title_rate:SetText("Refresh Rate")
   controls.title_rate:SetColor(0.75, 0.75, 0.75, 1)

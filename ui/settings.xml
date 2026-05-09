@@ -7,6 +7,10 @@
       with title, close button, drag handler. Position is persisted in
       SavedVars.settings.{x,y}. Both bar and graph chrome carry a gear
       button that targets this same window.
+
+      Phase 7 final addition: a Profile dropdown at the top selects
+      preset combinations. Touching any individual slider switches the
+      profile to "Custom" automatically.
     -->
     <TopLevelControl name="VerdantSettingsPanel"
                      hidden="true"
@@ -14,7 +18,7 @@
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="280" y="310"/>
+      <Dimensions x="280" y="350"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -47,12 +51,27 @@
           <OnClicked>Verdant.Settings.toggle()</OnClicked>
         </Button>
 
+        <!-- ── Row 0: Profile dropdown ─────────────────────────────────── -->
+        <Label name="$(parent)ProfileLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="46"/>
+          <Dimensions x="56" y="14"/>
+        </Label>
+
+        <Control name="$(parent)ProfileDropdown" inherits="ZO_ComboBox">
+          <Anchor point="TOPLEFT"  offsetX="74"  offsetY="40"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="40"/>
+          <Dimensions y="26"/>
+        </Control>
+
         <!-- ── Row 1: Refresh Rate ─────────────────────────────────────── -->
         <Label name="$(parent)Title"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="40"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="78"/>
           <Dimensions x="160" y="12"/>
         </Label>
 
@@ -60,13 +79,13 @@
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="40"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="78"/>
           <Dimensions x="80" y="12"/>
         </Label>
 
         <Control name="$(parent)SliderTrack" mouseEnabled="true">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="55"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="55"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="93"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="93"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_rate_track_click(self)</OnMouseUp>
         </Control>
@@ -76,7 +95,7 @@
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="78"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="116"/>
           <Dimensions x="160" y="12"/>
         </Label>
 
@@ -84,13 +103,13 @@
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="78"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="116"/>
           <Dimensions x="80" y="12"/>
         </Label>
 
         <Control name="$(parent)SliderTrackHeal" mouseEnabled="true">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="93"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="93"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="131"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="131"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_heal_track_click(self)</OnMouseUp>
         </Control>
@@ -100,7 +119,7 @@
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="116"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="154"/>
           <Dimensions x="160" y="12"/>
         </Label>
 
@@ -108,13 +127,13 @@
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="116"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="154"/>
           <Dimensions x="80" y="12"/>
         </Label>
 
         <Control name="$(parent)SliderTrackShield" mouseEnabled="true">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="131"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="131"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="169"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="169"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_shield_track_click(self)</OnMouseUp>
         </Control>
@@ -124,7 +143,7 @@
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="154"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="192"/>
           <Dimensions x="160" y="12"/>
         </Label>
 
@@ -132,13 +151,13 @@
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="154"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="192"/>
           <Dimensions x="80" y="12"/>
         </Label>
 
         <Control name="$(parent)SliderTrackSample" mouseEnabled="true">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="169"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="169"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="207"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="207"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_sample_track_click(self)</OnMouseUp>
         </Control>
@@ -148,7 +167,7 @@
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="192"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="230"/>
           <Dimensions x="160" y="12"/>
         </Label>
 
@@ -156,13 +175,13 @@
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="192"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="230"/>
           <Dimensions x="80" y="12"/>
         </Label>
 
         <Control name="$(parent)SliderTrackTWindow" mouseEnabled="true">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="207"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="207"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="245"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="245"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_twindow_track_click(self)</OnMouseUp>
         </Control>
@@ -172,7 +191,7 @@
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="230"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="268"/>
           <Dimensions x="160" y="12"/>
         </Label>
 
@@ -180,13 +199,13 @@
                font="ZoFontGameSmall"
                horizontalAlignment="RIGHT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="230"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="268"/>
           <Dimensions x="80" y="12"/>
         </Label>
 
         <Control name="$(parent)SliderTrackVPAlpha" mouseEnabled="true">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="245"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="245"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="283"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="283"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_vpalpha_track_click(self)</OnMouseUp>
         </Control>
