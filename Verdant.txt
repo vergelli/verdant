@@ -24,6 +24,10 @@ zenimax/ui.lua
 zenimax/savedvars.lua
 zenimax/events.lua
 zenimax/scene.lua
+lib/plot/style.lua
+lib/plot/primitives.lua
+lib/plot/pool.lua
+lib/plot/plot_stacked_bar.lua
 observability/copybox.lua
 observability/log.lua
 observability/profiler.lua
