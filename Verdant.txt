@@ -32,8 +32,6 @@ core/temporal_buffer.lua
 core/visibility.lua
 ui/bar.xml
 ui/bar.lua
-ui/tribar.xml
-ui/tribar.lua
 ui/settings.xml
 ui/settings.lua
 ui/graph.xml

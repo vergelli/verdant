@@ -87,10 +87,10 @@
           <Dimensions y="14"/>
         </Label>
 
-        <!-- Toggle tribar window — symmetric to bar window's [+] button that
-             opens this graph.  Useful when the user has closed the tribar via
-             its X and wants it back without typing /verdant tribar. -->
-        <Button name="$(parent)TribarBtn"
+        <!-- Toggle bar window — mirror of bar's [+] button which opens this
+             graph.  Useful when the user has closed the bar via its X and
+             wants it back without typing /verdant. -->
+        <Button name="$(parent)BarBtn"
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
@@ -99,7 +99,7 @@
           <Textures normal="EsoUI/Art/Buttons/pointsplus_up.dds"
                     pressed="EsoUI/Art/Buttons/pointsplus_down.dds"
                     mouseOver="EsoUI/Art/Buttons/pointsplus_over.dds"/>
-          <OnClicked>Verdant.TriBar.toggle()</OnClicked>
+          <OnClicked>Verdant.Bar.toggle()</OnClicked>
         </Button>
 
         <Button name="$(parent)CloseBtn"

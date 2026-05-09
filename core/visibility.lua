@@ -15,7 +15,7 @@ local in_hud = true
 -- "the user wants this open" flag, INDEPENDENT from the actual SetHidden
 -- state — that way auto-hiding during a non-HUD scene does not erase the
 -- user's preference.  Actual visibility = in_hud AND user_visible[key].
-local user_visible = { bar = false, graph = false, tribar = false }
+local user_visible = { bar = false, graph = false }
 
 -- ── apply / persist ───────────────────────────────────────────────────────
 local function apply()
@@ -24,9 +24,6 @@ local function apply()
   end
   if VerdantGraphWindow then
     VerdantGraphWindow:SetHidden(not (in_hud and user_visible.graph))
-  end
-  if VerdantTriBarWindow then
-    VerdantTriBarWindow:SetHidden(not (in_hud and user_visible.tribar))
   end
   -- Settings panel is transient: just hide it whenever leaving HUD; the
   -- user can re-open it via the gear icon on the bar when back in HUD.
@@ -40,7 +37,6 @@ local function persist()
   if not sv then return end
   sv.bar      = sv.bar      or {} ; sv.bar.visible      = user_visible.bar
   sv.temporal = sv.temporal or {} ; sv.temporal.visible = user_visible.graph
-  sv.tribar   = sv.tribar   or {} ; sv.tribar.visible   = user_visible.tribar
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
@@ -54,14 +50,13 @@ end
 function M.get(key) return user_visible[key] or false end
 
 -- Master toggle wired to the keybind: closes ALL open windows in one shot,
--- or — if every window is closed — opens just the bar.  The graph and
--- tribar are not auto-opened so the keybind always has a predictable
--- "show the entry point" action.
+-- or — if every window is closed — opens just the bar.  The graph is not
+-- auto-opened so the keybind always has a predictable "show the entry
+-- point" action.
 function M.master_toggle()
-  if user_visible.bar or user_visible.graph or user_visible.tribar then
+  if user_visible.bar or user_visible.graph then
     user_visible.bar    = false
     user_visible.graph  = false
-    user_visible.tribar = false
   else
     user_visible.bar    = true
   end
@@ -72,9 +67,8 @@ end
 function M.init()
   local sv = Verdant.SavedVars
   if sv then
-    user_visible.bar    = (sv.bar      and sv.bar.visible)      or false
-    user_visible.graph  = (sv.temporal and sv.temporal.visible) or false
-    user_visible.tribar = (sv.tribar   and sv.tribar.visible)   or false
+    user_visible.bar   = (sv.bar      and sv.bar.visible)      or false
+    user_visible.graph = (sv.temporal and sv.temporal.visible) or false
   end
 
   Scene.register_callback("SceneStateChanged",

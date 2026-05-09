@@ -100,9 +100,7 @@ local function on_slash(input)
   end
 
   -- ── window toggles ───────────────────────────────────────────────────────
-  if cmd == "tribar" then
-    Verdant.TriBar.toggle() ; return
-  elseif cmd == "graph" then
+  if cmd == "graph" then
     Verdant.Graph.toggle() ; return
   end
 
@@ -114,15 +112,14 @@ local function on_addon_loaded()
   local C = Verdant.Constants
 
   -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
-  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, tribar = {}, temporal = {} })
+  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, temporal = {} })
   Verdant.Probe.init()
   Verdant.Engine.init()
   Verdant.Bar.init()
-  Verdant.TriBar.init()
   Verdant.Settings.init()
   Verdant.Graph.init()
   -- Visibility must init AFTER UI controls exist — it reads/applies SetHidden
-  -- on VerdantBarWindow / VerdantGraphWindow / VerdantTriBarWindow.
+  -- on VerdantBarWindow / VerdantGraphWindow.
   Verdant.Visibility.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
