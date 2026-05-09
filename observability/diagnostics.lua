@@ -149,6 +149,24 @@ local function build_diag_lines()
     lines[#lines+1] = "[diag] event_pool=" .. Verdant.Metrics.pool_in_use()
                       .. "/" .. Verdant.Metrics.pool_capacity()
   end
+  if Verdant.Log and Verdant.Log.size then
+    local cur, cap = Verdant.Log.size()
+    lines[#lines+1] = "[diag] log_ring=" .. cur .. "/" .. cap
+  end
+  if Verdant.Validation and Verdant.Validation.run_all_checks then
+    local v = Verdant.Validation.run_all_checks()
+    lines[#lines+1] = "[diag] validation: failures=" .. v.failure_count
+                      .. " pool_outstanding=" .. v.pool_outstanding
+  end
+  if Verdant.Profiler and Verdant.Profiler.report then
+    local r, window_s = Verdant.Profiler.report()
+    local stages = {}
+    for k in pairs(r) do stages[#stages+1] = k end
+    if #stages > 0 then
+      lines[#lines+1] = "[diag] profiler window=" .. string.format("%.1fs", window_s)
+                        .. " stages=" .. #stages .. " (use /verdant prof for detail)"
+    end
+  end
   return lines
 end
 
