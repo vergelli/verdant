@@ -749,8 +749,8 @@ function M.init()
   -- Lower alpha on both Backdrops so the window reads as semi-transparent
   -- (consistent with ESO panels) and the inner viewport feels lighter than
   -- the surrounding container.
-  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.80)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.65)
+  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.65)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.80)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames

@@ -41,9 +41,14 @@ local SHIELD_PRESETS, SHIELD_LABELS = range_presets(1, 30)
 local HEAL_DEFAULT   = 5000
 local SHIELD_DEFAULT = 10000
 
--- Sampling rate (stored as ms interval; label shows Hz)
-local SAMPLE_PRESETS = { 1000, 500, 200, 100 }
-local SAMPLE_LABELS  = { [1000] = "1 Hz", [500] = "2 Hz", [200] = "5 Hz", [100] = "10 Hz" }
+-- Sampling rate (stored as ms interval; label shows Hz). 1..10 Hz, 1 Hz step.
+local SAMPLE_PRESETS = {}
+local SAMPLE_LABELS  = {}
+for hz = 1, 10 do
+  local ms = math.floor(1000 / hz + 0.5)
+  SAMPLE_PRESETS[#SAMPLE_PRESETS + 1] = ms
+  SAMPLE_LABELS[ms] = hz .. " Hz"
+end
 local SAMPLE_DEFAULT = 1000
 
 -- Time window for temporal buffer (stored as seconds).
