@@ -14,6 +14,11 @@ local pairs            = pairs
 local IsUnitGrouped    = IsUnitGrouped
 local GetGroupSize     = GetGroupSize
 
+local C = Verdant.zenimax.constants
+local COMBAT_UNIT_TYPE_PLAYER     = C.COMBAT_UNIT_TYPE_PLAYER
+local COMBAT_UNIT_TYPE_GROUP      = C.COMBAT_UNIT_TYPE_GROUP
+local COMBAT_UNIT_TYPE_PLAYER_PET = C.COMBAT_UNIT_TYPE_PLAYER_PET
+
 local W_COV_MS = 10000
 
 local coverage = {}    -- [unitId] = last_benef_ms

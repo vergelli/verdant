@@ -9,7 +9,7 @@ is the entry point for anyone reading the code for the first time.
 
 Verdant is a **dataflow pipeline**. Combat events arrive from the
 ZeniMax client, get normalized, filtered, ingested into rolling
-metrics, and then projected onto bar / graph / tribar widgets. The
+metrics, and then projected onto bar / graph widgets. The
 implementation pattern is **pipeline architecture** combined with a
 **hexagonal boundary** at the ZOS API edge — not full Clean
 Architecture. The single Clean rule we keep is: **dependencies flow
@@ -30,7 +30,7 @@ core/           Pure domain logic: metrics, coverage, group set,
 lib/            Reusable utilities. lib/plot/ owns visualization;
                 lib/mem/ owns pools and ring buffers.
 
-ui/             Widgets (bar, graph, tribar, settings). Read from
+ui/             Widgets (bar, graph, settings). Read from
                 pipeline/presentation; do not reach into core/.
 
 observability/  Logging, profiling, validation. Cross-cutting; may

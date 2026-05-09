@@ -30,24 +30,77 @@
 
       <Controls>
 
-        <!-- Outer container backdrop -->
+        <!-- Outer container backdrop.
+             NOTE: <Center> commented out as part of the "donut" experiment —
+             chrome parchment is now painted by 4 sibling Texture strips
+             below (ChromeTop/Bottom/Left/Right) so the viewport zone has
+             no outer paint and inner alpha is independent.  To revert:
+             uncomment the <Center> line, delete the 4 Chrome textures,
+             and uncomment the SetCenterColor call in graph.lua. -->
         <Backdrop name="$(parent)Bg">
           <AnchorFill/>
           <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
                 edgeFileWidth="128" edgeFileHeight="16" edgeSize="6"/>
-          <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+          <!-- <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/> -->
           <Insets left="6" top="6" right="-6" bottom="-6"/>
         </Backdrop>
+
+        <!-- Chrome donut: 4 strips around the viewport.  Anchors are
+             parent-relative with fixed offsets that mirror the Viewport's
+             anchors (top=50, bottom=-14, left=14, right=-14) so they
+             auto-resize with the window.  Placed before TitleLabel/buttons
+             in document order, so chrome buttons render above them.
+             NOTE: forward reference to $(parent)Viewport doesn't resolve
+             cleanly in ESO XML — keep these in sync with the Viewport's
+             anchors below if you change them. -->
+        <Texture name="$(parent)ChromeTop"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPLEFT"  offsetX="6"  offsetY="6"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="-6" offsetY="50"/>
+        </Texture>
+
+        <Texture name="$(parent)ChromeBottom"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="BOTTOMLEFT"  offsetX="6"  offsetY="-14"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6" offsetY="-6"/>
+        </Texture>
+
+        <Texture name="$(parent)ChromeLeft"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPLEFT"    offsetX="6"  offsetY="50"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMLEFT" offsetX="14" offsetY="-14"/>
+        </Texture>
+
+        <Texture name="$(parent)ChromeRight"
+                 textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPRIGHT"    offsetX="-14" offsetY="50"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6"  offsetY="-14"/>
+        </Texture>
 
         <!-- Title -->
         <Label name="$(parent)TitleLabel"
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT"  offsetX="14" offsetY="6"/>
-          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="6"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="6"/>
+          <Anchor point="TOPRIGHT" offsetX="-52" offsetY="6"/>
           <Dimensions y="14"/>
         </Label>
+
+        <!-- Toggle bar window — mirror of bar's [+] button which opens this
+             graph.  Useful when the user has closed the bar via its X and
+             wants it back without typing /verdant. -->
+        <Button name="$(parent)BarBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="4"/>
+          <Dimensions x="18" y="18"/>
+          <Textures normal="EsoUI/Art/Buttons/pointsplus_up.dds"
+                    pressed="EsoUI/Art/Buttons/pointsplus_down.dds"
+                    mouseOver="EsoUI/Art/Buttons/pointsplus_over.dds"/>
+          <OnClicked>Verdant.Bar.toggle()</OnClicked>
+        </Button>
 
         <Button name="$(parent)CloseBtn"
                 mouseEnabled="true"

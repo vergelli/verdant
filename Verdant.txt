@@ -15,7 +15,9 @@ bindings.xml
 locales/default.lua
 locales/$(language).lua
 core/constants.lua
-core/events.lua
+zenimax/constants.lua
+zenimax/events.lua
+zenimax/scene.lua
 core/buffer.lua
 core/shield_registry.lua
 core/coverage.lua
@@ -30,8 +32,6 @@ core/temporal_buffer.lua
 core/visibility.lua
 ui/bar.xml
 ui/bar.lua
-ui/tribar.xml
-ui/tribar.lua
 ui/settings.xml
 ui/settings.lua
 ui/graph.xml

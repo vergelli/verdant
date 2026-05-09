@@ -18,10 +18,8 @@ local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink f
 local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
 local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
 -- Canvas is intentionally dark so it contrasts with the lighter outer frame
-local C_BG        = { r = 0.06, g = 0.07, b = 0.09, a = 1.00 }
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE     = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local FILL_T, FILL_B = 0, 0.53125
 local LINE_THICKNESS = 2
 local LABEL_H        = 12
@@ -57,6 +55,7 @@ local function fmt_secs(ms)
   return s .. "s"
 end
 
+
 -- ── pool factories ────────────────────────────────────────────────────────
 local function make_fill_pool(name_prefix)
   local counter = 0
@@ -66,6 +65,10 @@ local function make_fill_pool(name_prefix)
       local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls.canvas, CT_TEXTURE)
       t:SetTexture(FILL_TEXTURE)
       t:SetTextureCoords(0, 1, FILL_T, FILL_B)
+      -- Sub-pixel positioning: prevent ESO from snapping bar edges to integer
+      -- pixels, so adjacent bars share a clean float boundary instead of
+      -- producing a periodic "narrow / wide" pattern at fractional slot widths.
+      t:SetPixelRoundingEnabled(false)
       return t
     end,
     function(t) t:SetHidden(true) end
@@ -81,6 +84,7 @@ local function make_skill_fill_pool(name_prefix, canvas_key)
       local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls[canvas_key], CT_TEXTURE)
       t:SetTexture(FILL_TEXTURE)
       t:SetTextureCoords(0, 1, FILL_T, FILL_B)
+      t:SetPixelRoundingEnabled(false)
       return t
     end,
     function(t) t:SetHidden(true) end
@@ -364,9 +368,9 @@ local function render_view1()
   -- and the chart "slides" left with a stable cadence once the buffer is full.
   -- Newest sample is right-aligned; empty slots sit on the left until full.
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity
+  local slot_w      = cw / capacity                              -- float
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
   local slot_offset = capacity - n  -- leftmost slot of current data
   local xs          = {}
   local ehps_hs     = {}
@@ -473,9 +477,9 @@ local function render_view2()
 
   -- Shared slot grid for both sub-plots (same width, same capacity).
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity
+  local slot_w      = cw / capacity                              -- float
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
   local slot_offset = capacity - n
 
   -- ── eHPS sub-plot ──
@@ -695,6 +699,11 @@ function M.next_view()
   set_view(v)
 end
 
+-- Live-applies viewport alpha (0..1).  Called by the settings slider.
+function M.set_viewport_alpha(a)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, a)
+end
+
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
   Verdant.Visibility.set("graph", now_visible)
@@ -748,25 +757,25 @@ function M.init()
   -- screen sizes.  Min must accommodate the controls row + a usable viewport.
   controls.window:SetDimensionConstraints(360, 240, 1000, 700)
 
-  -- Lower alpha on both Backdrops so the window reads as semi-transparent
-  -- (consistent with ESO panels) and the inner viewport feels lighter than
-  -- the surrounding container.
-  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.80)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.65)
-
-  -- ── canvas backgrounds ────────────────────────────────────────────────
-  -- Created first so they are behind the grid controls and behind pool objects.
-  local function make_bg(name, parent)
-    local bg = WM:CreateControl(name, parent, CT_TEXTURE)
-    bg:ClearAnchors()
-    bg:SetAnchor(TOPLEFT,     parent, TOPLEFT,     0, 0)
-    bg:SetAnchor(BOTTOMRIGHT, parent, BOTTOMRIGHT, 0, 0)
-    bg:SetTexture(BG_TEXTURE)
-    bg:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
-  end
-  make_bg("VerdantGraphCanvasBg",  controls.canvas)
-  make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
-  make_bg("VerdantSkillBgBot",     controls.mps_canvas)
+  -- Donut chrome: 4 sibling textures paint the parchment around the viewport,
+  -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
+  -- chrome / viewport alphas are fully independent (no composition overlap).
+  -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
+  -- Donut chrome layering.  Outer center is forced to alpha 0 from Lua
+  -- because the XML comment of <Center> doesn't reliably disable it across
+  -- ESO's Backdrop machinery.  Chrome strips paint parchment around the
+  -- viewport; inner Backdrop's edge provides the inner frame, its center
+  -- is the only viewport bg layer (no overlap → independent alphas).
+  VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0)
+  VerdantGraphWindowChromeTop   :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
+  -- Viewport alpha is user-tunable via the settings panel (slider 0..100%).
+  -- Read the saved value (default 30% if first run / pre-feature SV).
+  local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal
+                and Verdant.SavedVars.temporal.viewport_alpha_pct) or 30
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, sv_a / 100)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames

@@ -14,6 +14,14 @@ local M = Verdant.ShieldRegistry
 local pairs    = pairs
 local tostring = tostring
 
+local C = Verdant.zenimax.constants
+local COMBAT_UNIT_TYPE_PLAYER    = C.COMBAT_UNIT_TYPE_PLAYER
+local EFFECT_RESULT_GAINED       = C.EFFECT_RESULT_GAINED
+local EFFECT_RESULT_UPDATED      = C.EFFECT_RESULT_UPDATED
+local EFFECT_RESULT_FULL_REFRESH = C.EFFECT_RESULT_FULL_REFRESH
+local EFFECT_RESULT_TRANSFER     = C.EFFECT_RESULT_TRANSFER
+local EFFECT_RESULT_FADED        = C.EFFECT_RESULT_FADED
+
 local function key(abilityId, targetUnitId)
   return tostring(abilityId or 0) .. ":" .. tostring(targetUnitId or 0)
 end

@@ -11,7 +11,7 @@
                      clampedToScreen="true"
                      mouseEnabled="true">
 
-      <Dimensions x="160" y="210"/>
+      <Dimensions x="160" y="250"/>
 
       <Controls>
 
@@ -141,6 +141,30 @@
           <Anchor point="TOPRIGHT" offsetX="-8" offsetY="187"/>
           <Dimensions y="14"/>
           <OnMouseUp>Verdant.Settings.on_twindow_track_click(self)</OnMouseUp>
+        </Control>
+
+        <!-- ── Row 6: Viewport Alpha ───────────────────────────────────── -->
+        <Label name="$(parent)VPAlphaTitle"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="8" offsetY="211"/>
+          <Dimensions x="88" y="12"/>
+        </Label>
+
+        <Label name="$(parent)VPAlphaLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="211"/>
+          <Dimensions x="54" y="12"/>
+        </Label>
+
+        <Control name="$(parent)SliderTrackVPAlpha" mouseEnabled="true">
+          <Anchor point="TOPLEFT"  offsetX="8"  offsetY="226"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="226"/>
+          <Dimensions y="14"/>
+          <OnMouseUp>Verdant.Settings.on_vpalpha_track_click(self)</OnMouseUp>
         </Control>
 
       </Controls>
