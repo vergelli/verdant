@@ -84,3 +84,107 @@ function Bound:err(...)  emit("err",  self.source, ...) end
 function M.for_module(source)
   return setmetatable({ source = source }, Bound)
 end
+
+-- ── structured ring buffer (SPEC_04 §4) ──────────────────────────────────
+-- Separate from the human-readable for_module path above. write() stores
+-- (t, level, key, data) records in a pre-allocated ring; flush() copies to
+-- SavedVars. The ring is mutated in place — no per-write allocation.
+
+local DEBUG = Verdant.Constants.DEBUG
+
+local RING_CAPACITY = 1024
+local ring          = {}
+local ring_head     = 0     -- last-written index (1-based)
+local ring_count    = 0     -- total writes since start
+local now_ms        = Verdant.zenimax.api.GetGameTimeMilliseconds
+
+if DEBUG then
+  for i = 1, RING_CAPACITY do
+    ring[i] = { t = 0, level = "", key = "", data = nil }
+  end
+end
+
+local NOOP = function() end
+
+local function real_write(level, key, data)
+  ring_head = (ring_head % RING_CAPACITY) + 1
+  local rec = ring[ring_head]
+  rec.t     = now_ms()
+  rec.level = level
+  rec.key   = key
+  rec.data  = data
+  ring_count = ring_count + 1
+  -- Mirror to CopyBox at warn/error so the dev sees them live.
+  if (level == "warn" or level == "error") and Verdant.CopyBox then
+    local body = "[" .. level .. ":" .. key .. "]"
+    if data ~= nil then body = body .. " " .. tostring(data) end
+    Verdant.CopyBox.append(body)
+  end
+end
+
+local function real_flush()
+  if not Verdant.SavedVars then return 0 end
+  Verdant.SavedVars.debug = Verdant.SavedVars.debug or {}
+  local out = {}
+  -- ordered: oldest → newest
+  if ring_count <= RING_CAPACITY then
+    for i = 1, ring_count do
+      local r = ring[i]
+      out[#out+1] = { t = r.t, level = r.level, key = r.key, data = r.data }
+    end
+  else
+    for i = 1, RING_CAPACITY do
+      local idx = (ring_head + i - 1) % RING_CAPACITY + 1
+      local r = ring[idx]
+      out[#out+1] = { t = r.t, level = r.level, key = r.key, data = r.data }
+    end
+  end
+  Verdant.SavedVars.debug.log = out
+  return #out
+end
+
+local function real_clear()
+  ring_head  = 0
+  ring_count = 0
+end
+
+local function real_size()
+  return math.min(ring_count, RING_CAPACITY), RING_CAPACITY
+end
+
+local function real_show_recent(n)
+  n = n or 20
+  local lines = {}
+  local total = math.min(ring_count, RING_CAPACITY)
+  local start_i = math.max(1, total - n + 1)
+  for i = start_i, total do
+    local idx
+    if ring_count <= RING_CAPACITY then
+      idx = i
+    else
+      idx = (ring_head + i - 1) % RING_CAPACITY + 1
+    end
+    local r = ring[idx]
+    lines[#lines+1] = string.format("[%d %s:%s] %s",
+      r.t, r.level, r.key, tostring(r.data))
+  end
+  if Verdant.CopyBox and Verdant.CopyBox.show then
+    Verdant.CopyBox.show("Verdant /log show", table.concat(lines, "\n"))
+  else
+    for _, l in ipairs(lines) do d(l) end
+  end
+end
+
+if DEBUG then
+  M.write       = real_write
+  M.flush       = real_flush
+  M.clear       = real_clear
+  M.size        = real_size
+  M.show_recent = real_show_recent
+else
+  M.write       = NOOP
+  M.flush       = function() return 0 end
+  M.clear       = NOOP
+  M.size        = function() return 0, RING_CAPACITY end
+  M.show_recent = NOOP
+end
