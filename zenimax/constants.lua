@@ -56,3 +56,31 @@ M.EFFECT_RESULT_FADED         = EFFECT_RESULT_FADED
 M.EFFECT_RESULT_UPDATED       = EFFECT_RESULT_UPDATED
 M.EFFECT_RESULT_FULL_REFRESH  = EFFECT_RESULT_FULL_REFRESH
 M.EFFECT_RESULT_TRANSFER      = EFFECT_RESULT_TRANSFER
+
+-- ── UI: anchor points ─────────────────────────────────────────────────────
+M.TOPLEFT     = TOPLEFT
+M.TOP         = TOP
+M.TOPRIGHT    = TOPRIGHT
+M.LEFT        = LEFT
+M.CENTER      = CENTER
+M.RIGHT       = RIGHT
+M.BOTTOMLEFT  = BOTTOMLEFT
+M.BOTTOM      = BOTTOM
+M.BOTTOMRIGHT = BOTTOMRIGHT
+
+-- ── UI: control types ─────────────────────────────────────────────────────
+M.CT_TEXTURE  = CT_TEXTURE
+M.CT_LABEL    = CT_LABEL
+M.CT_BACKDROP = CT_BACKDROP
+M.CT_CONTROL  = CT_CONTROL
+
+-- ── UI: text alignment ────────────────────────────────────────────────────
+M.TEXT_ALIGN_LEFT   = TEXT_ALIGN_LEFT
+M.TEXT_ALIGN_CENTER = TEXT_ALIGN_CENTER
+M.TEXT_ALIGN_RIGHT  = TEXT_ALIGN_RIGHT
+M.TEXT_ALIGN_TOP    = TEXT_ALIGN_TOP
+M.TEXT_ALIGN_BOTTOM = TEXT_ALIGN_BOTTOM
+
+-- ── UI: roots / sounds ────────────────────────────────────────────────────
+M.GuiRoot = GuiRoot
+M.SOUNDS  = SOUNDS
