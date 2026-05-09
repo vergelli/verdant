@@ -144,7 +144,8 @@ local function on_addon_loaded()
   -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
   local world = GetWorldName()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
-    C.SV_TABLE, C.SV_VERSION, world, { probe = {}, bar = {}, temporal = {}, copybox = {} })
+    C.SV_TABLE, C.SV_VERSION, world,
+    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {} })
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
 
   Verdant.Probe.init()
