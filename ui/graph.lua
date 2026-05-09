@@ -750,11 +750,15 @@ function M.init()
   -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
   -- chrome / viewport alphas are fully independent (no composition overlap).
   -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
-  VerdantGraphWindowChromeTop   :SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.20)
+  -- DIAGNOSTIC: extreme alphas to verify SetColor / SetCenterColor are applied.
+  -- Chrome very transparent (0.30), inner almost invisible (0.05).
+  -- If both visibly change after /reloadui, alphas work — restore preferred values.
+  -- If neither changes, the calls aren't reaching the controls.
+  VerdantGraphWindowChromeTop   :SetColor(1, 1, 1, 0.30)
+  VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.30)
+  VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.30)
+  VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.30)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.05)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
