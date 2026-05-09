@@ -55,4 +55,13 @@ Verdant.Constants = {
     -- Per SPEC_03 §5.2.
     EVENT_CAPACITY = 4096,
   },
+
+  -- VerdantEvent.kind values. Numeric ints for fast switch dispatch in
+  -- pipeline/filter and pipeline/processing.
+  ABILITY_KIND = {
+    HEAL         = 1,
+    OVERHEAL     = 2,
+    SHIELD       = 3,
+    DAMAGE_GROUP = 4,
+  },
 }

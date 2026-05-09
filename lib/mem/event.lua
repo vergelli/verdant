@@ -17,6 +17,7 @@ Verdant.lib.mem.Event = Event
 function Event.factory()
   return {
     t              = 0,
+    kind           = 0,    -- AbilityKind enum (see core/constants.lua)
     amount         = 0,
     target_unit_id = 0,
     target_type    = 0,
