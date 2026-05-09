@@ -65,6 +65,10 @@ local function make_fill_pool(name_prefix)
       local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls.canvas, CT_TEXTURE)
       t:SetTexture(FILL_TEXTURE)
       t:SetTextureCoords(0, 1, FILL_T, FILL_B)
+      -- Sub-pixel positioning: prevent ESO from snapping bar edges to integer
+      -- pixels, so adjacent bars share a clean float boundary instead of
+      -- producing a periodic "narrow / wide" pattern at fractional slot widths.
+      t:SetPixelRoundingEnabled(false)
       return t
     end,
     function(t) t:SetHidden(true) end
@@ -80,6 +84,7 @@ local function make_skill_fill_pool(name_prefix, canvas_key)
       local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls[canvas_key], CT_TEXTURE)
       t:SetTexture(FILL_TEXTURE)
       t:SetTextureCoords(0, 1, FILL_T, FILL_B)
+      t:SetPixelRoundingEnabled(false)
       return t
     end,
     function(t) t:SetHidden(true) end
@@ -363,17 +368,16 @@ local function render_view1()
   -- and the chart "slides" left with a stable cadence once the buffer is full.
   -- Newest sample is right-aligned; empty slots sit on the left until full.
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = math_max(1, math_floor(cw / capacity))     -- integer
-  local leftover    = cw - slot_w * capacity                     -- 0..slot_w-1
+  local slot_w      = cw / capacity                              -- float
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, slot_w - bar_gap)              -- same for all
+  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
   local slot_offset = capacity - n  -- leftmost slot of current data
   local xs          = {}
   local ehps_hs     = {}
   local ems_hs      = {}
 
   Verdant.TemporalBuffer.iterate(function(i, s)
-    local x  = leftover + (slot_offset + i - 1) * slot_w
+    local x  = (slot_offset + i - 1) * slot_w
     local xc = x + bw * 0.5
 
     local ehps_h = math_max(0, math_floor(ch_plot * (s.eHPS / max_ems) + 0.5))
@@ -473,10 +477,9 @@ local function render_view2()
 
   -- Shared slot grid for both sub-plots (same width, same capacity).
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = math_max(1, math_floor(cw / capacity))     -- integer
-  local leftover    = cw - slot_w * capacity                     -- 0..slot_w-1
+  local slot_w      = cw / capacity                              -- float
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, slot_w - bar_gap)              -- same for all
+  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
   local slot_offset = capacity - n
 
   -- ── eHPS sub-plot ──
@@ -486,7 +489,7 @@ local function render_view2()
     local col_hs = {}
 
     Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = leftover + (slot_offset + i - 1) * slot_w
+      local x     = (slot_offset + i - 1) * slot_w
       local col_h = math_max(0, math_floor(ch * (s.eHPS / max_shared) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
@@ -525,7 +528,7 @@ local function render_view2()
     local col_hs  = {}
 
     Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = leftover + (slot_offset + i - 1) * slot_w
+      local x     = (slot_offset + i - 1) * slot_w
       local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_shared) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
