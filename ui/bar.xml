@@ -89,16 +89,17 @@
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
           <Anchor point="TOPLEFT"  offsetX="8"   offsetY="36"/>
-          <Anchor point="TOPRIGHT" offsetX="-48" offsetY="36"/>
+          <Anchor point="TOPRIGHT" offsetX="-58" offsetY="36"/>
           <Dimensions y="14"/>
         </Label>
 
-        <!-- Graph window toggle — icon Button, same row as ValueLabel -->
+        <!-- Graph window toggle — icon Button, same row as ValueLabel.
+             Moved further left to make room for the larger gear. -->
         <Button name="$(parent)GraphBtn"
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-22" offsetY="35"/>
+          <Anchor point="TOPRIGHT" offsetX="-34" offsetY="35"/>
           <Dimensions x="16" y="16"/>
           <Textures normal="EsoUI/Art/Buttons/pointsplus_up.dds"
                     pressed="EsoUI/Art/Buttons/pointsplus_down.dds"
@@ -106,15 +107,15 @@
           <OnClicked>Verdant.Graph.toggle()</OnClicked>
         </Button>
 
-        <!-- Settings toggle — gear icon. Bumped from 18x14 chat_options to
-             22x22 menubar texture: more contrast, more visible, matches
-             ESO's main menu button language. -->
+        <!-- Settings toggle — gear icon. 26x26 with menubar texture for
+             prominence; the bar's narrowest size still fits this with
+             room for the +/value/gear chrome row. -->
         <Button name="$(parent)SettingsBtn"
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="32"/>
-          <Dimensions x="22" y="22"/>
+          <Anchor point="TOPRIGHT" offsetX="-4" offsetY="30"/>
+          <Dimensions x="26" y="26"/>
           <Textures normal="EsoUI/Art/MenuBar/menuBar_mainMenu_up.dds"
                     pressed="EsoUI/Art/MenuBar/menuBar_mainMenu_down.dds"
                     mouseOver="EsoUI/Art/MenuBar/menuBar_mainMenu_over.dds"/>

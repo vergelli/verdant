@@ -100,10 +100,13 @@ local VPALPHA_DEFAULT = 30
 local FONT_PRESETS = { 1, 2, 3 }
 local FONT_LABELS  = { [1] = "Small", [2] = "Medium", [3] = "Large" }
 local FONT_DEFAULT = 1   -- preserves current visuals (ZoFontGameSmall everywhere)
+-- ESO ships predictable Game-family fonts at three discrete sizes.
+-- ZoFontGameMedium does NOT exist in stock ESO and silently falls
+-- back to default — that's why "Large" looked unchanged before.
 local FONT_SPECS   = {
   [1] = "ZoFontGameSmall",
   [2] = "ZoFontGame",
-  [3] = "ZoFontGameMedium",
+  [3] = "ZoFontGameLarge",
 }
 
 -- ── state ─────────────────────────────────────────────────────────────────────
@@ -163,7 +166,10 @@ local function setup_slider_visuals(track, name_prefix)
   fill:SetAnchor(BOTTOMLEFT, track, BOTTOMLEFT, 0, 0)
   fill:SetTexture(FILL_TEXTURE)
   fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  fill:SetColor(0.95, 0.80, 0.20, 0.90)
+  -- Warm amber/cream matching ESO's tooltip border tone (BORDER_COLOR
+  -- in bar.lua). Was a punchy primary yellow that clashed with the
+  -- otherwise-muted UI palette.
+  fill:SetColor(0.85, 0.72, 0.45, 0.90)
   fill:SetDrawLevel(1)
 
   local thumb = WM:CreateControl(name_prefix .. "Thumb", track, CT_TEXTURE)
@@ -225,6 +231,15 @@ local function apply_font_scale()
     if lbl then lbl:SetFont(font) end
     if val then val:SetFont(font) end
   end
+  -- Graph window static chrome labels. Dynamic axis labels (Y-values,
+  -- time-strip) intentionally stay fixed-size: they're meant to be
+  -- compact reference tickmarks.
+  if VerdantGraphWindowTitleLabel  then VerdantGraphWindowTitleLabel:SetFont(font)  end
+  if VerdantGraphWindowStatusLabel then VerdantGraphWindowStatusLabel:SetFont(font) end
+  if VerdantGraphWindowViewLabel   then VerdantGraphWindowViewLabel:SetFont(font)   end
+  if VerdantGraphWindowEhpsLabel   then VerdantGraphWindowEhpsLabel:SetFont(font)   end
+  if VerdantGraphWindowMpsLabel    then VerdantGraphWindowMpsLabel:SetFont(font)    end
+  if VerdantGraphWindowNoDataLabel then VerdantGraphWindowNoDataLabel:SetFont(font) end
 end
 
 local function refresh_all_sliders()
