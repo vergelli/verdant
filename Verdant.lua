@@ -168,7 +168,11 @@ local function on_addon_loaded()
   end
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
 
-  Verdant.Probe.init()
+  -- Probe is dev-only (used by DEBUG-gated /verdant on/off/dump/...). It
+  -- registers ~10 ZOS event handlers, each doing a few conditional checks
+  -- per combat event even when probe.state.enabled is false. Skipping
+  -- init() in release keeps that cost off the hot path entirely.
+  if C.DEBUG then Verdant.Probe.init() end
   Verdant.Pipeline.init()
   Verdant.Bar.init()
   Verdant.Settings.init()
