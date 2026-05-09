@@ -750,19 +750,36 @@ function M.init()
   -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
   -- chrome / viewport alphas are fully independent (no composition overlap).
   -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
-  -- DIAGNOSTIC: hide chrome strips and inner backdrop entirely.
-  -- If after /reloadui the gray is GONE → it was them, our color calls just
-  -- weren't taking effect for some reason.
-  -- If gray PERSISTS → something else (not the chrome/inner) is painting it.
-  -- Also print whether the global controls actually exist.
-  d("[V] dbg ChromeTop  : " .. tostring(VerdantGraphWindowChromeTop))
-  d("[V] dbg ViewportBg : " .. tostring(VerdantGraphWindowViewportBg))
-  d("[V] dbg WindowBg   : " .. tostring(VerdantGraphWindowBg))
+  -- DIAGNOSTIC slash command: /verdant chrome dumps the state of the chrome
+  -- strips and inner backdrop on demand (deferred from init so chat is ready).
+  SLASH_COMMANDS["/vdiag"] = function()
+    local function tag(name, ctrl)
+      if not ctrl then
+        d("[V] " .. name .. " = nil")
+        return
+      end
+      d("[V] " .. name .. " = " .. tostring(ctrl)
+        .. " hidden=" .. tostring(ctrl:IsHidden())
+        .. " w=" .. tostring(ctrl:GetWidth())
+        .. " h=" .. tostring(ctrl:GetHeight()))
+    end
+    tag("ChromeTop",    VerdantGraphWindowChromeTop)
+    tag("ChromeBottom", VerdantGraphWindowChromeBottom)
+    tag("ChromeLeft",   VerdantGraphWindowChromeLeft)
+    tag("ChromeRight",  VerdantGraphWindowChromeRight)
+    tag("ViewportBg",   VerdantGraphWindowViewportBg)
+    tag("WindowBg",     VerdantGraphWindowBg)
+  end
+
+  -- Hide everything we control to find what's painting white.  Guarded by
+  -- existence checks so missing globals don't error.
   if VerdantGraphWindowChromeTop    then VerdantGraphWindowChromeTop   :SetHidden(true) end
   if VerdantGraphWindowChromeBottom then VerdantGraphWindowChromeBottom:SetHidden(true) end
   if VerdantGraphWindowChromeLeft   then VerdantGraphWindowChromeLeft  :SetHidden(true) end
   if VerdantGraphWindowChromeRight  then VerdantGraphWindowChromeRight :SetHidden(true) end
   if VerdantGraphWindowViewportBg   then VerdantGraphWindowViewportBg  :SetHidden(true) end
+  -- Also wipe the outer in case its <Center> wasn't actually disabled.
+  if VerdantGraphWindowBg then VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0) end
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
