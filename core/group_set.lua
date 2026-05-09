@@ -6,6 +6,7 @@ Verdant.GroupSet = {}
 local M = Verdant.GroupSet
 
 local pairs = pairs
+local log   = Verdant.Log.for_module("group_set")
 
 local members = {}   -- [unitId] = true
 local player_unit_id = nil
@@ -16,7 +17,12 @@ function M.add(unitId)
 end
 
 function M.set_player(unitId)
-  if unitId and unitId ~= 0 then player_unit_id = unitId end
+  if unitId and unitId ~= 0 then
+    if player_unit_id ~= unitId then
+      log:info("player unit_id resolved:", unitId)
+    end
+    player_unit_id = unitId
+  end
 end
 
 function M.contains(unitId)
@@ -25,6 +31,8 @@ function M.contains(unitId)
 end
 
 function M.reset()
+  local n = M.size()
+  if n > 0 then log:info("reset: cleared", n, "members") end
   members = {}
   player_unit_id = nil
 end

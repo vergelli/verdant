@@ -11,7 +11,7 @@ local M = Verdant.Engine
 
 local GetGameTimeMilliseconds = Verdant.zenimax.api.GetGameTimeMilliseconds
 local tostring                = tostring
-local log                     = Verdant.Log.for_module("engine")
+local Log                     = Verdant.Log.for_module("engine")
 
 local C = Verdant.zenimax.constants
 local EVENT_COMBAT_EVENT          = C.EVENT_COMBAT_EVENT
@@ -86,7 +86,7 @@ local function on_heal_out(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_heal(ev)
     else
       bump("engine.pool.exhausted")
-      log:warn("event pool exhausted")
+      Log:warn("event pool exhausted")
     end
     Verdant.Coverage.touch(targetUnitId, t)
   end
@@ -101,7 +101,7 @@ local function on_heal_out(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_overheal(ev)
     else
       bump("engine.pool.exhausted")
-      log:warn("event pool exhausted")
+      Log:warn("event pool exhausted")
     end
   end
 end
@@ -137,7 +137,7 @@ local function on_shield_abs(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_shield(ev)
     else
       bump("engine.pool.exhausted")
-      log:warn("event pool exhausted")
+      Log:warn("event pool exhausted")
     end
   end
   Verdant.Coverage.touch(targetUnitId, t)
@@ -170,7 +170,7 @@ local function on_group_damage(result, isError, _name, _g, _slot,
       Verdant.Metrics.ingest_damage_group(ev)
     else
       bump("engine.pool.exhausted")
-      log:warn("event pool exhausted")
+      Log:warn("event pool exhausted")
     end
   end
 end
@@ -189,11 +189,13 @@ end
 
 local function on_group_change()
   bump("engine.group.changed")
+  Log:info("group changed; refreshing coverage mode")
   Verdant.Coverage.refresh_mode()
 end
 
 local function on_group_left()
   bump("engine.group.left")
+  Log:info("group left; resetting groupset sz=", Verdant.GroupSet.size())
   log("group_left", "resetting groupset sz=" .. Verdant.GroupSet.size())
   Verdant.Coverage.refresh_mode()
   Verdant.GroupSet.reset()
@@ -248,4 +250,5 @@ function M.init()
   E.register("Verdant_E_GroupL", EVENT_GROUP_MEMBER_LEFT,   on_group_left)
   E.register("Verdant_E_GroupU", EVENT_GROUP_UPDATE,        on_group_change)
   E.register("Verdant_E_PlayerAct", EVENT_PLAYER_ACTIVATED, on_group_change)
+  Log:info("init complete; 7 event handlers registered")
 end

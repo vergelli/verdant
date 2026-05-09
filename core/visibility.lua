@@ -4,6 +4,7 @@ local M = Verdant.Visibility
 
 local Scene = Verdant.zenimax.scene
 local SCENE_SHOWN = Scene.SCENE_SHOWN
+local log = Verdant.Log.for_module("visibility")
 
 -- ── state ─────────────────────────────────────────────────────────────────
 -- in_hud: true while either the gameplay HUD scene or the HUD-overlay scene
@@ -42,6 +43,7 @@ end
 -- ── public API ────────────────────────────────────────────────────────────
 function M.set(key, visible)
   if user_visible[key] == visible then return end
+  log:info("set", key, "->", visible and "visible" or "hidden")
   user_visible[key] = visible
   apply()
   persist()
@@ -55,9 +57,11 @@ function M.get(key) return user_visible[key] or false end
 -- point" action.
 function M.master_toggle()
   if user_visible.bar or user_visible.graph then
+    log:info("master_toggle: hiding all")
     user_visible.bar    = false
     user_visible.graph  = false
   else
+    log:info("master_toggle: showing bar")
     user_visible.bar    = true
   end
   apply()

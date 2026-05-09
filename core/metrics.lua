@@ -10,6 +10,7 @@ local W_SHIELD_MS = 30000   -- shields are sparse; wider window avoids permanent
 
 local heal_buf, overheal_buf, shield_buf, damage_buf
 local event_pool
+local log = Verdant.Log.for_module("metrics")
 
 local function in_M(entry)
   return Verdant.Coverage.is_in_M(entry.target_type)
@@ -52,6 +53,7 @@ function M.init()
   overheal_buf = RingBuffer.new(W_MS,        1024, release_to_pool)
   shield_buf   = RingBuffer.new(W_SHIELD_MS,  512, release_to_pool)
   damage_buf   = RingBuffer.new(W_MS,        2048, release_to_pool)
+  log:info("init: window=", W_MS, "ms shield_window=", W_SHIELD_MS, "ms pool=", cap)
 end
 
 function M.set_window(ms)
@@ -59,12 +61,14 @@ function M.set_window(ms)
   heal_buf.window_ms     = W_MS
   overheal_buf.window_ms = W_MS
   damage_buf.window_ms   = W_MS
+  log:info("window ->", W_MS, "ms")
   -- shield window is intentionally independent; use set_shield_window to change it
 end
 
 function M.set_shield_window(ms)
   W_SHIELD_MS = ms or 30000
   shield_buf.window_ms = W_SHIELD_MS
+  log:info("shield_window ->", W_SHIELD_MS, "ms")
 end
 
 function M.window_seconds() return W_MS / 1000 end
@@ -172,6 +176,9 @@ function M.MPS_by_group(now_ms)
 end
 
 function M.reset()
+  log:info("reset: heal=", heal_buf:size(), "overheal=", overheal_buf:size(),
+           "shield=", shield_buf:size(), "damage=", damage_buf:size(),
+           "pool_in_use=", event_pool:in_use())
   heal_buf:reset()
   overheal_buf:reset()
   shield_buf:reset()

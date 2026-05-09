@@ -24,14 +24,14 @@ zenimax/ui.lua
 zenimax/savedvars.lua
 zenimax/events.lua
 zenimax/scene.lua
+observability/copybox.lua
+observability/log.lua
 core/shield_registry.lua
 core/coverage.lua
 core/group_set.lua
 core/mode.lua
 core/skill_colors.lua
 core/metrics.lua
-observability/copybox.lua
-observability/log.lua
 observability/diagnostics.lua
 core/engine.lua
 core/probe.lua

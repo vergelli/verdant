@@ -53,10 +53,15 @@ local function format_line(level, source, args, n)
 end
 
 local function emit(level, source, ...)
+  -- Gate at the very top — in DEBUG=false hot paths, info/warn must do
+  -- zero work (no select, no concat, no tostring). err still formats
+  -- because errors are rare and need to surface in chat.
+  local debug_on = Verdant.Constants.DEBUG
+  if not debug_on and level ~= "err" then return end
   local n = select("#", ...)
   local args = { ... }
   local line = format_line(level, source, args, n)
-  if Verdant.Constants.DEBUG and Verdant.CopyBox then
+  if debug_on and Verdant.CopyBox then
     Verdant.CopyBox.append(line)
   elseif level == "err" then
     d(line)
