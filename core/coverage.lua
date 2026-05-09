@@ -11,8 +11,9 @@ Verdant.Coverage = {}
 local M = Verdant.Coverage
 
 local pairs            = pairs
-local IsUnitGrouped    = IsUnitGrouped
-local GetGroupSize     = GetGroupSize
+local api              = Verdant.zenimax.api
+local IsUnitGrouped    = api.IsUnitGrouped
+local GetGroupSize     = api.GetGroupSize
 
 local C = Verdant.zenimax.constants
 local COMBAT_UNIT_TYPE_PLAYER     = C.COMBAT_UNIT_TYPE_PLAYER
