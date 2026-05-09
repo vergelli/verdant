@@ -64,10 +64,12 @@ end
 local SAMPLE_DEFAULT = 1000
 
 -- Time window for temporal buffer (stored as seconds).
--- 15 s → 5 min in 15-second steps: 15, 30, 45, 60, ..., 300.
+-- 15 s → 10 min in 15-second steps: 15, 30, 45, 60, ..., 600.
+-- Upper end (>5min) is intended for end-game PvE bosses that run long;
+-- combinations with high sample rate are gated by a capacity warning.
 local function twindow_presets()
   local p, lbls = {}, {}
-  for s = 15, 300, 15 do
+  for s = 15, 600, 15 do
     p[#p + 1] = s
     if s % 60 == 0 then
       lbls[s] = (s / 60) .. "m"
