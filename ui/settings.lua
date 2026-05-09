@@ -288,6 +288,36 @@ function M.on_vpalpha_track_click(control)
 end
 
 -- ── init ──────────────────────────────────────────────────────────────────────
+-- Snapshot of the current configuration for /verdant report and other
+-- introspection. Read-only; do NOT mutate the returned table.
+function M.snapshot()
+  local hz       = math_floor(1000 / current_sample)
+  local capacity = current_twindow * hz
+  return {
+    rate_ms              = current_rate,
+    heal_window_ms       = current_heal,
+    shield_window_ms     = current_shield,
+    sample_rate_ms       = current_sample,
+    sample_rate_hz       = hz,
+    time_window_s        = current_twindow,
+    viewport_alpha_pct   = current_vpalpha,
+    temporal_capacity    = capacity,
+    capacity_warn_above  = CAPACITY_WARN_THRESHOLD,
+  }
+end
+
+function M.report_lines()
+  local s = M.snapshot()
+  local heavy = (s.temporal_capacity > s.capacity_warn_above) and "  [HEAVY]" or ""
+  return {
+    string.format("[config] bar: refresh=%dms heal_window=%dms shield_window=%dms",
+      s.rate_ms, s.heal_window_ms, s.shield_window_ms),
+    string.format("[config] graph: sample=%dms (%dHz) window=%ds capacity=%d%s",
+      s.sample_rate_ms, s.sample_rate_hz, s.time_window_s, s.temporal_capacity, heavy),
+    string.format("[config] viewport_alpha=%d%%", s.viewport_alpha_pct),
+  }
+end
+
 function M.init()
   local sv = Verdant.SavedVars
   sv.bar      = sv.bar      or {}
@@ -358,4 +388,8 @@ function M.init()
   c.fill_twindow, c.thumb_twindow = setup_slider_visuals(c.track_twindow, "VerdantSettingsTWindow")
   c.fill_vpalpha, c.thumb_vpalpha = setup_slider_visuals(c.track_vpalpha, "VerdantSettingsVPAlpha")
   -- slider display deferred to first toggle() — panel is hidden and GetWidth() returns 0
+
+  -- Log the full config snapshot at startup so /verdant report after a
+  -- reload always has the baseline.
+  for _, line in ipairs(M.report_lines()) do log:info(line) end
 end

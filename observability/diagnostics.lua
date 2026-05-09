@@ -195,6 +195,9 @@ function M.full_report()
   end
   out[#out+1] = "Verdant full report — uptime "
                 .. (GetGameTimeMilliseconds() - start_time) .. "ms"
+  if Verdant.Settings and Verdant.Settings.report_lines then
+    section("config", Verdant.Settings.report_lines())
+  end
   section("diagnostics", build_diag_lines())
   if Verdant.Profiler and Verdant.Profiler.report_lines then
     section("profiler",   Verdant.Profiler.report_lines())
