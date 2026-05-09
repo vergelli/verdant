@@ -699,6 +699,11 @@ function M.next_view()
   set_view(v)
 end
 
+-- Live-applies viewport alpha (0..1).  Called by the settings slider.
+function M.set_viewport_alpha(a)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, a)
+end
+
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
   Verdant.Visibility.set("graph", now_visible)
@@ -766,7 +771,11 @@ function M.init()
   VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
   VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
   VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.40)
+  -- Viewport alpha is user-tunable via the settings panel (slider 0..100%).
+  -- Read the saved value (default 30% if first run / pre-feature SV).
+  local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal
+                and Verdant.SavedVars.temporal.viewport_alpha_pct) or 30
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, sv_a / 100)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames

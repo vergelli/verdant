@@ -20,8 +20,9 @@ ZO_CreateStringId("VERDANT_BAR_HIDDEN",     "Bar hidden.")
 ZO_CreateStringId("VERDANT_LOADED",         "Verdant v%s loaded. Type %s to toggle.")
 
 -- Temporal Analytics settings
-ZO_CreateStringId("VERDANT_SETTING_SAMPLE_RATE",  "Sampling Rate")
-ZO_CreateStringId("VERDANT_SETTING_TIME_WINDOW",  "Time Window")
+ZO_CreateStringId("VERDANT_SETTING_SAMPLE_RATE",     "Sampling Rate")
+ZO_CreateStringId("VERDANT_SETTING_TIME_WINDOW",     "Time Window")
+ZO_CreateStringId("VERDANT_SETTING_VIEWPORT_ALPHA",  "Viewport Alpha")
 
 -- Graph window
 ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Temporal Analytics")

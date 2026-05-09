@@ -70,6 +70,16 @@ end
 local TWINDOW_PRESETS, TWINDOW_LABELS = twindow_presets()
 local TWINDOW_DEFAULT = 60
 
+-- Viewport alpha (stored as integer percentage 0..100, step 5).  Stored as
+-- int (not float) to avoid floating-point key issues in the labels lookup.
+local VPALPHA_PRESETS = {}
+local VPALPHA_LABELS  = {}
+for pct = 0, 100, 5 do
+  VPALPHA_PRESETS[#VPALPHA_PRESETS + 1] = pct
+  VPALPHA_LABELS[pct] = pct .. "%"
+end
+local VPALPHA_DEFAULT = 30
+
 -- ── state ─────────────────────────────────────────────────────────────────────
 local controls       = {}
 local current_rate    = RATE_DEFAULT
@@ -77,6 +87,7 @@ local current_heal    = HEAL_DEFAULT
 local current_shield  = SHIELD_DEFAULT
 local current_sample  = SAMPLE_DEFAULT
 local current_twindow = TWINDOW_DEFAULT
+local current_vpalpha = VPALPHA_DEFAULT
 
 -- ── shared helpers ────────────────────────────────────────────────────────────
 local function nearest_idx(presets, ms)
@@ -160,6 +171,7 @@ function M.toggle()
     update_slider(c.track_shield,  c.fill_shield,  c.thumb_shield,  c.label_shield,  SHIELD_PRESETS,  SHIELD_LABELS,  current_shield)
     update_slider(c.track_sample,  c.fill_sample,  c.thumb_sample,  c.label_sample,  SAMPLE_PRESETS,  SAMPLE_LABELS,  current_sample)
     update_slider(c.track_twindow, c.fill_twindow, c.thumb_twindow, c.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
+    update_slider(c.track_vpalpha, c.fill_vpalpha, c.thumb_vpalpha, c.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
   else
     win:SetHidden(true)
   end
@@ -225,6 +237,18 @@ function M.on_twindow_track_click(control)
   update_slider(controls.track_twindow, controls.fill_twindow, controls.thumb_twindow, controls.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
 end
 
+function M.on_vpalpha_track_click(control)
+  local cx      = GetUIMousePosition()
+  local track_w = control:GetWidth()
+  if track_w <= 0 then return end
+  local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
+  local idx = math_max(1, math_min(#VPALPHA_PRESETS, math_floor(pct * (#VPALPHA_PRESETS - 1) + 0.5) + 1))
+  current_vpalpha = VPALPHA_PRESETS[idx]
+  persist_temporal("viewport_alpha_pct", current_vpalpha)
+  Verdant.Graph.set_viewport_alpha(current_vpalpha / 100)
+  update_slider(controls.track_vpalpha, controls.fill_vpalpha, controls.thumb_vpalpha, controls.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
+end
+
 -- ── init ──────────────────────────────────────────────────────────────────────
 function M.init()
   local sv = Verdant.SavedVars
@@ -234,8 +258,9 @@ function M.init()
   current_rate    = RATE_PRESETS   [nearest_idx(RATE_PRESETS,    sv.bar.rate_ms             or RATE_DEFAULT)]
   current_heal    = HEAL_PRESETS   [nearest_idx(HEAL_PRESETS,    sv.bar.heal_window_ms      or HEAL_DEFAULT)]
   current_shield  = SHIELD_PRESETS [nearest_idx(SHIELD_PRESETS,  sv.bar.shield_window_ms    or SHIELD_DEFAULT)]
-  current_sample  = SAMPLE_PRESETS [nearest_idx(SAMPLE_PRESETS,  sv.temporal.sample_rate_ms or SAMPLE_DEFAULT)]
-  current_twindow = TWINDOW_PRESETS[nearest_idx(TWINDOW_PRESETS, sv.temporal.time_window_s  or TWINDOW_DEFAULT)]
+  current_sample  = SAMPLE_PRESETS [nearest_idx(SAMPLE_PRESETS,  sv.temporal.sample_rate_ms    or SAMPLE_DEFAULT)]
+  current_twindow = TWINDOW_PRESETS[nearest_idx(TWINDOW_PRESETS, sv.temporal.time_window_s     or TWINDOW_DEFAULT)]
+  current_vpalpha = VPALPHA_PRESETS[nearest_idx(VPALPHA_PRESETS, sv.temporal.viewport_alpha_pct or VPALPHA_DEFAULT)]
 
   Verdant.Metrics.set_window(current_heal)
   Verdant.Metrics.set_shield_window(current_shield)
@@ -259,6 +284,9 @@ function M.init()
   controls.title_twindow  = VerdantSettingsPanelTWindowTitle
   controls.label_twindow  = VerdantSettingsPanelTWindowLabel
   controls.track_twindow  = VerdantSettingsPanelSliderTrackTWindow
+  controls.title_vpalpha  = VerdantSettingsPanelVPAlphaTitle
+  controls.label_vpalpha  = VerdantSettingsPanelVPAlphaLabel
+  controls.track_vpalpha  = VerdantSettingsPanelSliderTrackVPAlpha
 
   controls.title_rate:SetText("Refresh Rate")
   controls.title_rate:SetColor(0.75, 0.75, 0.75, 1)
@@ -280,11 +308,16 @@ function M.init()
   controls.title_twindow:SetColor(0.75, 0.75, 0.75, 1)
   controls.label_twindow:SetColor(0.95, 0.80, 0.20, 1)
 
+  controls.title_vpalpha:SetText(GetString(VERDANT_SETTING_VIEWPORT_ALPHA))
+  controls.title_vpalpha:SetColor(0.75, 0.75, 0.75, 1)
+  controls.label_vpalpha:SetColor(0.95, 0.80, 0.20, 1)
+
   local c = controls
   c.fill_rate,    c.thumb_rate    = setup_slider_visuals(c.track_rate,    "VerdantSettingsRate")
   c.fill_heal,    c.thumb_heal    = setup_slider_visuals(c.track_heal,    "VerdantSettingsHeal")
   c.fill_shield,  c.thumb_shield  = setup_slider_visuals(c.track_shield,  "VerdantSettingsShield")
   c.fill_sample,  c.thumb_sample  = setup_slider_visuals(c.track_sample,  "VerdantSettingsSample")
   c.fill_twindow, c.thumb_twindow = setup_slider_visuals(c.track_twindow, "VerdantSettingsTWindow")
+  c.fill_vpalpha, c.thumb_vpalpha = setup_slider_visuals(c.track_vpalpha, "VerdantSettingsVPAlpha")
   -- slider display deferred to first toggle() — panel is hidden and GetWidth() returns 0
 end

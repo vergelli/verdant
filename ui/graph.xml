@@ -82,10 +82,25 @@
                font="ZoFontGameSmall"
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT"  offsetX="14" offsetY="6"/>
-          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="6"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="6"/>
+          <Anchor point="TOPRIGHT" offsetX="-52" offsetY="6"/>
           <Dimensions y="14"/>
         </Label>
+
+        <!-- Toggle tribar window — symmetric to bar window's [+] button that
+             opens this graph.  Useful when the user has closed the tribar via
+             its X and wants it back without typing /verdant tribar. -->
+        <Button name="$(parent)TribarBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="4"/>
+          <Dimensions x="18" y="18"/>
+          <Textures normal="EsoUI/Art/Buttons/pointsplus_up.dds"
+                    pressed="EsoUI/Art/Buttons/pointsplus_down.dds"
+                    mouseOver="EsoUI/Art/Buttons/pointsplus_over.dds"/>
+          <OnClicked>Verdant.TriBar.toggle()</OnClicked>
+        </Button>
 
         <Button name="$(parent)CloseBtn"
                 mouseEnabled="true"
