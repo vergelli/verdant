@@ -35,7 +35,10 @@ function M.new(name_prefix, parent, ctype, on_factory, on_reset)
       if on_factory then on_factory(c, counter) end
       return c
     end,
-    function(_, c)
+    -- ZO_ObjectPool calls the reset function with the object as a SINGLE
+    -- argument, not (pool, object). Confirmed by matching the previous
+    -- inline make_skill_pool pattern in bar.lua (which used function(t)).
+    function(c)
       if on_reset then on_reset(c)
       else Primitives.clear(c) end
     end
@@ -54,7 +57,7 @@ function M.new_virtual(name_prefix, parent, virtual_template, on_factory, on_res
       if on_factory then on_factory(c, counter) end
       return c
     end,
-    function(_, c)
+    function(c)
       if on_reset then on_reset(c)
       else Primitives.clear(c) end
     end
