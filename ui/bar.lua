@@ -26,6 +26,7 @@ local BOTTOM           = zc.BOTTOM
 local BOTTOMRIGHT      = zc.BOTTOMRIGHT
 local CT_TEXTURE       = zc.CT_TEXTURE
 local CT_LABEL         = zc.CT_LABEL
+local CT_CONTROL       = zc.CT_CONTROL
 local TEXT_ALIGN_CENTER = zc.TEXT_ALIGN_CENTER
 local GuiRoot          = zc.GuiRoot
 local SOUNDS           = zc.SOUNDS
