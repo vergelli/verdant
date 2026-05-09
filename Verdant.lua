@@ -133,6 +133,17 @@ local function on_slash(input)
     Verdant.Graph.toggle() ; return
   end
 
+  -- ── help ─────────────────────────────────────────────────────────────────
+  -- Lists user-facing commands. Dev commands stay hidden in release —
+  -- the user never needs to know they exist (per phase-7 design).
+  if cmd == "help" then
+    d(GetString(VERDANT_HELP_HEADER))
+    d(GetString(VERDANT_HELP_TOGGLE))
+    d(GetString(VERDANT_HELP_GRAPH))
+    d(GetString(VERDANT_HELP_HELP))
+    return
+  end
+
   -- ── /verdant (any input) → toggle bar ────────────────────────────────────
   Verdant.Bar.toggle()
 end
@@ -146,6 +157,15 @@ local function on_addon_loaded()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
     C.SV_TABLE, C.SV_VERSION, world,
     { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {} })
+
+  -- One-time cleanup of orphan key left over by the Phase 7 font-scale
+  -- experiment. Done inline rather than via SV_VERSION bump because
+  -- bumping wipes ZO_SavedVars data (users would lose their profile +
+  -- alpha + window position). The migration framework in
+  -- zenimax/savedvars.lua remains ready for a real schema change later.
+  if Verdant.SavedVars.settings then
+    Verdant.SavedVars.settings.font_scale = nil
+  end
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
 
   Verdant.Probe.init()
