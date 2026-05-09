@@ -109,16 +109,13 @@ function M.check_payload_shape(payload, expected_keys, label)
   end
 end
 
+-- Pure query — must NOT mutate state (no log.write here).
+-- /verdant report calls this multiple times; logging each call would
+-- pollute the very log ring we're reporting on (self-fulfilling artifact).
 function M.run_all_checks()
   local leaked_count = 0
-  for label, s in pairs(outstanding) do
-    local n = 0
-    for _ in pairs(s) do n = n + 1 end
-    if n > 0 then leaked_count = leaked_count + n end
-    if Verdant.Log and Verdant.Log.write then
-      Verdant.Log.write("info", "validation.pool_outstanding",
-        { pool = label, outstanding = n })
-    end
+  for _, s in pairs(outstanding) do
+    for _ in pairs(s) do leaked_count = leaked_count + 1 end
   end
   return {
     failure_count    = #failures,
