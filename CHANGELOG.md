@@ -1,5 +1,82 @@
 # Changelog
 
+## [2.0.0] - 2026-05-09
+
+A foundation rewrite focused on architecture, observability, and UX
+polish. Numbers and visual behavior are unchanged from 1.1.0; the
+internals are substantially different.
+
+### Added
+- **Configuration profiles** — Solo PvE / Group Dungeons / Trials / PvP
+  / Custom presets at the top of the settings panel. Selecting a profile
+  applies all gameplay-related sliders at once. Touching any slider
+  switches to "Custom" automatically so manual tweaks aren't overwritten.
+- **Reset to Defaults** button restores all sliders to a known-good
+  state and reapplies it to the live state in one click.
+- **Settings is now its own movable window** with title, close button,
+  and persistent position. Both the bar and graph windows expose a gear
+  button targeting it.
+- **Time Window range extended** from 5 min to 10 min so end-game PvE
+  boss fights fit a full recording. Combinations that produce a heavy
+  capacity (`window_s × sample_hz > 1500`) emit a chat warning.
+- **Visible slider tracks** with a dark inner panel; empty sliders no
+  longer look like blank space.
+- **/verdant help** lists the user-facing commands.
+
+### Changed
+- Slider fill color softened from primary yellow to warm amber, matching
+  ESO's tooltip border palette.
+- Settings gear icon enlarged (26x26 on the bar, 28x28 on the graph)
+  and given a more contrasted texture so it reads as a real button.
+- Graph window now has its own gear button — settings reachable from
+  either window.
+
+### Internal architecture (8-phase rewrite)
+- **Phase 1**: every ZOS `EVENT_MANAGER` / constant access routes through
+  `Verdant.zenimax.{events,constants}` — a single-file ACL boundary.
+- **Phase 2**: `lib/mem/{buffer_pool,ring_buffer,event}.lua` —
+  `VerdantEvent` pool (4096 records) eliminates per-event `{}` allocation
+  on the heal/shield/damage hot path.
+- **Phase 3**: `Verdant.zenimax.{api,ui,savedvars}` — completes the ACL.
+  Outside `zenimax/`, no live code touches a bare ZOS global.
+- **Phase 4**: `core/engine.lua` replaced by the four-stage pipeline
+  (`pipeline/{acquisition,filter,processing,presentation,pipeline}.lua`).
+  Each stage has a single responsibility; counter accounting preserved
+  exactly through validation.
+- **Phase 5**: `lib/plot/` — reusable visualization scaffolding
+  (`style`, `primitives`, `pool`, `plot_stacked_bar`). Bar and graph
+  widgets routed through the shared pool factory; the StackedBar
+  composer absorbed the per-skill segment rendering previously
+  duplicated four times.
+- **Phase 6**: observability layer with negligible release-mode cost —
+  load-time `if not DEBUG then return end` gating. New: `/verdant prof`
+  per-stage percentile profiler, `/verdant validate` invariant checks,
+  `/verdant log` structured ring, `/verdant report` one-shot dev dump.
+- **Phase 7**: settings UX rebuild + profiles (this release's headline
+  feature).
+- **Phase 8**: ESOUI guideline compliance, locales, dead code removal,
+  documentation pass.
+
+### Fixed during the rewrite
+- ZO_ObjectPool reset callback signature documented as one-arg
+  (`function(t)`) — saved future maintainers from the `function(_, c)`
+  trap that nil'd the object.
+- `ZoFontGameMedium` does not exist in stock ESO and silently falls
+  back to the default font; previously prototyped font scale slider was
+  removed once this surfaced.
+- Self-fulfilling artifact in `/verdant report` — `validation.run_all_checks`
+  is now a pure query and no longer mutates the log ring it's reporting on.
+- `lib/plot/*` manifest order: must load **after** `zenimax/*` because
+  it references `Verdant.zenimax.{constants,ui}` at module load time.
+
+### Out of scope (deferred to v2.x)
+- Buff/debuff timeline view (`VerdantEffectEvent` pool + `plot_buff_timeline.lua`).
+- Architectural extraction of a `config/` module per SPEC_05 §Phase 7.
+  The settings UX rebuild was prioritized; the architecture refactor
+  can land later if it earns its keep.
+
+---
+
 ## [1.1.0] - 2026-05-05
 
 ### Added
