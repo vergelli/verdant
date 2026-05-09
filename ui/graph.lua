@@ -750,15 +750,19 @@ function M.init()
   -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
   -- chrome / viewport alphas are fully independent (no composition overlap).
   -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
-  -- DIAGNOSTIC: paint chrome RED and inner GREEN to verify our calls reach
-  -- the right controls.  If after /reloadui chrome is red and inner green,
-  -- the bindings are correct and the previous "blanco opaco" was real
-  -- alpha behavior.  If colors don't change, the calls aren't landing.
-  VerdantGraphWindowChromeTop   :SetColor(1, 0, 0, 1)
-  VerdantGraphWindowChromeBottom:SetColor(1, 0, 0, 1)
-  VerdantGraphWindowChromeLeft  :SetColor(1, 0, 0, 1)
-  VerdantGraphWindowChromeRight :SetColor(1, 0, 0, 1)
-  VerdantGraphWindowViewportBg:SetCenterColor(0, 1, 0, 1)
+  -- DIAGNOSTIC: hide chrome strips and inner backdrop entirely.
+  -- If after /reloadui the gray is GONE → it was them, our color calls just
+  -- weren't taking effect for some reason.
+  -- If gray PERSISTS → something else (not the chrome/inner) is painting it.
+  -- Also print whether the global controls actually exist.
+  d("[V] dbg ChromeTop  : " .. tostring(VerdantGraphWindowChromeTop))
+  d("[V] dbg ViewportBg : " .. tostring(VerdantGraphWindowViewportBg))
+  d("[V] dbg WindowBg   : " .. tostring(VerdantGraphWindowBg))
+  if VerdantGraphWindowChromeTop    then VerdantGraphWindowChromeTop   :SetHidden(true) end
+  if VerdantGraphWindowChromeBottom then VerdantGraphWindowChromeBottom:SetHidden(true) end
+  if VerdantGraphWindowChromeLeft   then VerdantGraphWindowChromeLeft  :SetHidden(true) end
+  if VerdantGraphWindowChromeRight  then VerdantGraphWindowChromeRight :SetHidden(true) end
+  if VerdantGraphWindowViewportBg   then VerdantGraphWindowViewportBg  :SetHidden(true) end
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
