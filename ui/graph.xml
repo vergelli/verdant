@@ -83,9 +83,23 @@
                horizontalAlignment="LEFT"
                verticalAlignment="CENTER">
           <Anchor point="TOPLEFT"  offsetX="14"  offsetY="6"/>
-          <Anchor point="TOPRIGHT" offsetX="-52" offsetY="6"/>
+          <Anchor point="TOPRIGHT" offsetX="-78" offsetY="6"/>
           <Dimensions y="14"/>
         </Label>
+
+        <!-- Settings toggle — same gear texture as bar window. The graph
+             chrome has more room so the button can be 22x22. -->
+        <Button name="$(parent)SettingsBtn"
+                mouseEnabled="true"
+                mouseOverBlendMode="ADD"
+                inherits="ZO_ButtonBehaviorClickSound">
+          <Anchor point="TOPRIGHT" offsetX="-54" offsetY="2"/>
+          <Dimensions x="22" y="22"/>
+          <Textures normal="EsoUI/Art/MenuBar/menuBar_mainMenu_up.dds"
+                    pressed="EsoUI/Art/MenuBar/menuBar_mainMenu_down.dds"
+                    mouseOver="EsoUI/Art/MenuBar/menuBar_mainMenu_over.dds"/>
+          <OnClicked>Verdant.Settings.toggle()</OnClicked>
+        </Button>
 
         <!-- Toggle bar window — mirror of bar's [+] button which opens this
              graph.  Useful when the user has closed the bar via its X and
