@@ -3,7 +3,7 @@ local Verdant = Verdant
 
 Verdant.Constants = {
   ADDON_NAME    = "Verdant",
-  VERSION       = "1.1.0",
+  VERSION       = "2.0.0",
   SLASH_COMMAND = "/verdant",
 
   -- DEBUG gates developer-only slash subcommands (probe/dump/diag/...) and,

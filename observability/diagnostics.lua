@@ -1,3 +1,17 @@
+-- Diagnostics — counters + event ring + 1Hz timeseries collector. The
+-- aggregation surface that /verdant diag and /verdant report read from.
+-- Stays partially live in release (counter bumps from pipeline.lua are
+-- always called) — the formatting/dump paths are dev-only.
+--
+-- Public surface:
+--   bump(key, n)        increment a counter
+--   log_event(cat, p)   append a categorized entry to the event ring
+--   snapshot()          structured dump for SavedVars / probe persist
+--   print_diag()        human-readable dump (CopyBox in DEBUG, chat in release)
+--   full_report()       aggregated /verdant report (DEBUG only)
+--   reset()             clears counters/ring; also rebuilds start_time
+--   init()              wires the 1Hz ts_sample tick
+
 Verdant = Verdant or {}
 local Verdant = Verdant
 

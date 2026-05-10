@@ -802,9 +802,9 @@ function M.init()
 
   -- ZO_DefaultButton supports SetText: the button frame is the texture,
   -- the label inside renders the text we set here.
-  controls.btn_record:SetText("Start")
-  controls.btn_stop:SetText("Stop")
-  controls.btn_flush:SetText("Flush")
+  controls.btn_record:SetText(GetString(VERDANT_GRAPH_RECORD))
+  controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
+  controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
 
   controls.status:SetText("")
   controls.status:SetColor(0.65, 0.65, 0.65, 1)

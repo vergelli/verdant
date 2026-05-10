@@ -29,9 +29,7 @@ M.reset        = NOOP
 
 if not Verdant.Constants.DEBUG then return end
 
--- ─────────────────────────────────────────────────────────────────────────
--- Below this line: only parses when DEBUG=true.
--- ─────────────────────────────────────────────────────────────────────────
+-- ── below this line: only parses when DEBUG=true ────────────────────────
 
 local now_ms = Verdant.zenimax.api.GetGameTimeMilliseconds
 

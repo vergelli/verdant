@@ -103,12 +103,24 @@ local VPALPHA_DEFAULT = 30
 -- "custom" is the catch-all marker; it's selected automatically as soon
 -- as the user touches any slider individually so manual tweaks don't
 -- silently revert when a profile is reapplied.
+-- Profile labels go through GetString so future locales can override.
+-- Resolved lazily inside profile_label_for(); the locales might not be
+-- live at module-load time depending on manifest order.
+local function profile_label_for(id)
+  if id == "solo"     then return GetString(VERDANT_PROFILE_SOLO)     end
+  if id == "dungeons" then return GetString(VERDANT_PROFILE_DUNGEONS) end
+  if id == "trials"   then return GetString(VERDANT_PROFILE_TRIALS)   end
+  if id == "pvp"      then return GetString(VERDANT_PROFILE_PVP)      end
+  if id == "custom"   then return GetString(VERDANT_PROFILE_CUSTOM)   end
+  return id
+end
+
 local PROFILES = {
-  { id = "solo",     label = "Solo PvE",       rate = 1000, heal = 5000, shield = 10000, sample = 1000, twindow = 60  },
-  { id = "dungeons", label = "Group Dungeons", rate = 500,  heal = 5000, shield = 7000,  sample = 1000, twindow = 180 },
-  { id = "trials",   label = "Trials",         rate = 1000, heal = 5000, shield = 7000,  sample = 1000, twindow = 600 },
-  { id = "pvp",      label = "PvP",            rate = 200,  heal = 3000, shield = 5000,  sample = 200,  twindow = 30  },
-  { id = "custom",   label = "Custom"          },  -- no preset values
+  { id = "solo",     rate = 1000, heal = 5000, shield = 10000, sample = 1000, twindow = 60  },
+  { id = "dungeons", rate = 500,  heal = 5000, shield = 7000,  sample = 1000, twindow = 180 },
+  { id = "trials",   rate = 1000, heal = 5000, shield = 7000,  sample = 1000, twindow = 600 },
+  { id = "pvp",      rate = 200,  heal = 3000, shield = 5000,  sample = 200,  twindow = 30  },
+  { id = "custom"    },  -- no preset values
 }
 local PROFILE_DEFAULT = "solo"
 
@@ -241,7 +253,7 @@ local function mark_custom()
   current_profile = "custom"
   persist_profile("custom")
   if profile_combo then
-    profile_combo:SetSelectedItemText(profile_by_id("custom").label)
+    profile_combo:SetSelectedItemText(profile_label_for("custom"))
   end
 end
 
@@ -272,7 +284,7 @@ local function apply_profile(id)
 
   current_profile = id
   persist_profile(id)
-  log:info("profile ->", p.label)
+  log:info("profile ->", profile_label_for(id))
   return true
 end
 
@@ -414,7 +426,7 @@ function M.on_reset_click()
   Verdant.Graph.set_viewport_alpha(current_vpalpha / 100)
 
   if profile_combo then
-    profile_combo:SetSelectedItemText(profile_by_id(PROFILE_DEFAULT).label)
+    profile_combo:SetSelectedItemText(profile_label_for(PROFILE_DEFAULT))
   end
   refresh_all_sliders()
 end
@@ -425,10 +437,9 @@ end
 function M.snapshot()
   local hz       = math_floor(1000 / current_sample)
   local capacity = current_twindow * hz
-  local p        = profile_by_id(current_profile)
   return {
     profile_id           = current_profile,
-    profile_label        = p and p.label or current_profile,
+    profile_label        = profile_label_for(current_profile),
     rate_ms              = current_rate,
     heal_window_ms       = current_heal,
     shield_window_ms     = current_shield,
@@ -503,9 +514,9 @@ function M.init()
   controls.profile_label  = VerdantSettingsPanelProfileLabel
   controls.profile_combo  = VerdantSettingsPanelProfileDropdown
 
-  controls.window_title:SetText("Verdant Settings")
-  controls.reset_btn:SetText("Reset to Defaults")
-  controls.profile_label:SetText("Profile")
+  controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
+  controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
+  controls.profile_label:SetText(GetString(VERDANT_SETTINGS_PROFILE))
   controls.profile_label:SetColor(0.75, 0.75, 0.75, 1)
 
   -- Populate the profile combobox.
@@ -514,22 +525,22 @@ function M.init()
   profile_combo:ClearItems()
   for _, p in ipairs(PROFILES) do
     local id = p.id
-    local entry = profile_combo:CreateItemEntry(p.label,
+    local entry = profile_combo:CreateItemEntry(profile_label_for(id),
       function() M.on_profile_selected(id) end)
     profile_combo:AddItem(entry, ZO_COMBOBOX_SUPPRESS_UPDATE)
   end
   profile_combo:UpdateItems()
-  profile_combo:SetSelectedItemText(profile_by_id(current_profile).label)
+  profile_combo:SetSelectedItemText(profile_label_for(current_profile))
 
-  controls.title_rate:SetText("Refresh Rate")
+  controls.title_rate:SetText(GetString(VERDANT_SETTING_REFRESH_RATE))
   controls.title_rate:SetColor(0.75, 0.75, 0.75, 1)
   controls.label_rate:SetColor(0.95, 0.80, 0.20, 1)
 
-  controls.title_heal:SetText("Heal Window")
+  controls.title_heal:SetText(GetString(VERDANT_SETTING_HEAL_WINDOW))
   controls.title_heal:SetColor(0.75, 0.75, 0.75, 1)
   controls.label_heal:SetColor(0.95, 0.80, 0.20, 1)
 
-  controls.title_shield:SetText("Shield Window")
+  controls.title_shield:SetText(GetString(VERDANT_SETTING_SHIELD_WINDOW))
   controls.title_shield:SetColor(0.75, 0.75, 0.75, 1)
   controls.label_shield:SetColor(0.95, 0.80, 0.20, 1)
 
