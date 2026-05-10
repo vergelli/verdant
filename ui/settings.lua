@@ -222,9 +222,7 @@ local CAPACITY_WARN_THRESHOLD = 1500
 
 local function warn_if_heavy(capacity, twindow_s, hz)
   if capacity <= CAPACITY_WARN_THRESHOLD then return end
-  local msg = string.format(
-    "%ss x %s Hz = %d samples may impact FPS. Consider lower sample rate for long windows.",
-    twindow_s, hz, capacity)
+  local msg = string.format(GetString(VERDANT_WARN_HEAVY_BUFFER), twindow_s, hz, capacity)
   -- Chat in red so the user notices.
   d("|cFF4444[V] WARNING:|r " .. msg)
   log:warn("heavy combo:", msg)
