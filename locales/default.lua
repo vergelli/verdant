@@ -19,9 +19,32 @@ ZO_CreateStringId("VERDANT_BAR_SHOWN",      "Bar shown.")
 ZO_CreateStringId("VERDANT_BAR_HIDDEN",     "Bar hidden.")
 ZO_CreateStringId("VERDANT_LOADED",         "Verdant v%s loaded. Type %s to toggle.")
 
--- Temporal Analytics settings
-ZO_CreateStringId("VERDANT_SETTING_SAMPLE_RATE",  "Sampling Rate")
-ZO_CreateStringId("VERDANT_SETTING_TIME_WINDOW",  "Time Window")
+-- Settings panel
+ZO_CreateStringId("VERDANT_SETTINGS_TITLE",          "Verdant Settings")
+ZO_CreateStringId("VERDANT_SETTINGS_PROFILE",        "Profile")
+ZO_CreateStringId("VERDANT_SETTINGS_RESET",          "Reset to Defaults")
+ZO_CreateStringId("VERDANT_SETTING_REFRESH_RATE",    "Refresh Rate")
+ZO_CreateStringId("VERDANT_SETTING_HEAL_WINDOW",     "Heal Window")
+ZO_CreateStringId("VERDANT_SETTING_SHIELD_WINDOW",   "Shield Window")
+ZO_CreateStringId("VERDANT_SETTING_SAMPLE_RATE",     "Sampling Rate")
+ZO_CreateStringId("VERDANT_SETTING_TIME_WINDOW",     "Time Window")
+ZO_CreateStringId("VERDANT_SETTING_VIEWPORT_ALPHA",  "Viewport Alpha")
+
+-- Profile preset names
+ZO_CreateStringId("VERDANT_PROFILE_SOLO",            "Solo PvE")
+ZO_CreateStringId("VERDANT_PROFILE_DUNGEONS",        "Group Dungeons")
+ZO_CreateStringId("VERDANT_PROFILE_TRIALS",          "Trials")
+ZO_CreateStringId("VERDANT_PROFILE_PVP",             "PvP")
+ZO_CreateStringId("VERDANT_PROFILE_CUSTOM",          "Custom")
+
+-- Heavy buffer warning (chat) — args: window_s, hz, capacity
+ZO_CreateStringId("VERDANT_WARN_HEAVY_BUFFER", "%ds x %d Hz = %d samples may impact FPS. Consider lower sample rate for long windows.")
+
+-- Help command output
+ZO_CreateStringId("VERDANT_HELP_HEADER",  "Verdant commands:")
+ZO_CreateStringId("VERDANT_HELP_TOGGLE",  "  /verdant         toggle the bar window")
+ZO_CreateStringId("VERDANT_HELP_GRAPH",   "  /verdant graph   toggle the temporal analytics window")
+ZO_CreateStringId("VERDANT_HELP_HELP",    "  /verdant help    show this list")
 
 -- Graph window
 ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Temporal Analytics")

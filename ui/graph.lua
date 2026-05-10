@@ -2,15 +2,32 @@ Verdant = Verdant or {}
 Verdant.Graph = {}
 local M = Verdant.Graph
 
-local ZO_ObjectPool              = ZO_ObjectPool
-local WINDOW_MANAGER             = WINDOW_MANAGER
-local EVENT_MANAGER              = EVENT_MANAGER
-local CreateControlFromVirtual   = CreateControlFromVirtual
-local GetGameTimeMilliseconds    = GetGameTimeMilliseconds
-local GetString                  = GetString
+local api  = Verdant.zenimax.api
+local zui  = Verdant.zenimax.ui
+local zc   = Verdant.zenimax.constants
+local zev  = Verdant.zenimax.events
+local WINDOW_MANAGER             = zui.WINDOW_MANAGER
+local GetGameTimeMilliseconds    = api.GetGameTimeMilliseconds
+local GetString                  = api.GetString
 local math_max                   = math.max
 local math_floor                 = math.floor
 local string_format              = string.format
+
+-- ── UI constants (local cache for hot anchor / type lookups) ──────────────
+local log               = Verdant.Log.for_module("graph")
+local TOPLEFT           = zc.TOPLEFT
+local TOPRIGHT          = zc.TOPRIGHT
+local BOTTOMLEFT        = zc.BOTTOMLEFT
+local BOTTOM            = zc.BOTTOM
+local BOTTOMRIGHT       = zc.BOTTOMRIGHT
+local CENTER            = zc.CENTER
+local GuiRoot           = zc.GuiRoot
+local CT_TEXTURE        = zc.CT_TEXTURE
+local CT_LABEL          = zc.CT_LABEL
+local TEXT_ALIGN_LEFT   = zc.TEXT_ALIGN_LEFT
+local TEXT_ALIGN_CENTER = zc.TEXT_ALIGN_CENTER
+local TEXT_ALIGN_RIGHT  = zc.TEXT_ALIGN_RIGHT
+local TEXT_ALIGN_BOTTOM = zc.TEXT_ALIGN_BOTTOM
 
 -- Colors matching bar.lua
 local C_EHPS      = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 }  -- pastel green fill
@@ -18,10 +35,8 @@ local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink f
 local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
 local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
 -- Canvas is intentionally dark so it contrasts with the lighter outer frame
-local C_BG        = { r = 0.06, g = 0.07, b = 0.09, a = 1.00 }
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE     = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local FILL_T, FILL_B = 0, 0.53125
 local LINE_THICKNESS = 2
 local LABEL_H        = 12
@@ -57,71 +72,52 @@ local function fmt_secs(ms)
   return s .. "s"
 end
 
+
 -- ── pool factories ────────────────────────────────────────────────────────
+-- ── pool factories (lib/plot/Pool wrappers) ──────────────────────────────
+-- All four pool kinds (fills + lines × per-canvas variants) share a small
+-- factory closure: bind a parent canvas + on_factory texture/thickness
+-- setup, then defer to Verdant.lib.plot.Pool. Reset semantics differ for
+-- lines: they must clear anchors on release so a re-acquired line starts
+-- fresh (otherwise a "ghost" segment from the previous use can persist).
+local Pool = Verdant.lib.plot.Pool
+
+local function fill_factory(c)
+  c:SetTexture(FILL_TEXTURE)
+  c:SetTextureCoords(0, 1, FILL_T, FILL_B)
+  -- Sub-pixel positioning: prevent ESO from snapping bar edges to integer
+  -- pixels so adjacent bars share a clean float boundary instead of
+  -- producing a periodic "narrow / wide" pattern at fractional slot widths.
+  c:SetPixelRoundingEnabled(false)
+end
+
+local function fill_reset(c)
+  c:SetHidden(true)
+end
+
+local function line_factory(line)
+  line:SetThickness(LINE_THICKNESS)
+end
+
+local function line_reset(line)
+  line:SetHidden(true)
+  line:ClearAnchors()
+end
+
 local function make_fill_pool(name_prefix)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls.canvas, CT_TEXTURE)
-      t:SetTexture(FILL_TEXTURE)
-      t:SetTextureCoords(0, 1, FILL_T, FILL_B)
-      return t
-    end,
-    function(t) t:SetHidden(true) end
-  )
+  return Pool.new(name_prefix, controls.canvas, CT_TEXTURE, fill_factory, fill_reset)
 end
 
--- canvas_key: key in controls{} for the parent canvas (resolved lazily at first acquire).
 local function make_skill_fill_pool(name_prefix, canvas_key)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, controls[canvas_key], CT_TEXTURE)
-      t:SetTexture(FILL_TEXTURE)
-      t:SetTextureCoords(0, 1, FILL_T, FILL_B)
-      return t
-    end,
-    function(t) t:SetHidden(true) end
-  )
+  return Pool.new(name_prefix, controls[canvas_key], CT_TEXTURE, fill_factory, fill_reset)
 end
 
--- Line reset clears anchors as well as hiding.  Without ClearAnchors the
--- previous segment's endpoints can persist on a Line when it is re-acquired
--- mid-recording, producing a "ghost" of the old descent that shows alongside
--- the freshly-positioned line.  Wiping anchors on release forces the next
--- acquirer to set them from scratch.
 local function make_line_pool(name_prefix)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local line = CreateControlFromVirtual(name_prefix .. counter, controls.canvas, "VerdantGraphLineTemplate")
-      line:SetThickness(LINE_THICKNESS)
-      return line
-    end,
-    function(line)
-      line:SetHidden(true)
-      line:ClearAnchors()
-    end
-  )
+  return Pool.new_virtual(name_prefix, controls.canvas, "VerdantGraphLineTemplate", line_factory, line_reset)
 end
 
 local function make_skill_line_pool(name_prefix, canvas_key)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local line = CreateControlFromVirtual(name_prefix .. counter, controls[canvas_key], "VerdantGraphLineTemplate")
-      line:SetThickness(LINE_THICKNESS)
-      return line
-    end,
-    function(line)
-      line:SetHidden(true)
-      line:ClearAnchors()
-    end
-  )
+  return Pool.new_virtual(name_prefix, controls[canvas_key], "VerdantGraphLineTemplate", line_factory, line_reset)
 end
 
 -- ── grid system ───────────────────────────────────────────────────────────
@@ -364,9 +360,9 @@ local function render_view1()
   -- and the chart "slides" left with a stable cadence once the buffer is full.
   -- Newest sample is right-aligned; empty slots sit on the left until full.
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity
+  local slot_w      = cw / capacity                              -- float
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
   local slot_offset = capacity - n  -- leftmost slot of current data
   local xs          = {}
   local ehps_hs     = {}
@@ -473,9 +469,9 @@ local function render_view2()
 
   -- Shared slot grid for both sub-plots (same width, same capacity).
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity
+  local slot_w      = cw / capacity                              -- float
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, math_floor(slot_w - bar_gap))
+  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
   local slot_offset = capacity - n
 
   -- ── eHPS sub-plot ──
@@ -601,7 +597,11 @@ local function set_view(v)
 end
 
 -- ── sampling loop ─────────────────────────────────────────────────────────
+local prof_enter = Verdant.Profiler.enter
+local prof_exit  = Verdant.Profiler.exit
+
 local function on_sample_update()
+  prof_enter("graph.sample_tick")
   local now = GetGameTimeMilliseconds()
   local r   = Verdant.Metrics.contribution(now)
   local eg  = Verdant.Metrics.eHPS_by_group(now)
@@ -614,11 +614,13 @@ local function on_sample_update()
   if not controls.window:IsHidden() then
     render_current_view()
   end
+  prof_exit("graph.sample_tick")
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
 function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
+  log:info("record click")
   Verdant.TemporalBuffer.clear()
   release_all_pools()
   hide_all_grids()
@@ -628,22 +630,23 @@ function M.on_record_click()
   local sv       = Verdant.SavedVars
   local interval = (sv and sv.temporal and sv.temporal.sample_rate_ms)
                    or Verdant.Constants.TEMPORAL.SAMPLE_RATE_DEFAULT
-  EVENT_MANAGER:RegisterForUpdate(Verdant.Constants.TEMPORAL.UPDATE_NAME, interval, on_sample_update)
+  zev.register_update(Verdant.Constants.TEMPORAL.UPDATE_NAME, interval, on_sample_update)
   refresh_button_colors()
   controls.status:SetText("0:00")
 end
 
 function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
+  log:info("stop click")
   Verdant.TemporalBuffer.stop_recording()
-  EVENT_MANAGER:UnregisterForUpdate(Verdant.Constants.TEMPORAL.UPDATE_NAME)
+  zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
   refresh_button_colors()
   render_current_view()
 end
 
 function M.on_flush_click()
   if Verdant.TemporalBuffer.is_recording() then
-    EVENT_MANAGER:UnregisterForUpdate(Verdant.Constants.TEMPORAL.UPDATE_NAME)
+    zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
     Verdant.TemporalBuffer.stop_recording()
   end
   Verdant.TemporalBuffer.clear()
@@ -695,8 +698,14 @@ function M.next_view()
   set_view(v)
 end
 
+-- Live-applies viewport alpha (0..1).  Called by the settings slider.
+function M.set_viewport_alpha(a)
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, a)
+end
+
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
+  log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
   if now_visible then
     -- Sync the EMS/SKILL sub-controls with current_view, then render fresh.
@@ -748,25 +757,25 @@ function M.init()
   -- screen sizes.  Min must accommodate the controls row + a usable viewport.
   controls.window:SetDimensionConstraints(360, 240, 1000, 700)
 
-  -- Lower alpha on both Backdrops so the window reads as semi-transparent
-  -- (consistent with ESO panels) and the inner viewport feels lighter than
-  -- the surrounding container.
-  VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.80)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, 0.65)
-
-  -- ── canvas backgrounds ────────────────────────────────────────────────
-  -- Created first so they are behind the grid controls and behind pool objects.
-  local function make_bg(name, parent)
-    local bg = WM:CreateControl(name, parent, CT_TEXTURE)
-    bg:ClearAnchors()
-    bg:SetAnchor(TOPLEFT,     parent, TOPLEFT,     0, 0)
-    bg:SetAnchor(BOTTOMRIGHT, parent, BOTTOMRIGHT, 0, 0)
-    bg:SetTexture(BG_TEXTURE)
-    bg:SetColor(C_BG.r, C_BG.g, C_BG.b, C_BG.a)
-  end
-  make_bg("VerdantGraphCanvasBg",  controls.canvas)
-  make_bg("VerdantSkillBgTop",     controls.ehps_canvas)
-  make_bg("VerdantSkillBgBot",     controls.mps_canvas)
+  -- Donut chrome: 4 sibling textures paint the parchment around the viewport,
+  -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
+  -- chrome / viewport alphas are fully independent (no composition overlap).
+  -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
+  -- Donut chrome layering.  Outer center is forced to alpha 0 from Lua
+  -- because the XML comment of <Center> doesn't reliably disable it across
+  -- ESO's Backdrop machinery.  Chrome strips paint parchment around the
+  -- viewport; inner Backdrop's edge provides the inner frame, its center
+  -- is the only viewport bg layer (no overlap → independent alphas).
+  VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0)
+  VerdantGraphWindowChromeTop   :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
+  -- Viewport alpha is user-tunable via the settings panel (slider 0..100%).
+  -- Read the saved value (default 30% if first run / pre-feature SV).
+  local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal
+                and Verdant.SavedVars.temporal.viewport_alpha_pct) or 30
+  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, sv_a / 100)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
@@ -793,9 +802,9 @@ function M.init()
 
   -- ZO_DefaultButton supports SetText: the button frame is the texture,
   -- the label inside renders the text we set here.
-  controls.btn_record:SetText("Start")
-  controls.btn_stop:SetText("Stop")
-  controls.btn_flush:SetText("Flush")
+  controls.btn_record:SetText(GetString(VERDANT_GRAPH_RECORD))
+  controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
+  controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
 
   controls.status:SetText("")
   controls.status:SetColor(0.65, 0.65, 0.65, 1)

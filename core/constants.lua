@@ -3,8 +3,13 @@ local Verdant = Verdant
 
 Verdant.Constants = {
   ADDON_NAME    = "Verdant",
-  VERSION       = "1.1.0",
+  VERSION       = "2.0.0",
   SLASH_COMMAND = "/verdant",
+
+  -- DEBUG gates developer-only slash subcommands (probe/dump/diag/...) and,
+  -- starting in Phase 6, observability layers (log/profiler/validation).
+  -- Release builds keep this false so the no-op references are wired in
+  -- and the cost of dev instrumentation stays out of the hot path.
   DEBUG         = false,
 
   SV_TABLE   = "VerdantSavedVars",
@@ -43,5 +48,37 @@ Verdant.Constants = {
     UPDATE_NAME          = "VerdantTemporalSample",
     SAMPLE_RATE_DEFAULT  = 1000,   -- ms interval → 1 Hz
     TIME_WINDOW_DEFAULT  = 60,     -- seconds
+  },
+
+  POOL = {
+    -- Worst-case sustained ~300 events/sec in 12-man trial × 13 sec headroom.
+    -- Per SPEC_03 §5.2.
+    EVENT_CAPACITY = 4096,
+  },
+
+  -- VerdantEvent.kind values. Numeric ints for fast switch dispatch in
+  -- pipeline/filter and pipeline/processing.
+  ABILITY_KIND = {
+    HEAL         = 1,
+    OVERHEAL     = 2,
+    SHIELD       = 3,
+    DAMAGE_GROUP = 4,
+  },
+
+  -- Per-stage profiler budgets in ms. A sample exceeding the budget
+  -- emits log.write("warn", "profiler.budget_exceeded", ...).
+  --
+  -- Values calibrated against a real DEBUG=true delve session
+  -- (Phase 6 validation). Set to ~2x measured max so transient spikes
+  -- don't spam; warnings should mean "something is wrong", not
+  -- "normal high-end of the distribution".
+  PROFILER_BUDGETS_MS = {
+    ["pipeline.combat_event"]            = 5.0,   -- measured max=1
+    ["pipeline.combat_event.acquisition"] = 2.0,
+    ["pipeline.combat_event.filter"]     = 2.0,
+    ["pipeline.combat_event.processing"] = 3.0,
+    ["pipeline.render_tick"]             = 10.0,
+    ["bar.refresh"]                      = 5.0,   -- measured max=1
+    ["graph.sample_tick"]                = 15.0,  -- measured max=7 with full pool
   },
 }

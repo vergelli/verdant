@@ -4,15 +4,32 @@ local Verdant = Verdant
 Verdant.Bar = {}
 local M = Verdant.Bar
 
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
-local GetAPIVersion           = GetAPIVersion
-local PlaySound               = PlaySound
-local WINDOW_MANAGER          = WINDOW_MANAGER
-local ZO_ObjectPool           = ZO_ObjectPool
+local api  = Verdant.zenimax.api
+local zui  = Verdant.zenimax.ui
+local zc   = Verdant.zenimax.constants
+local GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
+local GetAPIVersion           = api.GetAPIVersion
+local PlaySound               = zui.PlaySound
+local WINDOW_MANAGER          = zui.WINDOW_MANAGER
 local string_format           = string.format
 local math_max                = math.max
 local math_min                = math.min
 local math_floor              = math.floor
+
+-- ── UI constants (local cache for hot anchor / type lookups) ──────────────
+local log              = Verdant.Log.for_module("bar")
+local TOPLEFT          = zc.TOPLEFT
+local TOP              = zc.TOP
+local TOPRIGHT         = zc.TOPRIGHT
+local BOTTOMLEFT       = zc.BOTTOMLEFT
+local BOTTOM           = zc.BOTTOM
+local BOTTOMRIGHT      = zc.BOTTOMRIGHT
+local CT_TEXTURE       = zc.CT_TEXTURE
+local CT_LABEL         = zc.CT_LABEL
+local CT_CONTROL       = zc.CT_CONTROL
+local TEXT_ALIGN_CENTER = zc.TEXT_ALIGN_CENTER
+local GuiRoot          = zc.GuiRoot
+local SOUNDS           = zc.SOUNDS
 
 -- ── display metric cycle ──────────────────────────────────────────────────
 -- "ALL" is the 4th position: shows three columns simultaneously
@@ -25,7 +42,6 @@ local COLORS = {
 }
 
 local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
-local BG_TEXTURE    = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_bg.dds"
 local GLOSS_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill_gloss.dds"
 local FILL_T, FILL_B = 0, 0.53125
 
@@ -45,44 +61,19 @@ local TRI_COLS    = { "EMS", "eHPS", "MPS" }
 local TRI_COL_X   = { EMS = 0, eHPS = TRI_COL_W + TRI_COL_GAP, MPS = (TRI_COL_W + TRI_COL_GAP) * 2 }
 local TRI_TOTAL_W = TRI_COL_W * 3 + TRI_COL_GAP * 2   -- 94 px
 
--- ── skill-color fill pools ────────────────────────────────────────────────
--- ZO_ObjectPool of CT_TEXTURE controls for stacked per-skill segments.
+-- ── skill-color stacked bar (lib/plot composer) ──────────────────────────
+-- Construction helper: returns a StackedBar composer textured the same
+-- way the previous in-line pool was. Used 3 times below (single-bar EHPS,
+-- single-bar MPS, plus one per metric column in triple view).
+local StackedBar = Verdant.lib.plot.StackedBar
 
-local function make_skill_pool(parent, name_prefix)
-  local counter = 0
-  return ZO_ObjectPool:New(
-    function(pool, key)
-      counter = counter + 1
-      local t = WINDOW_MANAGER:CreateControl(name_prefix .. counter, parent, CT_TEXTURE)
-      t:SetTexture(FILL_TEXTURE)
-      t:SetTextureCoords(0, 1, FILL_T, FILL_B)
-      return t
-    end,
-    function(t)
-      t:SetHidden(true)
-    end
-  )
-end
+local STACKED_BAR_OPTS = {
+  texture        = FILL_TEXTURE,
+  texture_coords = { 0, 1, FILL_T, FILL_B },
+}
 
--- Positions and colors pool textures as stacked vertical segments.
--- segments: array of { r,g,b,a, share } sorted largest-first (from group_shares).
--- total_frac: 0-1 contribution for this metric.
-local function render_skill_segments(pool, parent, segments, area_w, area_h, total_frac)
-  pool:ReleaseAllObjects()
-  local total_h = (total_frac > 0.005) and math_max(2, area_h * math_min(1, total_frac)) or 0
-  local cum_h   = 0
-  for i = 1, #segments do
-    local seg   = segments[i]
-    local seg_h = math_max(1, math_floor(total_h * seg.share + 0.5))
-    local t     = pool:AcquireObject()
-    t:ClearAnchors()
-    t:SetAnchor(BOTTOMLEFT, parent, BOTTOMLEFT, 0, -cum_h)
-    t:SetWidth(area_w)
-    t:SetHeight(seg_h)
-    t:SetColor(seg.r, seg.g, seg.b, seg.a)
-    t:SetHidden(false)
-    cum_h = cum_h + seg_h
-  end
+local function make_stacked_bar(parent, name_prefix)
+  return StackedBar.new(parent, name_prefix, STACKED_BAR_OPTS)
 end
 
 -- ── peak-value tracking ──────────────────────────────────────────────────
@@ -182,13 +173,6 @@ local function setup_single_bar()
   local area = controls.bar_area
 
   -- dark background
-  local bg = WM:CreateControl("VerdantBarBg", area, CT_TEXTURE)
-  bg:ClearAnchors()
-  bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
-  bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-  bg:SetTexture(BG_TEXTURE)
-  bg:SetColor(0.10, 0.10, 0.12, 1)
-  controls.bg = bg
 
   -- main fill (single metric, or EMS total placeholder)
   local fill = WM:CreateControl("VerdantBarFill", area, CT_TEXTURE)
@@ -220,8 +204,8 @@ local function setup_single_bar()
   controls.fill_shield = fs
 
   -- skill-color fill pools for eHPS and MPS modes (created before gloss)
-  controls.pool_ehps = make_skill_pool(area, "VerdantBarSkillEhps")
-  controls.pool_mps  = make_skill_pool(area, "VerdantBarSkillMps")
+  controls.bar_ehps = make_stacked_bar(area, "VerdantBarSkillEhps")
+  controls.bar_mps  = make_stacked_bar(area, "VerdantBarSkillMps")
 
   -- gloss overlay: subtle horizontal sheen from the original ESO fill gloss sheet.
   -- Covers the full bar area so it applies equally to any fill configuration.
@@ -287,13 +271,6 @@ local function setup_triple_view()
     area:SetWidth(TRI_COL_W)
     col.area = area
 
-    local bg = WM:CreateControl("VerdantBarTriBg" .. m, area, CT_TEXTURE)
-    bg:ClearAnchors()
-    bg:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
-    bg:SetAnchor(BOTTOMRIGHT, area, BOTTOMRIGHT, 0, 0)
-    bg:SetTexture(BG_TEXTURE)
-    bg:SetColor(0.10, 0.10, 0.12, 1)
-
     local fill = WM:CreateControl("VerdantBarTriFill" .. m, area, CT_TEXTURE)
     fill:ClearAnchors()
     fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
@@ -328,7 +305,7 @@ local function setup_triple_view()
 
     -- skill pool for eHPS and MPS columns
     if m ~= "EMS" then
-      col.pool = make_skill_pool(area, "VerdantBarTriSkill" .. m)
+      col.bar = make_stacked_bar(area, "VerdantBarTriSkill" .. m)
     end
 
     local gloss = WM:CreateControl("VerdantBarTriGloss" .. m, area, CT_TEXTURE)
@@ -365,9 +342,12 @@ local function setup_triple_view()
 end
 
 -- ── refresh (1 Hz tick + on user input) ──────────────────────────────────
+local prof_enter = Verdant.Profiler.enter
+local prof_exit  = Verdant.Profiler.exit
+
 local function refresh()
   if controls.window:IsHidden() then return end
-
+  prof_enter("bar.refresh")
   local now = GetGameTimeMilliseconds()
   local r   = Verdant.Metrics.contribution(now)
   local m   = current_metric()
@@ -411,11 +391,11 @@ local function refresh()
         if cm == "eHPS" then
           col.fill:SetHidden(true)
           local segs = Verdant.Metrics.eHPS_by_group(now)
-          render_skill_segments(col.pool, col.area, segs, area_w, area_h, frac)
+          col.bar:render(col.area, segs, area_w, area_h, frac)
         elseif cm == "MPS" then
           col.fill:SetHidden(true)
           local segs = Verdant.Metrics.MPS_by_group(now)
-          render_skill_segments(col.pool, col.area, segs, area_w, area_h, frac)
+          col.bar:render(col.area, segs, area_w, area_h, frac)
         else
           -- EMS: stacked heal (green, bottom) + shield (pink, above)
           col.fill:SetHidden(true)
@@ -471,8 +451,8 @@ local function refresh()
     if m == "EMS" then
       -- stacked fill: eHPS green (bottom), MPS pink (above); no per-skill coloring
       controls.fill:SetHidden(true)
-      controls.pool_ehps:ReleaseAllObjects()
-      controls.pool_mps:ReleaseAllObjects()
+      controls.bar_ehps:release()
+      controls.bar_mps:release()
 
       local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
       local shield_frac = math_max(0, math_min(1, r.C_shield or 0))
@@ -495,21 +475,22 @@ local function refresh()
       controls.fill:SetHidden(true)
       controls.fill_heal:SetHidden(true)
       controls.fill_shield:SetHidden(true)
-      controls.pool_mps:ReleaseAllObjects()
+      controls.bar_mps:release()
       local segs = Verdant.Metrics.eHPS_by_group(now)
-      render_skill_segments(controls.pool_ehps, controls.bar_area, segs, area_w, area_h, frac)
+      controls.bar_ehps:render(controls.bar_area, segs, area_w, area_h, frac)
 
     elseif m == "MPS" then
       controls.fill:SetHidden(true)
       controls.fill_heal:SetHidden(true)
       controls.fill_shield:SetHidden(true)
-      controls.pool_ehps:ReleaseAllObjects()
+      controls.bar_ehps:release()
       local segs = Verdant.Metrics.MPS_by_group(now)
-      render_skill_segments(controls.pool_mps, controls.bar_area, segs, area_w, area_h, frac)
+      controls.bar_mps:render(controls.bar_area, segs, area_w, area_h, frac)
     end
 
     render_peak_line(controls.peak_line, controls.bar_area, area_w, area_h, peaks[m].frac)
   end
+  prof_exit("bar.refresh")
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
@@ -531,6 +512,7 @@ end
 
 function M.toggle_display_mode()
   display_pct = not display_pct
+  log:info("display_mode ->", display_pct and "%" or "#")
   PlaySound(SOUNDS.DIALOG_ACCEPT)
   save_state()
   refresh()
@@ -538,6 +520,7 @@ end
 
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("bar")
+  log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("bar", now_visible)
   PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
 end
@@ -548,6 +531,10 @@ function M.show()
   save_state()
 end
 
+function M.on_close_click()
+  M.hide()
+end
+
 function M.hide()
   controls.window:SetHidden(true)
   PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
@@ -556,8 +543,9 @@ end
 
 -- Called by Settings when the slider changes
 function M.set_rate(ms)
-  Verdant.Events.unregister_update("Verdant_BarTick")
-  Verdant.Events.register_update("Verdant_BarTick", ms, refresh)
+  log:info("set_rate ->", ms, "ms")
+  Verdant.zenimax.events.unregister_update("Verdant_BarTick")
+  Verdant.zenimax.events.register_update("Verdant_BarTick", ms, refresh)
 end
 
 function M.on_move_stop()
@@ -632,6 +620,6 @@ function M.init()
   controls.window:SetHidden(not visible)
 
   local rate_ms = b.rate_ms or 1000
-  Verdant.Events.register_update("Verdant_BarTick", rate_ms, refresh)
+  Verdant.zenimax.events.register_update("Verdant_BarTick", rate_ms, refresh)
   refresh()
 end

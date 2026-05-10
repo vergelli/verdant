@@ -13,6 +13,15 @@ local M = Verdant.ShieldRegistry
 
 local pairs    = pairs
 local tostring = tostring
+local log      = Verdant.Log.for_module("shield_registry")
+
+local C = Verdant.zenimax.constants
+local COMBAT_UNIT_TYPE_PLAYER    = C.COMBAT_UNIT_TYPE_PLAYER
+local EFFECT_RESULT_GAINED       = C.EFFECT_RESULT_GAINED
+local EFFECT_RESULT_UPDATED      = C.EFFECT_RESULT_UPDATED
+local EFFECT_RESULT_FULL_REFRESH = C.EFFECT_RESULT_FULL_REFRESH
+local EFFECT_RESULT_TRANSFER     = C.EFFECT_RESULT_TRANSFER
+local EFFECT_RESULT_FADED        = C.EFFECT_RESULT_FADED
 
 local function key(abilityId, targetUnitId)
   return tostring(abilityId or 0) .. ":" .. tostring(targetUnitId or 0)
@@ -59,6 +68,11 @@ function M.expire_stale(now_ms)
 end
 
 function M.reset()
+  local n = 0
+  for _ in pairs(active) do n = n + 1 end
+  log:info("reset: cleared", n, "active shields,",
+           "gained=", stats.gained, "faded=", stats.faded,
+           "hits=", stats.hits, "misses=", stats.misses)
   active = {}
   stats  = { gained = 0, faded = 0, hits = 0, misses = 0 }
 end

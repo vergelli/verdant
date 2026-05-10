@@ -2,14 +2,14 @@ Verdant = Verdant or {}
 local Verdant = Verdant
 
 local SLASH_COMMANDS          = SLASH_COMMANDS
-local ZO_SavedVars            = ZO_SavedVars
 local d                       = d
 local string_format           = string.format
 local string_lower            = string.lower
 local string_match            = string.match
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
-local GetString               = GetString
-local GetWorldName            = GetWorldName
+local api                     = Verdant.zenimax.api
+local GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
+local GetString               = api.GetString
+local GetWorldName            = api.GetWorldName
 
 local KNOWN_FILTERS = {
   heal=true, shield=true, shield_raw=true, heal_abs=true,
@@ -84,6 +84,35 @@ local function on_slash(input)
       return
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
+    elseif cmd == "report" then
+      Verdant.Diagnostics.full_report() ; return
+    elseif cmd == "prof" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "reset" then Verdant.Profiler.reset(); d("[prof] reset")
+      else Verdant.Profiler.dump_to_chat() end
+      return
+    elseif cmd == "log" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "flush" then
+        local n = Verdant.Log.flush()
+        d("[log] flushed " .. tostring(n) .. " records to SavedVars.debug.log")
+      elseif sub == "show" then
+        Verdant.Log.show_recent(20)
+      elseif sub == "clear" then
+        Verdant.Log.clear(); d("[log] cleared")
+      else
+        local cur, cap = Verdant.Log.size()
+        d("[log] size " .. cur .. "/" .. cap .. "  (subcmd: flush | show | clear)")
+      end
+      return
+    elseif cmd == "validate" then
+      Verdant.Validation.dump_to_chat() ; return
+    elseif cmd == "copy" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "clear" then Verdant.CopyBox.clear()
+      elseif sub == "hide" then Verdant.CopyBox.hide()
+      else Verdant.CopyBox.show("Verdant Copy", "") end
+      return
     elseif cmd == "skills" then
       Verdant.SkillColors.print_unknown() ; return
     elseif cmd == "clear" then
@@ -99,28 +128,61 @@ local function on_slash(input)
     end
   end
 
+  -- ── window toggles ───────────────────────────────────────────────────────
+  if cmd == "graph" then
+    Verdant.Graph.toggle() ; return
+  end
+
+  -- ── help ─────────────────────────────────────────────────────────────────
+  -- Lists user-facing commands. Dev commands stay hidden in release —
+  -- the user never needs to know they exist (per phase-7 design).
+  if cmd == "help" then
+    d(GetString(VERDANT_HELP_HEADER))
+    d(GetString(VERDANT_HELP_TOGGLE))
+    d(GetString(VERDANT_HELP_GRAPH))
+    d(GetString(VERDANT_HELP_HELP))
+    return
+  end
+
   -- ── /verdant (any input) → toggle bar ────────────────────────────────────
   Verdant.Bar.toggle()
 end
 
 local function on_addon_loaded()
-  local C = Verdant.Constants
+  local C   = Verdant.Constants
+  local Log = Verdant.Log.for_module("bootstrap")
 
   -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
-  Verdant.SavedVars = ZO_SavedVars:NewAccountWide(C.SV_TABLE, C.SV_VERSION, GetWorldName(), { probe = {}, bar = {}, tribar = {}, temporal = {} })
-  Verdant.Probe.init()
-  Verdant.Engine.init()
+  local world = GetWorldName()
+  Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
+    C.SV_TABLE, C.SV_VERSION, world,
+    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {} })
+
+  -- One-time cleanup of orphan key left over by the Phase 7 font-scale
+  -- experiment. Done inline rather than via SV_VERSION bump because
+  -- bumping wipes ZO_SavedVars data (users would lose their profile +
+  -- alpha + window position). The migration framework in
+  -- zenimax/savedvars.lua remains ready for a real schema change later.
+  if Verdant.SavedVars.settings then
+    Verdant.SavedVars.settings.font_scale = nil
+  end
+  Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
+
+  -- Probe is dev-only (used by DEBUG-gated /verdant on/off/dump/...). It
+  -- registers ~10 ZOS event handlers, each doing a few conditional checks
+  -- per combat event even when probe.state.enabled is false. Skipping
+  -- init() in release keeps that cost off the hot path entirely.
+  if C.DEBUG then Verdant.Probe.init() end
+  Verdant.Pipeline.init()
   Verdant.Bar.init()
-  Verdant.TriBar.init()
   Verdant.Settings.init()
   Verdant.Graph.init()
-  -- Visibility must init AFTER UI controls exist — it reads/applies SetHidden
-  -- on VerdantBarWindow / VerdantGraphWindow / VerdantTriBarWindow.
   Verdant.Visibility.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
 
+  Log:info("loaded v" .. C.VERSION, "DEBUG=" .. tostring(C.DEBUG))
   d("[V] " .. string_format(GetString(VERDANT_LOADED), C.VERSION, C.SLASH_COMMAND))
 end
 
-Verdant.Events.register_addon_loaded(Verdant.Constants.ADDON_NAME, on_addon_loaded)
+Verdant.zenimax.events.register_addon_loaded(Verdant.Constants.ADDON_NAME, on_addon_loaded)

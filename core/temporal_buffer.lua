@@ -3,6 +3,7 @@ Verdant.TemporalBuffer = {}
 local M = Verdant.TemporalBuffer
 
 local math_floor = math.floor
+local log        = Verdant.Log.for_module("temporal_buffer")
 
 -- ── state ─────────────────────────────────────────────────────────────────
 -- data: pre-allocated array of {t, eHPS, MPS}.  Write pointer wraps via modulo.
@@ -29,6 +30,7 @@ function M.init(capacity)
   for i = 1, capacity do
     state.data[i] = { t = 0, eHPS = 0, MPS = 0, ehps_groups = {}, mps_groups = {} }
   end
+  log:info("init: capacity=", capacity)
 end
 
 -- Record one sample.  Overwrites the oldest entry when full.
@@ -67,14 +69,17 @@ function M.is_recording() return state.recording end
 
 function M.start_recording()
   state.recording = true
+  log:info("start_recording")
 end
 
 function M.stop_recording()
   state.recording = false
+  log:info("stop_recording: count=", state.count, "/", state.capacity)
 end
 
 -- Resets write pointer and count without freeing the pre-allocated table.
 function M.clear()
+  log:info("clear: discarding", state.count, "samples")
   state.write = 1
   state.count = 0
 end

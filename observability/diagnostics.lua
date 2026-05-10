@@ -1,10 +1,24 @@
+-- Diagnostics — counters + event ring + 1Hz timeseries collector. The
+-- aggregation surface that /verdant diag and /verdant report read from.
+-- Stays partially live in release (counter bumps from pipeline.lua are
+-- always called) — the formatting/dump paths are dev-only.
+--
+-- Public surface:
+--   bump(key, n)        increment a counter
+--   log_event(cat, p)   append a categorized entry to the event ring
+--   snapshot()          structured dump for SavedVars / probe persist
+--   print_diag()        human-readable dump (CopyBox in DEBUG, chat in release)
+--   full_report()       aggregated /verdant report (DEBUG only)
+--   reset()             clears counters/ring; also rebuilds start_time
+--   init()              wires the 1Hz ts_sample tick
+
 Verdant = Verdant or {}
 local Verdant = Verdant
 
 Verdant.Diagnostics = {}
 local M = Verdant.Diagnostics
 
-local GetGameTimeMilliseconds = GetGameTimeMilliseconds
+local GetGameTimeMilliseconds = Verdant.zenimax.api.GetGameTimeMilliseconds
 local d           = d
 local pairs       = pairs
 local tostring    = tostring
@@ -115,36 +129,103 @@ function M.snapshot()
   }
 end
 
--- ── chat dump (/verdant diag) ─────────────────────────────────────────────
-function M.print_diag()
-  d("[V:diag] uptime=" .. (GetGameTimeMilliseconds() - start_time) .. "ms"
-    .. "  ev_total=" .. ev_count
-    .. "  ts_samples=" .. ts_count)
-  -- counters grouped by prefix
-  d("[V:diag] counters:")
+-- ── diag dump (/verdant diag) ─────────────────────────────────────────────
+-- In DEBUG, output goes to the CopyBox (selectable / copyable). Otherwise
+-- chat output as before. The CopyBox itself also no-ops outside DEBUG.
+local function build_diag_lines()
+  local lines = {}
+  lines[#lines+1] = "[diag] uptime=" .. (GetGameTimeMilliseconds() - start_time)
+                    .. "ms  ev_total=" .. ev_count .. "  ts_samples=" .. ts_count
+  lines[#lines+1] = "[diag] counters:"
   local keys = {}
   for k in pairs(counters) do keys[#keys+1] = k end
   table_sort(keys)
   for _, k in ipairs(keys) do
-    d("  " .. k .. " = " .. tostring(counters[k]))
+    lines[#lines+1] = "  " .. k .. " = " .. tostring(counters[k])
   end
-  -- last 10 events
-  d("[V:diag] last events (up to 10):")
+  lines[#lines+1] = "[diag] last events (up to 10):"
   local n_show = math_min(ev_count, 10)
   local base   = math_min(ev_count, EVENT_CAP)
   for i = base - n_show + 1, base do
     local idx = (ev_head - base + i - 1 + EVENT_CAP) % EVENT_CAP + 1
     local e = ev_buf[idx]
     if e then
-      d("  t=" .. e.t .. " [" .. (e.cat or "?") .. "] " .. tostring(e.p))
+      lines[#lines+1] = "  t=" .. e.t .. " [" .. (e.cat or "?") .. "] " .. tostring(e.p)
     end
   end
-  -- mode + group size
   if Verdant.Mode then
-    d("[V:diag] mode=" .. tostring(Verdant.Mode.current()))
+    lines[#lines+1] = "[diag] mode=" .. tostring(Verdant.Mode.current())
   end
   if Verdant.GroupSet then
-    d("[V:diag] group_set.size=" .. Verdant.GroupSet.size())
+    lines[#lines+1] = "[diag] group_set.size=" .. Verdant.GroupSet.size()
+  end
+  if Verdant.Metrics and Verdant.Metrics.pool_capacity then
+    lines[#lines+1] = "[diag] event_pool=" .. Verdant.Metrics.pool_in_use()
+                      .. "/" .. Verdant.Metrics.pool_capacity()
+  end
+  if Verdant.Log and Verdant.Log.size then
+    local cur, cap = Verdant.Log.size()
+    lines[#lines+1] = "[diag] log_ring=" .. cur .. "/" .. cap
+  end
+  if Verdant.Validation and Verdant.Validation.run_all_checks then
+    local v = Verdant.Validation.run_all_checks()
+    lines[#lines+1] = "[diag] validation: failures=" .. v.failure_count
+                      .. " pool_outstanding=" .. v.pool_outstanding
+  end
+  if Verdant.Profiler and Verdant.Profiler.report then
+    local r, window_s = Verdant.Profiler.report()
+    local stages = {}
+    for k in pairs(r) do stages[#stages+1] = k end
+    if #stages > 0 then
+      lines[#lines+1] = "[diag] profiler window=" .. string.format("%.1fs", window_s)
+                        .. " stages=" .. #stages .. " (use /verdant prof for detail)"
+    end
+  end
+  return lines
+end
+
+function M.print_diag()
+  local lines = build_diag_lines()
+  if Verdant.Constants.DEBUG and Verdant.CopyBox then
+    Verdant.CopyBox.show("Verdant /diag", table.concat(lines, "\n"))
+  else
+    for _, line in ipairs(lines) do d(line) end
+  end
+end
+
+-- Unified one-shot dev report: concatenates /diag + /prof + /validate
+-- + recent log entries into a single CopyBox dump. Saves the dev from
+-- running each command separately when sharing context.
+function M.full_report()
+  if not Verdant.Constants.DEBUG then
+    d("[report] disabled (DEBUG=false)")
+    return
+  end
+  local out = {}
+  local function section(title, lines)
+    out[#out+1] = ""
+    out[#out+1] = "═══ " .. title .. " ═══"
+    for _, l in ipairs(lines) do out[#out+1] = l end
+  end
+  out[#out+1] = "Verdant full report — uptime "
+                .. (GetGameTimeMilliseconds() - start_time) .. "ms"
+  if Verdant.Settings and Verdant.Settings.report_lines then
+    section("config", Verdant.Settings.report_lines())
+  end
+  section("diagnostics", build_diag_lines())
+  if Verdant.Profiler and Verdant.Profiler.report_lines then
+    section("profiler",   Verdant.Profiler.report_lines())
+  end
+  if Verdant.Validation and Verdant.Validation.report_lines then
+    section("validation", Verdant.Validation.report_lines())
+  end
+  if Verdant.Log and Verdant.Log.recent_lines then
+    section("log (last 20)", Verdant.Log.recent_lines(20))
+  end
+  if Verdant.CopyBox and Verdant.CopyBox.show then
+    Verdant.CopyBox.show("Verdant /report", table.concat(out, "\n"))
+  else
+    for _, l in ipairs(out) do d(l) end
   end
 end
 
@@ -163,5 +244,5 @@ end
 -- ── init ──────────────────────────────────────────────────────────────────
 function M.init()
   start_time = GetGameTimeMilliseconds()
-  Verdant.Events.register_update("Verdant_DiagTick", TICK_MS, ts_sample)
+  Verdant.zenimax.events.register_update("Verdant_DiagTick", TICK_MS, ts_sample)
 end
