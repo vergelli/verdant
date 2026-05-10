@@ -31,49 +31,35 @@ internals are substantially different.
 - Graph window now has its own gear button — settings reachable from
   either window.
 
-### Internal architecture (8-phase rewrite)
-- **Phase 1**: every ZOS `EVENT_MANAGER` / constant access routes through
-  `Verdant.zenimax.{events,constants}` — a single-file ACL boundary.
-- **Phase 2**: `lib/mem/{buffer_pool,ring_buffer,event}.lua` —
-  `VerdantEvent` pool (4096 records) eliminates per-event `{}` allocation
-  on the heal/shield/damage hot path.
-- **Phase 3**: `Verdant.zenimax.{api,ui,savedvars}` — completes the ACL.
-  Outside `zenimax/`, no live code touches a bare ZOS global.
-- **Phase 4**: `core/engine.lua` replaced by the four-stage pipeline
-  (`pipeline/{acquisition,filter,processing,presentation,pipeline}.lua`).
-  Each stage has a single responsibility; counter accounting preserved
+### Internal
+- **ACL boundary**: every ZOS API access (events, constants, window manager,
+  ZO_SavedVars, etc.) routes through `Verdant.zenimax.*`. Outside that
+  namespace, no live code touches a bare ZOS global.
+- **Event pool**: a 4096-record `VerdantEvent` pool replaces per-event `{}`
+  allocation on the heal/shield/damage hot path. New `lib/mem/`
+  with `buffer_pool`, `ring_buffer` and `event` modules.
+- **Pipeline**: `core/engine.lua` is gone; combat events flow through
+  `pipeline/{acquisition, filter, processing, presentation}.lua`. Each
+  stage has a single responsibility; counter accounting preserved
   exactly through validation.
-- **Phase 5**: `lib/plot/` — reusable visualization scaffolding
-  (`style`, `primitives`, `pool`, `plot_stacked_bar`). Bar and graph
-  widgets routed through the shared pool factory; the StackedBar
-  composer absorbed the per-skill segment rendering previously
-  duplicated four times.
-- **Phase 6**: observability layer with negligible release-mode cost —
-  load-time `if not DEBUG then return end` gating. New: `/verdant prof`
-  per-stage percentile profiler, `/verdant validate` invariant checks,
-  `/verdant log` structured ring, `/verdant report` one-shot dev dump.
-- **Phase 7**: settings UX rebuild + profiles (this release's headline
-  feature).
-- **Phase 8**: ESOUI guideline compliance, locales, dead code removal,
-  documentation pass.
+- **Plot library**: `lib/plot/` provides reusable visualization
+  scaffolding (`style`, `primitives`, `pool`, `plot_stacked_bar`). The
+  bar and graph widgets share the pool factory; the StackedBar composer
+  absorbed per-skill segment rendering that was previously duplicated.
+- **Observability**: profiler, validation, structured log, and a
+  unified `/verdant report` command. Load-time `if not DEBUG then return end`
+  gating keeps release-mode overhead negligible.
+- **Localization**: hardcoded strings moved to `locales/`; `/verdant help`
+  lists user-facing commands.
 
 ### Fixed during the rewrite
 - ZO_ObjectPool reset callback signature documented as one-arg
   (`function(t)`) — saved future maintainers from the `function(_, c)`
   trap that nil'd the object.
-- `ZoFontGameMedium` does not exist in stock ESO and silently falls
-  back to the default font; previously prototyped font scale slider was
-  removed once this surfaced.
 - Self-fulfilling artifact in `/verdant report` — `validation.run_all_checks`
   is now a pure query and no longer mutates the log ring it's reporting on.
 - `lib/plot/*` manifest order: must load **after** `zenimax/*` because
   it references `Verdant.zenimax.{constants,ui}` at module load time.
-
-### Out of scope (deferred to v2.x)
-- Buff/debuff timeline view (`VerdantEffectEvent` pool + `plot_buff_timeline.lua`).
-- Architectural extraction of a `config/` module per SPEC_05 §Phase 7.
-  The settings UX rebuild was prioritized; the architecture refactor
-  can land later if it earns its keep.
 
 ---
 
