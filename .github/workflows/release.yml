@@ -62,12 +62,19 @@ jobs:
         # README / CHANGELOG / LICENSE live in the GitHub repo — the user's
         # AddOns/ folder should stay clean.  docs/, specs/, test/, .github/
         # are dev-only and excluded for the same reason.
+        #
+        # If you add a new top-level directory, add it here.  Manifest is
+        # the source of truth — anything it loads needs to be in this list.
         run: |
           mkdir -p staging/Verdant
           cp -r \
             bindings.xml \
             locales \
             core \
+            lib \
+            zenimax \
+            observability \
+            pipeline \
             ui \
             Verdant.lua \
             Verdant.txt \
