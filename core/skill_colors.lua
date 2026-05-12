@@ -117,7 +117,11 @@ local ABILITY_OVERRIDES = {
   [217469] = "scribing",
   [69773]  = "destru",
   [26824] =  "templar",
-  [44391] =  "templar"
+  [44391] =  "templar",
+  [55677] =  "undaunted",
+  [63511] =  "undaunted",
+  [184634] =  "item",
+
 }
 
 -- Runtime cache (abilityId → group string); populated on first encounter.
