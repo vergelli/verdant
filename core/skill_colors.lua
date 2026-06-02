@@ -24,9 +24,43 @@ local GROUP_COLORS = {
   undaunted   = { r = 0.42, g = 0.42, b = 0.18, a = 0.95 },  -- olive
   support     = { r = 0.42, g = 0.31, b = 0.68, a = 0.95 },  -- muted purple
   vampire     = { r = 0.55, g = 0.05, b = 0.10, a = 0.95 },  -- carmesi (blood)
+  werewolf    = { r = 0.60, g = 0.28, b = 0.18, a = 0.95 },  -- blood-moon russet (World, sibling of vampire)
+  psijic      = { r = 0.86, g = 0.80, b = 0.52, a = 0.95 },  -- astral gold (Psijic Order)
   mages_guild = { r = 0.10, g = 0.45, b = 0.65, a = 0.95 },  -- celeste oscuro
   item        = { r = 0.95, g = 0.20, b = 0.80, a = 0.95 },  -- magenta
   other       = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
+}
+
+-- Human-readable label per group, shown in the Unknown Contributions picker.
+local GROUP_LABELS = {
+  templar        = "Templar",
+  dk             = "Dragonknight",
+  sorc           = "Sorcerer",
+  nb             = "Nightblade",
+  warden         = "Warden",
+  necro          = "Necromancer",
+  arcanist       = "Arcanist",
+  destru         = "Destruction Staff",
+  resto          = "Restoration Staff",
+  mages_guild    = "Mages Guild",
+  undaunted      = "Undaunted",
+  support        = "Alliance War",
+  scribing       = "Scribing",
+  psijic         = "Psijic Order",
+  vampire        = "Vampire",
+  werewolf       = "Werewolf",
+  item           = "Item Set / Enchant",
+  other          = "Unknown (grey)",
+}
+
+-- Display order for the picker (groups clustered by domain).
+local GROUP_ORDER = {
+  "templar", "dk", "sorc", "nb", "warden", "necro", "arcanist",
+  "destru", "resto",
+  "mages_guild", "undaunted", "support", "scribing", "psijic",
+  "vampire", "werewolf",
+  "item",
+  "other",
 }
 
 -- Icon-path → group lookup. Locale-independent: ZOS uses a stable internal
@@ -52,9 +86,11 @@ local ICON_PATTERNS = {
   { "ability_ava_",              "support"     },
   { "ability_undaunted_",        "undaunted"   },
   { "ability_mageguild_",        "mages_guild" },
+  { "ability_psijic_",           "psijic"      },
   -- Vampire current and legacy paths.
   { "ability_u26_vampire_",      "vampire"     },
   { "ability_vampire_",          "vampire"     },
+  { "ability_werewolf_",         "werewolf"    },
 }
 
 -- Skill-line ID → group. Used as a third-tier fallback for cast IDs that
@@ -92,8 +128,11 @@ local SKILL_LINE_TO_GROUP = {
   -- Alliance War
   [48]  = "support",  [67]  = "support",
   [325] = "support",  [326] = "support",
+  -- Psijic Order (guild)
+  [130] = "psijic",
   -- World
   [51]  = "vampire",
+  [50]  = "werewolf",
 }
 
 -- Direct ID → group overrides. Highest precedence; covers abilityIds with
@@ -127,6 +166,10 @@ local ABILITY_OVERRIDES = {
 -- Runtime cache (abilityId → group string); populated on first encounter.
 local ability_cache = {}
 
+-- User assignments from the Unknown Contributions window. Highest precedence,
+-- persisted to SavedVariables and restored at load via M.load_persisted.
+local USER_OVERRIDES = {}
+
 -- IDs that fell through every classifier: { [abilityId] = "name | icon" }
 -- Printed by M.print_unknown() so the user can decide whether to add an
 -- override or extend a pattern. Includes the icon path because that's
@@ -157,6 +200,13 @@ local function lookup_group(abilityId)
 
   local g = ability_cache[abilityId]
   if g then return g end
+
+  -- 0. User assignment (Unknown Contributions window) — wins over everything.
+  g = USER_OVERRIDES[abilityId]
+  if g then
+    ability_cache[abilityId] = g
+    return g
+  end
 
   -- 1. Manual override — covers items, generic-icon procs, edge cases.
   g = ABILITY_OVERRIDES[abilityId]
@@ -215,6 +265,78 @@ local FALLBACK = GROUP_COLORS.other
 
 function M.get_color(abilityId)
   return GROUP_COLORS[lookup_group(abilityId)] or FALLBACK
+end
+
+function M.group_of(abilityId)
+  return lookup_group(abilityId)
+end
+
+function M.group_color(group)
+  return GROUP_COLORS[group] or FALLBACK
+end
+
+function M.group_names()
+  local out = {}
+  for k in pairs(GROUP_COLORS) do out[#out + 1] = k end
+  table.sort(out)
+  return out
+end
+
+function M.is_group(group)
+  return GROUP_COLORS[group] ~= nil
+end
+
+function M.group_label(key)
+  return GROUP_LABELS[key] or key
+end
+
+-- Ordered list of pickable groups for the Unknown Contributions window:
+-- { key, label, r, g, b, a } in GROUP_ORDER sequence.
+function M.groups_ordered()
+  local out = {}
+  for _, key in ipairs(GROUP_ORDER) do
+    local c = GROUP_COLORS[key] or FALLBACK
+    out[#out + 1] = { key = key, label = GROUP_LABELS[key] or key, r = c.r, g = c.g, b = c.b, a = c.a }
+  end
+  return out
+end
+
+-- Abilities that fell through every classifier, for the assignment window:
+-- { id, name, icon } sorted by id.
+function M.get_unknowns()
+  local out = {}
+  for id in pairs(unknown_log) do
+    out[#out + 1] = { id = id, name = GetAbilityName(id) or ("#" .. id), icon = GetAbilityIcon(id) or "" }
+  end
+  table.sort(out, function(a, b) return a.id < b.id end)
+  return out
+end
+
+function M.unknown_count()
+  local n = 0
+  for _ in pairs(unknown_log) do n = n + 1 end
+  return n
+end
+
+-- Assign a group to an ability from the Unknown Contributions window.
+-- Wins over every classifier, drops the id from the unknown log, and updates
+-- the cache so the next sample tick picks up the new color (no reload).
+function M.set_override(abilityId, group)
+  if not abilityId or abilityId <= 0 or not GROUP_COLORS[group] then return false end
+  USER_OVERRIDES[abilityId] = group
+  ability_cache[abilityId]  = group
+  unknown_log[abilityId]    = nil
+  return true
+end
+
+-- Restore persisted user assignments from SavedVariables at load.
+function M.load_persisted(sv)
+  if not sv then return end
+  if type(sv.skill_overrides) == "table" then
+    for id, group in pairs(sv.skill_overrides) do
+      if type(id) == "number" then M.set_override(id, group) end
+    end
+  end
 end
 
 -- Returns a sorted array of { r, g, b, a, share } (largest segment first).

@@ -29,6 +29,21 @@ ZO_CreateStringId("VERDANT_SETTING_SHIELD_WINDOW",   "Shield Window")
 ZO_CreateStringId("VERDANT_SETTING_SAMPLE_RATE",     "Sampling Rate")
 ZO_CreateStringId("VERDANT_SETTING_TIME_WINDOW",     "Time Window")
 ZO_CreateStringId("VERDANT_SETTING_VIEWPORT_ALPHA",  "Viewport Alpha")
+ZO_CreateStringId("VERDANT_SETTINGS_UNKNOWN",        "Unknown Contributions")
+ZO_CreateStringId("VERDANT_SETTINGS_LOGO_ON",        "Logo: Visible")
+ZO_CreateStringId("VERDANT_SETTINGS_LOGO_OFF",       "Logo: Hidden")
+ZO_CreateStringId("VERDANT_LOGO_HINT",               "Logo hidden. Bind a key to Verdant under Settings > Controls > Keybindings (Add-Ons), or type /verdant.")
+
+-- Unknown-contributions assignment window
+ZO_CreateStringId("VERDANT_ASSIGN_TITLE",  "Unknown Contributions")
+ZO_CreateStringId("VERDANT_ASSIGN_PICK",   "pick category")
+ZO_CreateStringId("VERDANT_ASSIGN_EMPTY",  "Nothing to classify — every contribution has a color.")
+ZO_CreateStringId("VERDANT_ASSIGN_DONE",   "Assign")
+ZO_CreateStringId("VERDANT_ASSIGN_MORE",   "+ %d more — assign some to reveal the rest")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_TITLE", "Confirm assignment")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_NOTE",  "These assignments are irreversible. Review them before confirming.")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_YES",   "Assign")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_NO",    "Cancel")
 
 -- Profile preset names
 ZO_CreateStringId("VERDANT_PROFILE_SOLO",            "Solo PvE")

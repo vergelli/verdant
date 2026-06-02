@@ -316,6 +316,24 @@ function M.on_move_stop()
   sv.settings.y = controls.window:GetTop()
 end
 
+-- Opens the unknown-contributions assignment window, closing Settings first so
+-- the two windows never stack on screen.
+function M.on_unknown_click()
+  controls.window:SetHidden(true)
+  Verdant.Assign.show()
+end
+
+-- Toggles the floating logo. When turning it off, drop a one-time chat hint on
+-- how to reach the window without it (keybind / slash command), since there is
+-- no clean API to deep-link the addon's keybinding screen.
+function M.on_logo_click()
+  local now = not Verdant.Logo.is_enabled()
+  Verdant.Logo.set_enabled(now)
+  controls.logo_btn:SetText(now and GetString(VERDANT_SETTINGS_LOGO_ON)
+                                 or GetString(VERDANT_SETTINGS_LOGO_OFF))
+  if not now then d("[V] " .. GetString(VERDANT_LOGO_HINT)) end
+end
+
 -- Combobox callback: applies the profile and refreshes all slider visuals
 -- so the user immediately sees the new positions.
 function M.on_profile_selected(id)
@@ -511,11 +529,19 @@ function M.init()
   controls.reset_btn      = VerdantSettingsPanelResetBtn
   controls.profile_label  = VerdantSettingsPanelProfileLabel
   controls.profile_combo  = VerdantSettingsPanelProfileDropdown
+  controls.unknown_btn    = VerdantSettingsPanelUnknownBtn
+  controls.unknown_label  = VerdantSettingsPanelUnknownLabel
+  controls.logo_btn       = VerdantSettingsPanelLogoBtn
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
   controls.profile_label:SetText(GetString(VERDANT_SETTINGS_PROFILE))
   controls.profile_label:SetColor(0.75, 0.75, 0.75, 1)
+
+  controls.unknown_label:SetText(GetString(VERDANT_SETTINGS_UNKNOWN))
+  controls.unknown_label:SetColor(0.80, 0.80, 0.80, 1)
+  controls.logo_btn:SetText(Verdant.Logo.is_enabled()
+    and GetString(VERDANT_SETTINGS_LOGO_ON) or GetString(VERDANT_SETTINGS_LOGO_OFF))
 
   -- Populate the profile combobox.
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)

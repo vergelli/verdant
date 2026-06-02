@@ -31,6 +31,11 @@ local function apply()
   if VerdantSettingsPanel and not in_hud then
     VerdantSettingsPanel:SetHidden(true)
   end
+  -- Floating logo: a launcher for the graph window. Show it only while in the
+  -- HUD with the graph closed; Logo.sync also respects the user's on/off toggle.
+  if Verdant.Logo then
+    Verdant.Logo.sync(in_hud and not user_visible.graph)
+  end
 end
 
 local function persist()

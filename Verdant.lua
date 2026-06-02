@@ -156,7 +156,10 @@ local function on_addon_loaded()
   local world = GetWorldName()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
     C.SV_TABLE, C.SV_VERSION, world,
-    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {} })
+    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {}, skill_overrides = {}, logo = {}, assign = {} })
+
+  -- Restore user color assignments from the Unknown Contributions window.
+  Verdant.SkillColors.load_persisted(Verdant.SavedVars)
 
   -- One-time cleanup of orphan key left over by the Phase 7 font-scale
   -- experiment. Done inline rather than via SV_VERSION bump because
@@ -175,8 +178,10 @@ local function on_addon_loaded()
   if C.DEBUG then Verdant.Probe.init() end
   Verdant.Pipeline.init()
   Verdant.Bar.init()
+  Verdant.Logo.init()        -- before Settings (reads Logo.is_enabled) + Visibility (calls Logo.sync)
   Verdant.Settings.init()
   Verdant.Graph.init()
+  Verdant.Assign.init()
   Verdant.Visibility.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
