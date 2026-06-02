@@ -6,7 +6,8 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![AI Assisted](https://img.shields.io/badge/AI%20Assisted-Claude%20by%20Anthropic-D97757?logo=anthropic&logoColor=white)
 
-![Verdant logo](docs/assets/Verdant%20Logo%204.png)
+![Verdant logo](docs/assets/verdant-readme-header.png)
+
 
 **Real-time healer contribution bar for The Elder Scrolls Online**
 
