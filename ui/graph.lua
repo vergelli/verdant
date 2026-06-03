@@ -869,10 +869,10 @@ function M.init()
   -- Chrome parchment carries a soft green wash so the window reads as
   -- Verdant's at a glance (identity / anti-clone signature).
   VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0)
-  VerdantGraphWindowChromeTop   :SetColor(0.84, 1.00, 0.90, 0.82)
-  VerdantGraphWindowChromeBottom:SetColor(0.84, 1.00, 0.90, 0.82)
-  VerdantGraphWindowChromeLeft  :SetColor(0.84, 1.00, 0.90, 0.82)
-  VerdantGraphWindowChromeRight :SetColor(0.84, 1.00, 0.90, 0.82)
+  VerdantGraphWindowChromeTop   :SetColor(0.62, 1.00, 0.74, 0.82)
+  VerdantGraphWindowChromeBottom:SetColor(0.62, 1.00, 0.74, 0.82)
+  VerdantGraphWindowChromeLeft  :SetColor(0.62, 1.00, 0.74, 0.82)
+  VerdantGraphWindowChromeRight :SetColor(0.62, 1.00, 0.74, 0.82)
   -- Viewport alpha is user-tunable via the settings panel (slider 0..100%).
   -- Read the saved value (default 30% if first run / pre-feature SV).
   local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal

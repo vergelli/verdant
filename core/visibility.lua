@@ -18,13 +18,23 @@ local in_hud = true
 -- user's preference.  Actual visibility = in_hud AND user_visible[key].
 local user_visible = { bar = false, graph = false }
 
+-- Master switch for the individual-bars window (Settings → "Individual Bars").
+-- Independent from user_visible.bar (the open/closed intent): when this is off
+-- the bar window can never show and its re-open affordances are suppressed.
+local bar_enabled = true
+
 -- ── apply / persist ───────────────────────────────────────────────────────
 local function apply()
   if VerdantBarWindow then
-    VerdantBarWindow:SetHidden(not (in_hud and user_visible.bar))
+    VerdantBarWindow:SetHidden(not (in_hud and user_visible.bar and bar_enabled))
   end
   if VerdantGraphWindow then
     VerdantGraphWindow:SetHidden(not (in_hud and user_visible.graph))
+  end
+  -- The graph's "+" button re-opens the bar; it's meaningless when bars are
+  -- disabled, so hide it to avoid a dead click.
+  if VerdantGraphWindowBarBtn then
+    VerdantGraphWindowBarBtn:SetHidden(not bar_enabled)
   end
   -- Settings panel is transient: just hide it whenever leaving HUD; the
   -- user can re-open it via the gear icon on the bar when back in HUD.
@@ -42,11 +52,15 @@ local function persist()
   local sv = Verdant.SavedVars
   if not sv then return end
   sv.bar      = sv.bar      or {} ; sv.bar.visible      = user_visible.bar
+  sv.bar.enabled = bar_enabled
   sv.temporal = sv.temporal or {} ; sv.temporal.visible = user_visible.graph
 end
 
 -- ── public API ────────────────────────────────────────────────────────────
 function M.set(key, visible)
+  -- Individual bars can be disabled in Settings; ignore show requests for the
+  -- bar while disabled so the keybind / graph "+" / slash can't override it.
+  if key == "bar" and visible and not bar_enabled then return end
   if user_visible[key] == visible then return end
   log:info("set", key, "->", visible and "visible" or "hidden")
   user_visible[key] = visible
@@ -66,18 +80,40 @@ function M.master_toggle()
     user_visible.bar    = false
     user_visible.graph  = false
   else
-    log:info("master_toggle: showing bar")
-    user_visible.bar    = true
+    -- Nothing open: show the usual entry point. The bar is it — unless the
+    -- user disabled individual bars, in which case fall back to the graph.
+    if bar_enabled then
+      log:info("master_toggle: showing bar")
+      user_visible.bar = true
+    else
+      log:info("master_toggle: bars disabled, showing graph")
+      user_visible.graph = true
+    end
   end
   apply()
   persist()
 end
+
+-- Master on/off for the individual-bars window (Settings toggle). Turning it on
+-- also opens the bar so the change is immediately visible.
+function M.set_bar_enabled(enabled)
+  if bar_enabled == enabled then return end
+  log:info("bar_enabled ->", enabled and "on" or "off")
+  bar_enabled = enabled
+  if enabled then user_visible.bar = true end
+  apply()
+  persist()
+end
+
+function M.is_bar_enabled() return bar_enabled end
 
 function M.init()
   local sv = Verdant.SavedVars
   if sv then
     user_visible.bar   = (sv.bar      and sv.bar.visible)      or false
     user_visible.graph = (sv.temporal and sv.temporal.visible) or false
+    -- Default ON (preserves prior behavior); only an explicit saved false disables.
+    if sv.bar and sv.bar.enabled ~= nil then bar_enabled = sv.bar.enabled end
   end
 
   Scene.register_callback("SceneStateChanged",

@@ -32,6 +32,8 @@ ZO_CreateStringId("VERDANT_SETTING_VIEWPORT_ALPHA",  "Viewport Alpha")
 ZO_CreateStringId("VERDANT_SETTINGS_UNKNOWN",        "Unknown Contributions")
 ZO_CreateStringId("VERDANT_SETTINGS_LOGO_ON",        "Logo: Visible")
 ZO_CreateStringId("VERDANT_SETTINGS_LOGO_OFF",       "Logo: Hidden")
+ZO_CreateStringId("VERDANT_SETTINGS_BARS_ON",        "Individual Bars: On")
+ZO_CreateStringId("VERDANT_SETTINGS_BARS_OFF",       "Individual Bars: Off")
 ZO_CreateStringId("VERDANT_LOGO_HINT",               "Logo hidden. Bind a key to Verdant under Settings > Controls > Keybindings (Add-Ons), or type /verdant.")
 
 -- Unknown-contributions assignment window
@@ -62,7 +64,7 @@ ZO_CreateStringId("VERDANT_HELP_GRAPH",   "  /verdant graph   toggle the tempora
 ZO_CreateStringId("VERDANT_HELP_HELP",    "  /verdant help    show this list")
 
 -- Graph window
-ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Temporal Analytics")
+ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Healing Analysis")
 ZO_CreateStringId("VERDANT_GRAPH_RECORD",         "Record")
 ZO_CreateStringId("VERDANT_GRAPH_STOP",           "Stop")
 ZO_CreateStringId("VERDANT_GRAPH_FLUSH",          "Flush")

@@ -334,6 +334,15 @@ function M.on_logo_click()
   if not now then d("[V] " .. GetString(VERDANT_LOGO_HINT)) end
 end
 
+-- Toggles whether the individual-bars window exists at all. Off hides it and
+-- removes the graph's re-open (+) affordance; On brings it back open.
+function M.on_bars_click()
+  local now = not Verdant.Visibility.is_bar_enabled()
+  Verdant.Visibility.set_bar_enabled(now)
+  controls.bars_btn:SetText(now and GetString(VERDANT_SETTINGS_BARS_ON)
+                                 or GetString(VERDANT_SETTINGS_BARS_OFF))
+end
+
 -- Combobox callback: applies the profile and refreshes all slider visuals
 -- so the user immediately sees the new positions.
 function M.on_profile_selected(id)
@@ -510,7 +519,7 @@ function M.init()
 
   -- Brand wash: tint the parchment a touch green so the window reads as
   -- Verdant's even in a screenshot (identity / anti-clone).
-  VerdantSettingsPanelBg:SetCenterColor(0.84, 1.00, 0.90, 1.0)
+  VerdantSettingsPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
 
   controls.title_rate     = VerdantSettingsPanelTitle
   controls.label_rate     = VerdantSettingsPanelRateLabel
@@ -537,6 +546,7 @@ function M.init()
   controls.unknown_btn    = VerdantSettingsPanelUnknownBtn
   controls.unknown_label  = VerdantSettingsPanelUnknownLabel
   controls.logo_btn       = VerdantSettingsPanelLogoBtn
+  controls.bars_btn       = VerdantSettingsPanelBarsBtn
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
@@ -547,6 +557,13 @@ function M.init()
   controls.unknown_label:SetColor(0.80, 0.80, 0.80, 1)
   controls.logo_btn:SetText(Verdant.Logo.is_enabled()
     and GetString(VERDANT_SETTINGS_LOGO_ON) or GetString(VERDANT_SETTINGS_LOGO_OFF))
+
+  -- Read the saved bars-enabled state directly (Visibility.init runs after this,
+  -- so its in-memory flag isn't loaded yet at this point).
+  local bars_on = not (Verdant.SavedVars and Verdant.SavedVars.bar
+                       and Verdant.SavedVars.bar.enabled == false)
+  controls.bars_btn:SetText(bars_on and GetString(VERDANT_SETTINGS_BARS_ON)
+                                     or GetString(VERDANT_SETTINGS_BARS_OFF))
 
   -- Populate the profile combobox.
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)
