@@ -38,6 +38,11 @@ local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink
 -- CRIT view: muted green base (non-crit heal) + bright gold cap (crit heal).
 local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green base
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
+
+-- Viewport (the dark graph area) carries a faint green hue so the whole window
+-- reads as Verdant's. Only the RGB bias changes — the user's alpha (the
+-- darkness level) is preserved, so the dark stays dark.
+local C_VIEWPORT  = { r = 0.78, g = 1.00, b = 0.86 }
 -- Canvas is intentionally dark so it contrasts with the lighter outer frame
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
@@ -794,7 +799,7 @@ end
 
 -- Live-applies viewport alpha (0..1).  Called by the settings slider.
 function M.set_viewport_alpha(a)
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, a)
+  VerdantGraphWindowViewportBg:SetCenterColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, a)
 end
 
 function M.toggle()
@@ -872,7 +877,7 @@ function M.init()
   -- Read the saved value (default 30% if first run / pre-feature SV).
   local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal
                 and Verdant.SavedVars.temporal.viewport_alpha_pct) or 30
-  VerdantGraphWindowViewportBg:SetCenterColor(1, 1, 1, sv_a / 100)
+  VerdantGraphWindowViewportBg:SetCenterColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, sv_a / 100)
 
   -- The "container above viewport" effect is now driven by the XML structure
   -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
