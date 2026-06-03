@@ -581,6 +581,11 @@ function M.init()
   display_pct = b.display_pct or false
 
   controls.window        = VerdantBarWindow
+
+  -- Brand wash: tint the bar parchment a touch green to match the rest of
+  -- Verdant's windows (identity / anti-clone).
+  VerdantBarWindowBg:SetCenterColor(0.84, 1.00, 0.90, 1.0)
+
   controls.title_label   = VerdantBarWindowTitleLabel
   controls.metric_label  = VerdantBarWindowMetricLabel
   controls.value_label   = VerdantBarWindowValueLabel

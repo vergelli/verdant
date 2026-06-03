@@ -861,11 +861,13 @@ function M.init()
   -- ESO's Backdrop machinery.  Chrome strips paint parchment around the
   -- viewport; inner Backdrop's edge provides the inner frame, its center
   -- is the only viewport bg layer (no overlap → independent alphas).
+  -- Chrome parchment carries a soft green wash so the window reads as
+  -- Verdant's at a glance (identity / anti-clone signature).
   VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0)
-  VerdantGraphWindowChromeTop   :SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowChromeBottom:SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowChromeLeft  :SetColor(1, 1, 1, 0.80)
-  VerdantGraphWindowChromeRight :SetColor(1, 1, 1, 0.80)
+  VerdantGraphWindowChromeTop   :SetColor(0.84, 1.00, 0.90, 0.82)
+  VerdantGraphWindowChromeBottom:SetColor(0.84, 1.00, 0.90, 0.82)
+  VerdantGraphWindowChromeLeft  :SetColor(0.84, 1.00, 0.90, 0.82)
+  VerdantGraphWindowChromeRight :SetColor(0.84, 1.00, 0.90, 0.82)
   -- Viewport alpha is user-tunable via the settings panel (slider 0..100%).
   -- Read the saved value (default 30% if first run / pre-feature SV).
   local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal

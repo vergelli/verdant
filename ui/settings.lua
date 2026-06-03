@@ -507,6 +507,11 @@ function M.init()
   reinit_buffer()
 
   controls.window         = VerdantSettingsPanel
+
+  -- Brand wash: tint the parchment a touch green so the window reads as
+  -- Verdant's even in a screenshot (identity / anti-clone).
+  VerdantSettingsPanelBg:SetCenterColor(0.84, 1.00, 0.90, 1.0)
+
   controls.title_rate     = VerdantSettingsPanelTitle
   controls.label_rate     = VerdantSettingsPanelRateLabel
   controls.track_rate     = VerdantSettingsPanelSliderTrack

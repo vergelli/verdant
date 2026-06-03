@@ -320,6 +320,10 @@ function M.init()
   controls.confirm_yes   = VerdantAssignConfirmYesBtn
   controls.confirm_no    = VerdantAssignConfirmNoBtn
 
+  -- Brand wash: green-tint the parchment to match the rest of Verdant.
+  VerdantAssignPanelBg:SetCenterColor(0.84, 1.00, 0.90, 1.0)
+  VerdantAssignConfirmBg:SetCenterColor(0.84, 1.00, 0.90, 1.0)
+
   controls.title:SetText(GetString(VERDANT_ASSIGN_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
   controls.help:SetColor(0.85, 0.70, 0.30, 1)  -- overflow notice (amber)
