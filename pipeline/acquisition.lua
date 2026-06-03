@@ -38,13 +38,14 @@ end
 -- metrics own them independently. Returns (ev_heal, ev_overheal); either
 -- may be nil. Caller is responsible for processing each independently
 -- (filter+process), or releasing on filter rejection.
-function M.acquire_heal_out(t, hit, overflow, targetUnitId, targetType, abilityId)
+function M.acquire_heal_out(t, hit, overflow, targetUnitId, targetType, abilityId, result)
   local ev_heal, ev_overheal
   if (hit or 0) > 0 then
     ev_heal = acquire()
     if ev_heal then
       ev_heal.t              = t
       ev_heal.kind           = KIND_HEAL
+      ev_heal.result         = result        or 0
       ev_heal.amount         = hit
       ev_heal.target_unit_id = targetUnitId or 0
       ev_heal.target_type    = targetType   or 0
@@ -56,6 +57,7 @@ function M.acquire_heal_out(t, hit, overflow, targetUnitId, targetType, abilityI
     if ev_overheal then
       ev_overheal.t              = t
       ev_overheal.kind           = KIND_OVERHEAL
+      ev_overheal.result         = result        or 0
       ev_overheal.amount         = overflow
       ev_overheal.target_unit_id = targetUnitId or 0
       ev_overheal.target_type    = targetType   or 0
@@ -71,6 +73,7 @@ function M.acquire_shield_abs(t, hit, targetUnitId, targetType, abilityId)
   if not ev then return nil end
   ev.t              = t
   ev.kind           = KIND_SHIELD
+  ev.result         = 0
   ev.amount         = hit
   ev.target_unit_id = targetUnitId or 0
   ev.target_type    = targetType   or 0
@@ -84,6 +87,7 @@ function M.acquire_damage_group(t, hit, targetUnitId)
   if not ev then return nil end
   ev.t              = t
   ev.kind           = KIND_DAMAGE_GROUP
+  ev.result         = 0
   ev.amount         = hit
   ev.target_unit_id = targetUnitId or 0
   ev.target_type    = 0

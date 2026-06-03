@@ -34,6 +34,10 @@ local C_EHPS      = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 }  -- pastel green 
 local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink fill
 local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
 local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
+
+-- CRIT view: muted green base (non-crit heal) + bright gold cap (crit heal).
+local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green base
+local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
 -- Canvas is intentionally dark so it contrasts with the lighter outer frame
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
@@ -57,7 +61,8 @@ local recording_start_ms = 0
 
 local VIEW_EMS    = 1
 local VIEW_SKILL  = 2
-local VIEW_LABELS = { "EMS", "SKILL" }
+local VIEW_CRIT   = 3
+local VIEW_LABELS = { "EMS", "SKILL", "CRIT" }
 local current_view = VIEW_EMS
 
 -- ── small helpers ─────────────────────────────────────────────────────────
@@ -553,9 +558,100 @@ local function render_view2()
   end
 end
 
+-- ── rendering: View 3 — CRIT: non-crit (base) + crit (cap) of eHPS ────────
+-- Shares the EMS canvas + EMS fill/line pools. Stack sums to eHPS, scaled to
+-- the window's max eHPS so the crit ratio reads at full vertical resolution.
+local function render_view3()
+  controls.pool_ehps:ReleaseAllObjects()
+  controls.pool_mps:ReleaseAllObjects()
+  controls.pool_line_ehps:ReleaseAllObjects()
+  controls.pool_line_ems:ReleaseAllObjects()
+
+  local n = Verdant.TemporalBuffer.count()
+  if n == 0 then
+    controls.no_data:SetHidden(false)
+    hide_grid(controls.grid_ems)
+    return
+  end
+  controls.no_data:SetHidden(true)
+
+  local canvas  = controls.canvas
+  local cw      = canvas:GetWidth()
+  local ch      = canvas:GetHeight()
+  if cw <= 4 or ch <= 4 then return end
+  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+
+  local max_ehps = 0
+  local t_first, t_last = 0, 0
+  Verdant.TemporalBuffer.iterate(function(i, s)
+    if s.eHPS > max_ehps then max_ehps = s.eHPS end
+    if i == 1 then t_first = s.t end
+    t_last = s.t
+  end)
+  if max_ehps <= 0 then
+    hide_grid(controls.grid_ems)
+    return
+  end
+
+  draw_grid(controls.grid_ems, canvas, max_ehps, t_last - t_first)
+
+  local capacity    = Verdant.TemporalBuffer.capacity()
+  local slot_w      = cw / capacity
+  local bar_gap     = (slot_w > 3) and 1 or 0
+  local bw          = math_max(1, slot_w - bar_gap)
+  local slot_offset = capacity - n
+  local xs          = {}
+  local top_hs      = {}
+
+  Verdant.TemporalBuffer.iterate(function(i, s)
+    local x  = (slot_offset + i - 1) * slot_w
+    local noncrit_h = math_max(0, math_floor(ch_plot * (s.noncrit / max_ehps) + 0.5))
+    local crit_h    = math_max(0, math_floor(ch_plot * (s.crit    / max_ehps) + 0.5))
+    xs[i]     = x + bw * 0.5
+    top_hs[i] = noncrit_h + crit_h
+
+    -- Non-crit base (bottom), muted green.
+    if noncrit_h > 0 then
+      local tn = controls.pool_ehps:AcquireObject()
+      tn:ClearAnchors()
+      tn:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -TIME_STRIP_H)
+      tn:SetWidth(bw)
+      tn:SetHeight(noncrit_h)
+      tn:SetColor(C_NONCRIT.r, C_NONCRIT.g, C_NONCRIT.b, C_NONCRIT.a)
+      tn:SetHidden(false)
+    end
+
+    -- Crit cap (top), gold.
+    if crit_h > 0 then
+      local tc = controls.pool_mps:AcquireObject()
+      tc:ClearAnchors()
+      tc:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -(TIME_STRIP_H + noncrit_h))
+      tc:SetWidth(bw)
+      tc:SetHeight(crit_h)
+      tc:SetColor(C_CRIT.r, C_CRIT.g, C_CRIT.b, C_CRIT.a)
+      tc:SetHidden(false)
+    end
+  end)
+
+  -- Single frontier polyline at the top of the stack (= eHPS level).
+  if slot_w >= 3 then
+    for i = 2, n do
+      local lt = controls.pool_line_ehps:AcquireObject()
+      lt:ClearAnchors()
+      lt:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, xs[i-1], -(top_hs[i-1] + TIME_STRIP_H))
+      lt:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, xs[i],   -(top_hs[i]   + TIME_STRIP_H))
+      lt:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+      lt:SetThickness(LINE_THICKNESS)
+      lt:SetHidden(false)
+    end
+  end
+end
+
 local function render_current_view()
   if current_view == VIEW_EMS then
     render_view1()
+  elseif current_view == VIEW_CRIT then
+    render_view3()
   else
     layout_skill_area()
     render_view2()
@@ -578,9 +674,11 @@ local function set_view(v)
   current_view = v
   controls.view_label:SetText(VIEW_LABELS[v])
 
-  local is_ems = (v == VIEW_EMS)
-  controls.canvas:SetHidden(not is_ems)
-  controls.skill_area:SetHidden(is_ems)
+  -- EMS and CRIT both render onto the single main canvas; only SKILL uses the
+  -- split skill_area with its two sub-plots.
+  local use_main_canvas = (v == VIEW_EMS or v == VIEW_CRIT)
+  controls.canvas:SetHidden(not use_main_canvas)
+  controls.skill_area:SetHidden(use_main_canvas)
 
   if Verdant.TemporalBuffer.count() == 0 then
     controls.no_data:SetHidden(false)
@@ -588,12 +686,7 @@ local function set_view(v)
   end
   controls.no_data:SetHidden(true)
 
-  if is_ems then
-    render_view1()
-  else
-    layout_skill_area()
-    render_view2()
-  end
+  render_current_view()
 end
 
 -- ── sampling loop ─────────────────────────────────────────────────────────
@@ -606,7 +699,8 @@ local function on_sample_update()
   local r   = Verdant.Metrics.contribution(now)
   local eg  = Verdant.Metrics.eHPS_by_group(now)
   local mg  = Verdant.Metrics.MPS_by_group(now)
-  Verdant.TemporalBuffer.push(now, r.eHPS, r.MPS, eg, mg)
+  local crit, noncrit = Verdant.Metrics.eHPS_crit_split(now)
+  Verdant.TemporalBuffer.push(now, r.eHPS, r.MPS, crit, noncrit, eg, mg)
 
   local elapsed = math_floor((now - recording_start_ms) / 1000)
   controls.status:SetText(string_format("%d:%02d", math_floor(elapsed / 60), elapsed % 60))
@@ -686,14 +780,14 @@ end
 
 function M.prev_view()
   local v = current_view - 1
-  if v < VIEW_EMS then v = VIEW_SKILL end
+  if v < VIEW_EMS then v = VIEW_CRIT end
   release_all_pools()
   set_view(v)
 end
 
 function M.next_view()
   local v = current_view + 1
-  if v > VIEW_SKILL then v = VIEW_EMS end
+  if v > VIEW_CRIT then v = VIEW_EMS end
   release_all_pools()
   set_view(v)
 end
@@ -708,10 +802,11 @@ function M.toggle()
   log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
   if now_visible then
-    -- Sync the EMS/SKILL sub-controls with current_view, then render fresh.
-    local is_ems = (current_view == VIEW_EMS)
-    controls.canvas:SetHidden(not is_ems)
-    controls.skill_area:SetHidden(is_ems)
+    -- Sync the main-canvas / skill_area sub-controls with current_view, then
+    -- render fresh. EMS and CRIT use the main canvas; SKILL uses skill_area.
+    local use_main_canvas = (current_view == VIEW_EMS or current_view == VIEW_CRIT)
+    controls.canvas:SetHidden(not use_main_canvas)
+    controls.skill_area:SetHidden(use_main_canvas)
     render_current_view()
   else
     release_all_pools()

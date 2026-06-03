@@ -64,7 +64,7 @@ end
 local now = Acquisition.now
 
 -- ── combat: heal out ──────────────────────────────────────────────────────
-function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
+function M.dispatch_heal_out(result, isError, _name, _g, _slot,
                               _src, sourceType, _tgt, targetType, hit,
                               _pt, _dt, _log, sourceUnitId, targetUnitId,
                               abilityId, overflow)
@@ -92,7 +92,7 @@ function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
   local t = now()
   prof_enter("pipeline.combat_event.acquisition")
   local ev_heal, ev_overheal = Acquisition.acquire_heal_out(
-    t, hit, overflow, targetUnitId, targetType, abilityId)
+    t, hit, overflow, targetUnitId, targetType, abilityId, result)
   prof_exit("pipeline.combat_event.acquisition")
 
   if ev_heal then

@@ -18,6 +18,7 @@ function Event.factory()
   return {
     t              = 0,
     kind           = 0,    -- AbilityKind enum (see core/constants.lua)
+    result         = 0,    -- ACTION_RESULT_* (used by the crit-heal split)
     amount         = 0,
     target_unit_id = 0,
     target_type    = 0,

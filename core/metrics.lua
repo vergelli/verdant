@@ -16,6 +16,14 @@ local function in_M(entry)
   return Verdant.Coverage.is_in_M(entry.target_type)
 end
 
+-- Crit-heal result codes, bound in init (zenimax.constants is loaded by then).
+local CRIT_HEAL, CRIT_HOT
+
+local function is_crit(e)
+  local r = e.result
+  return r == CRIT_HEAL or r == CRIT_HOT
+end
+
 -- Pool acquired event from the engine. Used by both metrics.ingest_* (when
 -- the engine hands off an event) and metrics.acquire (when a caller needs
 -- to populate a fresh event before calling ingest_*).
@@ -53,6 +61,11 @@ function M.init()
   overheal_buf = RingBuffer.new(W_MS,        1024, release_to_pool)
   shield_buf   = RingBuffer.new(W_SHIELD_MS,  512, release_to_pool)
   damage_buf   = RingBuffer.new(W_MS,        2048, release_to_pool)
+
+  local zc = Verdant.zenimax.constants
+  CRIT_HEAL = zc.ACTION_RESULT_CRITICAL_HEAL
+  CRIT_HOT  = zc.ACTION_RESULT_HOT_TICK_CRITICAL
+
   log:info("init: window=", W_MS, "ms shield_window=", W_SHIELD_MS, "ms pool=", cap)
 end
 
@@ -165,6 +178,26 @@ function M.contribution(now_ms)
     C_heal  = c * heal_share,
     C_shield = c * shield_share,
   }
+end
+
+-- Splits effective healing (eHPS) into its critical and non-critical halves in
+-- one pass over the same window/buffer/predicate eHPS uses, so crit + noncrit
+-- == eHPS exactly. Only landed (in-M) heals count. Returns (crit_hps, noncrit_hps).
+function M.eHPS_crit_split(now_ms)
+  heal_buf:trim(now_ms)
+  local ws    = W_MS / 1000
+  local crit  = 0
+  local total = 0
+  for i = heal_buf.head, heal_buf.tail do
+    local e   = heal_buf.entries[i]
+    local amt = e.amount or 0
+    if amt > 0 and in_M(e) then
+      total = total + amt
+      if is_crit(e) then crit = crit + amt end
+    end
+  end
+  crit = crit / ws
+  return crit, (total / ws) - crit
 end
 
 function M.eHPS_by_group(now_ms)
