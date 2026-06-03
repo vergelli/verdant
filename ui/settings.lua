@@ -520,6 +520,7 @@ function M.init()
   -- Brand wash: tint the parchment a touch green so the window reads as
   -- Verdant's even in a screenshot (identity / anti-clone).
   VerdantSettingsPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
+  VerdantSettingsPanelBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
 
   controls.title_rate     = VerdantSettingsPanelTitle
   controls.label_rate     = VerdantSettingsPanelRateLabel

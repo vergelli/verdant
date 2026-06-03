@@ -873,6 +873,9 @@ function M.init()
   VerdantGraphWindowChromeBottom:SetColor(0.62, 1.00, 0.74, 0.82)
   VerdantGraphWindowChromeLeft  :SetColor(0.62, 1.00, 0.74, 0.82)
   VerdantGraphWindowChromeRight :SetColor(0.62, 1.00, 0.74, 0.82)
+  -- Crisp green border: the border texture takes color cleanly and is never
+  -- covered by buttons, so it's the surface that actually reads as "Verdant".
+  VerdantGraphWindowBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
   -- Viewport alpha is user-tunable via the settings panel (slider 0..100%).
   -- Read the saved value (default 30% if first run / pre-feature SV).
   local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal

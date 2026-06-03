@@ -322,7 +322,9 @@ function M.init()
 
   -- Brand wash: green-tint the parchment to match the rest of Verdant.
   VerdantAssignPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
+  VerdantAssignPanelBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
   VerdantAssignConfirmBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
+  VerdantAssignConfirmBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
 
   controls.title:SetText(GetString(VERDANT_ASSIGN_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
