@@ -29,22 +29,32 @@ function M.init(capacity)
   state.data     = {}
   for i = 1, capacity do
     state.data[i] = { t = 0, eHPS = 0, MPS = 0, crit = 0, noncrit = 0,
-                      ehps_groups = {}, mps_groups = {} }
+                      ehps_groups = { count = 0 }, mps_groups = { count = 0 } }
   end
   log:info("init: capacity=", capacity)
 end
 
--- Record one sample.  Overwrites the oldest entry when full.
--- ehps_groups / mps_groups are arrays of { r, g, b, a, share } from SkillColors.group_shares.
+local function copy_groups(dst, src)
+  local n = (src and (src.count or #src)) or 0
+  for i = 1, n do
+    local s = src[i]
+    local d = dst[i]
+    if d == nil then d = {}; dst[i] = d end
+    d.r = s.r; d.g = s.g; d.b = s.b; d.a = s.a; d.share = s.share
+  end
+  dst.count = n
+end
+
+
 function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups)
-  local slot          = state.data[state.write]
-  slot.t              = timestamp
-  slot.eHPS           = eHPS
-  slot.MPS            = MPS
-  slot.crit           = crit or 0
-  slot.noncrit        = noncrit or 0
-  slot.ehps_groups    = ehps_groups or {}
-  slot.mps_groups     = mps_groups  or {}
+  local slot   = state.data[state.write]
+  slot.t       = timestamp
+  slot.eHPS    = eHPS
+  slot.MPS     = MPS
+  slot.crit    = crit or 0
+  slot.noncrit = noncrit or 0
+  copy_groups(slot.ehps_groups, ehps_groups)
+  copy_groups(slot.mps_groups,  mps_groups)
   state.write = (state.write % state.capacity) + 1
   if state.count < state.capacity then
     state.count = state.count + 1

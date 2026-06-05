@@ -363,3 +363,46 @@ function M.group_shares(buf, now_ms, predicate)
   table.sort(out, function(a, b) return a.share > b.share end)
   return out
 end
+
+local gs_buckets = {}
+
+function M.group_shares_into(out, buf, now_ms, predicate)
+  buf:trim(now_ms)
+  for k in pairs(gs_buckets) do gs_buckets[k] = nil end
+  local total = 0
+  for i = buf.head, buf.tail do
+    local e   = buf.entries[i]
+    local amt = e.amount or 0
+    if amt > 0 and (not predicate or predicate(e)) then
+      local key = lookup_group(e.ability_id)
+      gs_buckets[key] = (gs_buckets[key] or 0) + amt
+      total = total + amt
+    end
+  end
+  if total <= 0 then
+    out.count = 0
+    return out
+  end
+  local n = 0
+  for g, amt in pairs(gs_buckets) do
+    n = n + 1
+    local slot = out[n]
+    if slot == nil then slot = {}; out[n] = slot end
+    local c = GROUP_COLORS[g] or FALLBACK
+    slot.r = c.r; slot.g = c.g; slot.b = c.b; slot.a = c.a
+    slot.share = amt / total
+  end
+
+  for i = 2, n do
+    local key = out[i]
+    local ks  = key.share
+    local j   = i - 1
+    while j >= 1 and out[j].share < ks do
+      out[j + 1] = out[j]
+      j = j - 1
+    end
+    out[j + 1] = key
+  end
+  out.count = n
+  return out
+end

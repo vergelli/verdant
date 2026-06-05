@@ -331,6 +331,11 @@ local function layout_skill_area()
   controls.mps_canvas:SetDimensions(sw, bot_h)
 end
 
+local r1_xs, r1_ehps_hs, r1_ems_hs = {}, {}, {}   -- view1 (EMS)
+local r2_xs_top, r2_colh_top       = {}, {}       -- view2 eHPS sub-plot
+local r2_xs_bot, r2_colh_bot       = {}, {}       -- view2 MPS sub-plot
+local r3_xs, r3_top_hs             = {}, {}       -- view3 (CRIT)
+
 -- ── rendering: View 1 — EMS stacked fills + polylines + grid ──────────────
 local function render_view1()
   controls.pool_ehps:ReleaseAllObjects()
@@ -365,18 +370,15 @@ local function render_view1()
 
   draw_grid(controls.grid_ems, canvas, max_ems, t_last - t_first)
 
-  -- Datadog-style fixed-width bars: slot width is derived from the buffer
-  -- CAPACITY (not current count), so bars don't shrink as samples accumulate
-  -- and the chart "slides" left with a stable cadence once the buffer is full.
-  -- Newest sample is right-aligned; empty slots sit on the left until full.
+
   local capacity    = Verdant.TemporalBuffer.capacity()
   local slot_w      = cw / capacity                              -- float
   local bar_gap     = (slot_w > 3) and 1 or 0
   local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
   local slot_offset = capacity - n  -- leftmost slot of current data
-  local xs          = {}
-  local ehps_hs     = {}
-  local ems_hs      = {}
+  local xs          = r1_xs
+  local ehps_hs     = r1_ehps_hs
+  local ems_hs      = r1_ems_hs
 
   Verdant.TemporalBuffer.iterate(function(i, s)
     local x  = (slot_offset + i - 1) * slot_w
@@ -487,8 +489,8 @@ local function render_view2()
   -- ── eHPS sub-plot ──
   if max_ehps > 0 then
     local ch     = ec:GetHeight()
-    local xs     = {}
-    local col_hs = {}
+    local xs     = r2_xs_top
+    local col_hs = r2_colh_top
 
     Verdant.TemporalBuffer.iterate(function(i, s)
       local x     = (slot_offset + i - 1) * slot_w
@@ -496,8 +498,10 @@ local function render_view2()
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
 
-      local y_off = 0
-      for _, grp in ipairs(s.ehps_groups) do
+      local y_off   = 0
+      local egroups = s.ehps_groups
+      for gi = 1, egroups.count do
+        local grp   = egroups[gi]
         local seg_h = math_max(1, math_floor(col_h * grp.share + 0.5))
         local t = controls.pool_skill_top:AcquireObject()
         t:ClearAnchors()
@@ -526,8 +530,8 @@ local function render_view2()
   -- ── MPS sub-plot (carries time labels → reserve TIME_STRIP_H at bottom) ──
   if max_mps > 0 then
     local ch_plot = math_max(1, mc:GetHeight() - TIME_STRIP_H)
-    local xs      = {}
-    local col_hs  = {}
+    local xs      = r2_xs_bot
+    local col_hs  = r2_colh_bot
 
     Verdant.TemporalBuffer.iterate(function(i, s)
       local x     = (slot_offset + i - 1) * slot_w
@@ -535,8 +539,10 @@ local function render_view2()
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
 
-      local y_off = 0
-      for _, grp in ipairs(s.mps_groups) do
+      local y_off   = 0
+      local mgroups = s.mps_groups
+      for gi = 1, mgroups.count do
+        local grp   = mgroups[gi]
         local seg_h = math_max(1, math_floor(col_h * grp.share + 0.5))
         local t = controls.pool_skill_bot:AcquireObject()
         t:ClearAnchors()
@@ -605,8 +611,8 @@ local function render_view3()
   local bar_gap     = (slot_w > 3) and 1 or 0
   local bw          = math_max(1, slot_w - bar_gap)
   local slot_offset = capacity - n
-  local xs          = {}
-  local top_hs      = {}
+  local xs          = r3_xs
+  local top_hs      = r3_top_hs
 
   Verdant.TemporalBuffer.iterate(function(i, s)
     local x  = (slot_offset + i - 1) * slot_w
@@ -698,14 +704,18 @@ end
 local prof_enter = Verdant.Profiler.enter
 local prof_exit  = Verdant.Profiler.exit
 
+local sample_ehps_groups = { count = 0 }
+local sample_mps_groups  = { count = 0 }
+
 local function on_sample_update()
   prof_enter("graph.sample_tick")
-  local now = GetGameTimeMilliseconds()
-  local r   = Verdant.Metrics.contribution(now)
-  local eg  = Verdant.Metrics.eHPS_by_group(now)
-  local mg  = Verdant.Metrics.MPS_by_group(now)
+  local now  = GetGameTimeMilliseconds()
+  local ehps = Verdant.Metrics.eHPS(now)
+  local mps  = Verdant.Metrics.MPS(now)
   local crit, noncrit = Verdant.Metrics.eHPS_crit_split(now)
-  Verdant.TemporalBuffer.push(now, r.eHPS, r.MPS, crit, noncrit, eg, mg)
+  Verdant.Metrics.eHPS_by_group_into(sample_ehps_groups, now)
+  Verdant.Metrics.MPS_by_group_into(sample_mps_groups, now)
+  Verdant.TemporalBuffer.push(now, ehps, mps, crit, noncrit, sample_ehps_groups, sample_mps_groups)
 
   local elapsed = math_floor((now - recording_start_ms) / 1000)
   controls.status:SetText(string_format("%d:%02d", math_floor(elapsed / 60), elapsed % 60))

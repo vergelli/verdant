@@ -86,6 +86,10 @@ local function on_slash(input)
       Verdant.Diagnostics.print_diag() ; return
     elseif cmd == "report" then
       Verdant.Diagnostics.full_report() ; return
+    elseif cmd == "gcprobe" then
+
+      local n = tonumber(string_match(input, "^%s*%S+%s+(%d+)")) or 1000
+      Verdant.Diagnostics.gc_probe(n) ; return
     elseif cmd == "prof" then
       local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
       if sub == "reset" then Verdant.Profiler.reset(); d("[prof] reset")

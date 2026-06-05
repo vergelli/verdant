@@ -18,6 +18,20 @@ local Verdant = Verdant
 Verdant.Diagnostics = {}
 local M = Verdant.Diagnostics
 
+local NOOP = function() end
+M.bump        = NOOP
+M.get         = function() return 0 end
+M.log_event   = NOOP
+M.snapshot    = function() return {} end
+M.print_diag  = function() d("[diag] disabled (DEBUG=false)") end
+M.full_report = function() d("[report] disabled (DEBUG=false)") end
+M.reset       = NOOP
+M.init        = NOOP
+
+if not Verdant.Constants.DEBUG then return end
+
+-- ── below this line: only parses / runs when DEBUG=true ─────────────────────
+
 local GetGameTimeMilliseconds = Verdant.zenimax.api.GetGameTimeMilliseconds
 local d           = d
 local pairs       = pairs
@@ -245,4 +259,52 @@ end
 function M.init()
   start_time = GetGameTimeMilliseconds()
   Verdant.zenimax.events.register_update("Verdant_DiagTick", TICK_MS, ts_sample)
+end
+
+local gcprobe_eg = { count = 0 }
+local gcprobe_mg = { count = 0 }
+local gcprobe_sink
+
+function M.gc_probe(n)
+  n = n or 1000
+  local Metrics = Verdant.Metrics
+  local TB      = Verdant.TemporalBuffer
+  local now     = GetGameTimeMilliseconds()
+
+
+  local lines = {}
+  local function emit(s) lines[#lines + 1] = s; d("[gcprobe] " .. s) end
+
+  local function measure(label, body)
+    for _ = 1, 64 do body() end
+    for _ = 1, 2 do collectgarbage("collect") end
+    local before = collectgarbage("count")
+    for _ = 1, n do body() end
+    local after  = collectgarbage("count")
+    local bytes  = (after - before) * 1024 / n
+    emit(string.format("%-26s %9.2f bytes/sample", label, bytes))
+    return bytes
+  end
+
+  emit(string.format("=== Verdant gcprobe  N=%d  (ZOS double-collect) ===", n))
+  measure("control (1 table/iter)", function()
+    gcprobe_sink = { r = 0, g = 0, b = 0, a = 0, share = 0 }
+  end)
+  local dp = measure("data path (M1)", function()
+    local e     = Metrics.eHPS(now)
+    local m     = Metrics.MPS(now)
+    local c, nc = Metrics.eHPS_crit_split(now)
+    Metrics.eHPS_by_group_into(gcprobe_eg, now)
+    Metrics.MPS_by_group_into(gcprobe_mg, now)
+    TB.push(now, e, m, c, nc, gcprobe_eg, gcprobe_mg)
+  end)
+
+  TB.clear()
+  emit(dp < 1 and "VERDICT: data path ~0 -> ZERO-ALLOC CONFIRMED"
+               or "VERDICT: data path NONZERO -> an alloc leaked, investigate")
+  emit("(temporal buffer cleared)")
+
+  if Verdant.CopyBox then
+    Verdant.CopyBox.show("Verdant gcprobe", table.concat(lines, "\n"))
+  end
 end
