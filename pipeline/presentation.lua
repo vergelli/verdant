@@ -1,12 +1,3 @@
--- pipeline/presentation.lua
---
--- Stage 4 of the pipeline. Read-side: builds a stable RenderPayload from
--- metrics state. Mutated in place each tick — zero per-tick allocation.
---
--- Per SPEC_05 Phase 4, this module is created as a *parallel* read path.
--- The current ui/bar.lua, ui/graph.lua continue reading directly from
--- core/metrics. UI migration to RenderPayload is scheduled for a later
--- phase. Today's consumer is /verdant readout (validation aid).
 
 Verdant = Verdant or {}
 local Verdant = Verdant
@@ -15,7 +6,6 @@ Verdant.Pipeline = Verdant.Pipeline or {}
 Verdant.Pipeline.Presentation = {}
 local M = Verdant.Pipeline.Presentation
 
--- The single stable payload instance, reused every tick.
 local payload = {
   ts          = 0,
   ehps        = 0,
@@ -27,11 +17,9 @@ local payload = {
   c_self      = 0,
   c_heal      = 0,
   c_shield    = 0,
-  mode        = "",   -- "group" | "open"
+  mode        = "",
 }
 
--- Builds the snapshot for now_ms. Returns the same payload table every
--- call; consumers must read fields (or copy) before the next snapshot.
 function M.snapshot(now_ms)
   local r = Verdant.Metrics.contribution(now_ms)
   payload.ts       = now_ms

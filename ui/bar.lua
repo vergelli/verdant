@@ -16,7 +16,6 @@ local math_max                = math.max
 local math_min                = math.min
 local math_floor              = math.floor
 
--- ── UI constants (local cache for hot anchor / type lookups) ──────────────
 local log              = Verdant.Log.for_module("bar")
 local TOPLEFT          = zc.TOPLEFT
 local TOP              = zc.TOP
@@ -31,40 +30,34 @@ local TEXT_ALIGN_CENTER = zc.TEXT_ALIGN_CENTER
 local GuiRoot          = zc.GuiRoot
 local SOUNDS           = zc.SOUNDS
 
--- ── display metric cycle ──────────────────────────────────────────────────
--- "ALL" is the 4th position: shows three columns simultaneously
 local DISPLAY_METRICS = { "EMS", "eHPS", "MPS", "ALL" }
 
 local COLORS = {
   EMS  = { r = 0.95, g = 0.80, b = 0.20, a = 0.92 },
-  eHPS = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 },  -- pastel green
-  MPS  = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 },  -- pastel pink
+  eHPS = { r = 0.55, g = 0.92, b = 0.62, a = 0.90 },
+  MPS  = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 },
 }
 
 local FILL_TEXTURE  = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local GLOSS_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill_gloss.dds"
 local FILL_T, FILL_B = 0, 0.53125
 
--- 4-strip border: warm gold tint, 2 px each side
+
 local BORDER_COLOR = { r = 0.75, g = 0.62, b = 0.38, a = 0.90 }
 local BORDER_SIZE  = 2
 
--- ── size constraints ──────────────────────────────────────────────────────
+
 local MIN_W_SINGLE, MAX_W_SINGLE = 60,  140
 local MIN_W_ALL,    MAX_W_ALL    = 110, 200
 local MIN_H,        MAX_H        = 180, 440
 
--- triple-view column geometry (fixed width, centered in window)
+
 local TRI_COL_W   = 26
 local TRI_COL_GAP = 8
 local TRI_COLS    = { "EMS", "eHPS", "MPS" }
 local TRI_COL_X   = { EMS = 0, eHPS = TRI_COL_W + TRI_COL_GAP, MPS = (TRI_COL_W + TRI_COL_GAP) * 2 }
 local TRI_TOTAL_W = TRI_COL_W * 3 + TRI_COL_GAP * 2   -- 94 px
 
--- ── skill-color stacked bar (lib/plot composer) ──────────────────────────
--- Construction helper: returns a StackedBar composer textured the same
--- way the previous in-line pool was. Used 3 times below (single-bar EHPS,
--- single-bar MPS, plus one per metric column in triple view).
 local StackedBar = Verdant.lib.plot.StackedBar
 
 local STACKED_BAR_OPTS = {
@@ -76,9 +69,6 @@ local function make_stacked_bar(parent, name_prefix)
   return StackedBar.new(parent, name_prefix, STACKED_BAR_OPTS)
 end
 
--- ── peak-value tracking ──────────────────────────────────────────────────
--- Holds the highest contribution fraction seen per metric.
--- Resets after PEAK_DECAY_MS of not being beaten.
 local PEAK_DECAY_MS = 60000
 local peaks = { EMS = { frac=0, t=0 }, eHPS = { frac=0, t=0 }, MPS = { frac=0, t=0 } }
 
@@ -91,7 +81,6 @@ local function update_peak(key, frac, now)
   end
 end
 
--- Places and shows the peak line.  peak_frac=0 hides it.
 local function render_peak_line(line, parent, area_w, area_h, peak_frac)
   if peak_frac < 0.01 then line:SetHidden(true) ; return end
   local y = -math_floor(area_h * math_min(1, peak_frac))
@@ -101,12 +90,11 @@ local function render_peak_line(line, parent, area_w, area_h, peak_frac)
   line:SetHidden(false)
 end
 
--- ── state ─────────────────────────────────────────────────────────────────
+
 local metric_idx  = 1
 local display_pct = false
 local controls    = {}
 
--- ── helpers ───────────────────────────────────────────────────────────────
 local function current_metric() return DISPLAY_METRICS[metric_idx] end
 
 local function contribution_values(r)
@@ -138,10 +126,6 @@ local function apply_size_constraints()
   end
 end
 
--- ── border: 4 solid CT_TEXTURE strips, warm gold ─────────────────────────
--- Created LAST inside a parent so each strip renders above the fill textures.
--- Each strip is anchored using two opposing corners of the *parent* so the
--- strips track resizes without any Lua intervention.
 local function make_border(parent, name)
   local WM  = WINDOW_MANAGER
   local r, g, b, a = BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, BORDER_COLOR.a
@@ -157,24 +141,16 @@ local function make_border(parent, name)
     t:SetColor(r, g, b, a)
   end
 
-  -- top:    my TOPLEFT    = parent TOPLEFT,   my BOTTOMRIGHT = parent TOPRIGHT   + (0, B)
   strip("T", TOPLEFT, TOPLEFT, 0, 0, BOTTOMRIGHT, TOPRIGHT,    0,  B)
-  -- bottom: my TOPLEFT    = parent BOTTOMLEFT + (0, -B), my BOTTOMRIGHT = parent BOTTOMRIGHT
   strip("B", TOPLEFT, BOTTOMLEFT, 0, -B, BOTTOMRIGHT, BOTTOMRIGHT, 0, 0)
-  -- left:   my TOPLEFT    = parent TOPLEFT,   my BOTTOMRIGHT = parent BOTTOMLEFT + (B, 0)
   strip("L", TOPLEFT, TOPLEFT, 0, 0, BOTTOMRIGHT, BOTTOMLEFT, B, 0)
-  -- right:  my TOPLEFT    = parent TOPRIGHT   + (-B, 0), my BOTTOMRIGHT = parent BOTTOMRIGHT
   strip("R", TOPLEFT, TOPRIGHT, -B, 0, BOTTOMRIGHT, BOTTOMRIGHT, 0, 0)
 end
 
--- ── single-bar texture setup ──────────────────────────────────────────────
 local function setup_single_bar()
   local WM   = WINDOW_MANAGER
   local area = controls.bar_area
 
-  -- dark background
-
-  -- main fill (single metric, or EMS total placeholder)
   local fill = WM:CreateControl("VerdantBarFill", area, CT_TEXTURE)
   fill:ClearAnchors()
   fill:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
@@ -183,7 +159,6 @@ local function setup_single_bar()
   fill:SetColor(COLORS.EMS.r, COLORS.EMS.g, COLORS.EMS.b, COLORS.EMS.a)
   controls.fill = fill
 
-  -- EMS stacked: eHPS green (bottom)
   local fh = WM:CreateControl("VerdantBarFillHeal", area, CT_TEXTURE)
   fh:ClearAnchors()
   fh:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
@@ -193,7 +168,6 @@ local function setup_single_bar()
   fh:SetHidden(true)
   controls.fill_heal = fh
 
-  -- EMS stacked: MPS pink (above eHPS). Anchor repositioned each tick.
   local fs = WM:CreateControl("VerdantBarFillShield", area, CT_TEXTURE)
   fs:ClearAnchors()
   fs:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
@@ -203,12 +177,9 @@ local function setup_single_bar()
   fs:SetHidden(true)
   controls.fill_shield = fs
 
-  -- skill-color fill pools for eHPS and MPS modes (created before gloss)
   controls.bar_ehps = make_stacked_bar(area, "VerdantBarSkillEhps")
   controls.bar_mps  = make_stacked_bar(area, "VerdantBarSkillMps")
 
-  -- gloss overlay: subtle horizontal sheen from the original ESO fill gloss sheet.
-  -- Covers the full bar area so it applies equally to any fill configuration.
   local gloss = WM:CreateControl("VerdantBarGloss", area, CT_TEXTURE)
   gloss:ClearAnchors()
   gloss:SetAnchor(TOPLEFT,     area, TOPLEFT,     0, 0)
@@ -218,7 +189,6 @@ local function setup_single_bar()
   gloss:SetColor(1, 1, 1, 0.25)
   controls.gloss = gloss
 
-  -- peak line: bright 2-px strip above gloss, below border
   local pl = WM:CreateControl("VerdantBarPeakLine", area, CT_TEXTURE)
   pl:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
   pl:SetTexture(FILL_TEXTURE)
@@ -228,16 +198,13 @@ local function setup_single_bar()
   pl:SetHidden(true)
   controls.peak_line = pl
 
-  -- 4-strip gold border — created LAST so it renders above fills and gloss
   make_border(area, "VerdantBarBorder")
 end
 
--- ── triple-column view (Lua-created inside main window) ───────────────────
 local function setup_triple_view()
   local WM  = WINDOW_MANAGER
   local win = controls.window
 
-  -- container: same vertical span as bar_area, fixed width centered
   local container = WM:CreateControl("VerdantBarTriContainer", win, CT_CONTROL)
   container:ClearAnchors()
   container:SetAnchor(TOP,    win, TOP,    0, 52)
@@ -253,7 +220,6 @@ local function setup_triple_view()
     local col = {}
     controls.tri[m] = col
 
-    -- metric label (top of column)
     local lbl = WM:CreateControl("VerdantBarTriLabel" .. m, container, CT_LABEL)
     lbl:ClearAnchors()
     lbl:SetAnchor(TOPLEFT, container, TOPLEFT, x, 0)
@@ -263,7 +229,6 @@ local function setup_triple_view()
     lbl:SetVerticalAlignment(TEXT_ALIGN_CENTER)
     col.label = lbl
 
-    -- bar area (between label and value)
     local area = WM:CreateControl("VerdantBarTriArea" .. m, container, CT_CONTROL)
     area:ClearAnchors()
     area:SetAnchor(TOPLEFT,    container, TOPLEFT,    x, 18)
@@ -280,7 +245,6 @@ local function setup_triple_view()
     fill:SetColor(c.r, c.g, c.b, c.a)
     col.fill = fill
 
-    -- EMS: stacked heal (pastel green, bottom) + shield (pastel pink, above)
     if m == "EMS" then
       fill:SetHidden(true)
 
@@ -303,7 +267,6 @@ local function setup_triple_view()
       col.fill_shield = fs
     end
 
-    -- skill pool for eHPS and MPS columns
     if m ~= "EMS" then
       col.bar = make_stacked_bar(area, "VerdantBarTriSkill" .. m)
     end
@@ -316,7 +279,6 @@ local function setup_triple_view()
     gloss:SetTextureCoords(0, 1, FILL_T, FILL_B)
     gloss:SetColor(1, 1, 1, 0.25)
 
-    -- peak line: above gloss, below border
     local tpl = WM:CreateControl("VerdantBarTriPeak" .. m, area, CT_TEXTURE)
     tpl:SetAnchor(BOTTOMLEFT, area, BOTTOMLEFT, 0, 0)
     tpl:SetTexture(FILL_TEXTURE)
@@ -326,10 +288,8 @@ local function setup_triple_view()
     tpl:SetHidden(true)
     col.peak_line = tpl
 
-    -- 4-strip border (last = on top of fill + gloss)
     make_border(area, "VerdantBarTriBorder" .. m)
 
-    -- value label (bottom of column)
     local val = WM:CreateControl("VerdantBarTriValue" .. m, container, CT_LABEL)
     val:ClearAnchors()
     val:SetAnchor(BOTTOMLEFT, container, BOTTOMLEFT, x, 0)
@@ -341,7 +301,6 @@ local function setup_triple_view()
   end
 end
 
--- ── refresh (1 Hz tick + on user input) ──────────────────────────────────
 local prof_enter = Verdant.Profiler.enter
 local prof_exit  = Verdant.Profiler.exit
 
@@ -355,7 +314,6 @@ local function refresh()
   controls.mode_btn:SetText(display_pct and "#" or "%")
 
   if m == "ALL" then
-    -- ── triple-column view ────────────────────────────────────────────────
     controls.bar_area:SetHidden(true)
     controls.metric_label:SetHidden(true)
     controls.value_label:SetHidden(true)
@@ -379,7 +337,7 @@ local function refresh()
       if display_pct then
         col.value:SetText(string_format("%.0f%%", frac * 100))
       else
-        col.value:SetText(string_format("%d", math_floor(v.raw)))
+        col.value:SetText(ZO_CommaDelimitNumber(math_floor(v.raw)))
       end
       col.value:SetColor(1, 1, 1, 1)
 
@@ -397,7 +355,6 @@ local function refresh()
           local segs = Verdant.Metrics.MPS_by_group(now)
           col.bar:render(col.area, segs, area_w, area_h, frac)
         else
-          -- EMS: stacked heal (green, bottom) + shield (pink, above)
           col.fill:SetHidden(true)
           local heal_frac   = math_max(0, math_min(1, r.C_heal   or 0))
           local shield_frac = math_max(0, math_min(1, r.C_shield or 0))
@@ -421,7 +378,6 @@ local function refresh()
     end
 
   else
-    -- ── single-metric view ────────────────────────────────────────────────
     controls.bar_area:SetHidden(false)
     controls.metric_label:SetHidden(false)
     controls.value_label:SetHidden(false)
@@ -438,7 +394,7 @@ local function refresh()
     if display_pct then
       controls.value_label:SetText(string_format("%.0f%%", frac * 100))
     else
-      controls.value_label:SetText(string_format("%d %s", math_floor(raw), suffix))
+      controls.value_label:SetText(ZO_CommaDelimitNumber(math_floor(raw)) .. " " .. suffix)
     end
     controls.value_label:SetColor(1, 1, 1, 1)
 
@@ -449,7 +405,6 @@ local function refresh()
     update_peak(m, frac, now)
 
     if m == "EMS" then
-      -- stacked fill: eHPS green (bottom), MPS pink (above); no per-skill coloring
       controls.fill:SetHidden(true)
       controls.bar_ehps:release()
       controls.bar_mps:release()
@@ -493,7 +448,6 @@ local function refresh()
   prof_exit("bar.refresh")
 end
 
--- ── public API ────────────────────────────────────────────────────────────
 function M.prev_metric()
   metric_idx = ((metric_idx - 2) % #DISPLAY_METRICS) + 1
   PlaySound(SOUNDS.DIALOG_ACCEPT)
@@ -541,7 +495,6 @@ function M.hide()
   save_state()
 end
 
--- Called by Settings when the slider changes
 function M.set_rate(ms)
   log:info("set_rate ->", ms, "ms")
   Verdant.zenimax.events.unregister_update("Verdant_BarTick")
@@ -570,7 +523,6 @@ function M.on_resize_stop()
   if sv then sv.bar = sv.bar or {} ; sv.bar.w, sv.bar.h = w, h end
 end
 
--- ── init ──────────────────────────────────────────────────────────────────
 function M.init()
   local C  = Verdant.Constants
   local sv = Verdant.SavedVars
@@ -581,6 +533,10 @@ function M.init()
   display_pct = b.display_pct or false
 
   controls.window        = VerdantBarWindow
+
+  VerdantBarWindowBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
+  VerdantBarWindowBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
+
   controls.title_label   = VerdantBarWindowTitleLabel
   controls.metric_label  = VerdantBarWindowMetricLabel
   controls.value_label   = VerdantBarWindowValueLabel
@@ -595,8 +551,6 @@ function M.init()
   controls.title_label:SetText("Verdant")
   controls.title_label:SetColor(0.55, 0.55, 0.55, 0.70)
 
-  -- prev_btn / next_btn are now icon Buttons (textures defined in XML);
-  -- ESO Button has no SetText/SetColor methods, so no Lua styling here.
 
   controls.api_label:SetHidden(true)
   controls.version_label:SetText(string_format("v%s  API %d", C.VERSION, GetAPIVersion()))

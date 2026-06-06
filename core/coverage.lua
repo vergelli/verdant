@@ -3,11 +3,6 @@ local Verdant = Verdant
 
 Verdant.Coverage = {}
 
--- Maintains the open-world coverage set V(t): unitIds we have benefited
--- (heal or shield-applied) within the last W_cov ms. Group set G(t) is
--- decided per-event via the event's targetType — a much cheaper signal
--- than enumerating GetUnitName("groupN") and resolving back to unitIds.
-
 local M = Verdant.Coverage
 
 local pairs            = pairs
@@ -23,7 +18,7 @@ local COMBAT_UNIT_TYPE_PLAYER_PET = C.COMBAT_UNIT_TYPE_PLAYER_PET
 
 local W_COV_MS = 10000
 
-local coverage = {}    -- [unitId] = last_benef_ms
+local coverage = {}
 local mode_grouped = false
 
 local function is_group_target_type(targetType)

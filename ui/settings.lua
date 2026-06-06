@@ -14,7 +14,6 @@ local math_max           = math.max
 local math_min           = math.min
 local math_floor         = math.floor
 
--- ── UI constants ──────────────────────────────────────────────────────────
 local log         = Verdant.Log.for_module("settings")
 local TOP         = zc.TOP
 local TOPLEFT     = zc.TOPLEFT
@@ -23,12 +22,9 @@ local BOTTOMLEFT  = zc.BOTTOMLEFT
 local CT_TEXTURE  = zc.CT_TEXTURE
 local GuiRoot     = zc.GuiRoot
 
--- Slider visuals: original ESO attributeBar textures with their proper
--- texture coords (top half of the dynamic_fill is the visible band).
 local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local FILL_T, FILL_B = 0, 0.53125
 
--- ── presets ───────────────────────────────────────────────────────────────────
 local RATE_PRESETS   = { 50, 100, 200, 500, 1000, 2000 }
 local RATE_LABELS    = {
   [50]   = "20 Hz", [100] = "10 Hz", [200] = "5 Hz",
@@ -36,8 +32,6 @@ local RATE_LABELS    = {
 }
 local RATE_DEFAULT   = 1000
 
--- Heal and Shield windows share the same 1..30 s range with 1 s step so they
--- can be compared 1:1 in the UI and so users don't have to learn two scales.
 local function range_presets(start_s, end_s)
   local p, lbls = {}, {}
   for s = start_s, end_s do
@@ -53,7 +47,6 @@ local SHIELD_PRESETS, SHIELD_LABELS = range_presets(1, 30)
 local HEAL_DEFAULT   = 5000
 local SHIELD_DEFAULT = 10000
 
--- Sampling rate (stored as ms interval; label shows Hz). 1..10 Hz, 1 Hz step.
 local SAMPLE_PRESETS = {}
 local SAMPLE_LABELS  = {}
 for hz = 1, 10 do
@@ -63,10 +56,6 @@ for hz = 1, 10 do
 end
 local SAMPLE_DEFAULT = 1000
 
--- Time window for temporal buffer (stored as seconds).
--- 15 s → 10 min in 15-second steps: 15, 30, 45, 60, ..., 600.
--- Upper end (>5min) is intended for end-game PvE bosses that run long;
--- combinations with high sample rate are gated by a capacity warning.
 local function twindow_presets()
   local p, lbls = {}, {}
   for s = 15, 600, 15 do
@@ -84,8 +73,6 @@ end
 local TWINDOW_PRESETS, TWINDOW_LABELS = twindow_presets()
 local TWINDOW_DEFAULT = 60
 
--- Viewport alpha (stored as integer percentage 0..100, step 5).  Stored as
--- int (not float) to avoid floating-point key issues in the labels lookup.
 local VPALPHA_PRESETS = {}
 local VPALPHA_LABELS  = {}
 for pct = 0, 100, 5 do
@@ -94,18 +81,6 @@ for pct = 0, 100, 5 do
 end
 local VPALPHA_DEFAULT = 30
 
--- ── profiles ─────────────────────────────────────────────────────────────────
--- Predefined slider combinations targeted at common play modes. Selecting
--- one applies all five gameplay-related sliders at once. viewport_alpha
--- intentionally stays out of profiles — it's purely cosmetic and the user
--- shouldn't lose their alpha preference when switching profile.
---
--- "custom" is the catch-all marker; it's selected automatically as soon
--- as the user touches any slider individually so manual tweaks don't
--- silently revert when a profile is reapplied.
--- Profile labels go through GetString so future locales can override.
--- Resolved lazily inside profile_label_for(); the locales might not be
--- live at module-load time depending on manifest order.
 local function profile_label_for(id)
   if id == "solo"     then return GetString(VERDANT_PROFILE_SOLO)     end
   if id == "dungeons" then return GetString(VERDANT_PROFILE_DUNGEONS) end
@@ -120,7 +95,7 @@ local PROFILES = {
   { id = "dungeons", rate = 500,  heal = 5000, shield = 7000,  sample = 1000, twindow = 180 },
   { id = "trials",   rate = 1000, heal = 5000, shield = 7000,  sample = 1000, twindow = 600 },
   { id = "pvp",      rate = 200,  heal = 3000, shield = 5000,  sample = 200,  twindow = 30  },
-  { id = "custom"    },  -- no preset values
+  { id = "custom"    },
 }
 local PROFILE_DEFAULT = "solo"
 
@@ -131,7 +106,6 @@ local function profile_by_id(id)
   return nil
 end
 
--- ── state ─────────────────────────────────────────────────────────────────────
 local controls       = {}
 local current_rate    = RATE_DEFAULT
 local current_heal    = HEAL_DEFAULT
@@ -141,7 +115,6 @@ local current_twindow = TWINDOW_DEFAULT
 local current_vpalpha = VPALPHA_DEFAULT
 local current_profile = PROFILE_DEFAULT
 
--- ── shared helpers ────────────────────────────────────────────────────────────
 local function nearest_idx(presets, ms)
   local bi, bd = 1, math.huge
   for i, p in ipairs(presets) do
@@ -165,18 +138,12 @@ local function update_slider(track, fill, thumb, label, presets, labels, ms)
   label:SetText(labels[ms] or (math_floor(ms / 1000) .. "s"))
 end
 
--- Background texture for the empty track. progressbar_frame_bg is a dark
--- inner panel; stretching it across our 14px slider height makes the
--- track visible (was previously an invisible Control hosting only fill
--- and thumb). If it ends up looking off at this scale the texture can be
--- swapped here in one place.
 local TRACK_BG_TEXTURE = "EsoUI/Art/Miscellaneous/progressbar_frame_bg.dds"
 
 local function setup_slider_visuals(track, name_prefix)
   local WM = WINDOW_MANAGER
 
-  -- Track background: behind the fill so the empty portion of the slider
-  -- still shows a visible panel.
+
   local bg = WM:CreateControl(name_prefix .. "Bg", track, CT_TEXTURE)
   bg:SetAnchorFill(track)
   bg:SetTexture(TRACK_BG_TEXTURE)
@@ -188,9 +155,6 @@ local function setup_slider_visuals(track, name_prefix)
   fill:SetAnchor(BOTTOMLEFT, track, BOTTOMLEFT, 0, 0)
   fill:SetTexture(FILL_TEXTURE)
   fill:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  -- Warm amber/cream matching ESO's tooltip border tone (BORDER_COLOR
-  -- in bar.lua). Was a punchy primary yellow that clashed with the
-  -- otherwise-muted UI palette.
   fill:SetColor(0.85, 0.72, 0.45, 0.90)
   fill:SetDrawLevel(1)
 
@@ -213,30 +177,22 @@ local function persist_temporal(key, val)
   if sv then sv.temporal = sv.temporal or {} ; sv.temporal[key] = val end
 end
 
--- Capacity-based safety warning. Render cost scales with the number of
--- samples the temporal buffer has to draw; a long window combined with
--- a high sample rate can balloon to thousands of samples and impact FPS.
--- Threshold tuned for ~600px canvas where slot_w < 3px already disables
--- per-segment line drawing — fills still cost O(capacity).
 local CAPACITY_WARN_THRESHOLD = 1500
 
 local function warn_if_heavy(capacity, twindow_s, hz)
   if capacity <= CAPACITY_WARN_THRESHOLD then return end
   local msg = string.format(GetString(VERDANT_WARN_HEAVY_BUFFER), twindow_s, hz, capacity)
-  -- Chat in red so the user notices.
   d("|cFF4444[V] WARNING:|r " .. msg)
   log:warn("heavy combo:", msg)
 end
 
 local function reinit_buffer()
-  local hz       = math_floor(1000 / current_sample)  -- intervals/s → Hz
+  local hz       = math_floor(1000 / current_sample)
   local capacity = current_twindow * hz
   Verdant.TemporalBuffer.init(capacity)
   warn_if_heavy(capacity, current_twindow, hz)
 end
 
--- ── profile machinery ────────────────────────────────────────────────────────
--- Combobox handle, populated in init().  May be nil during very early calls.
 local profile_combo
 
 local function persist_profile(id)
@@ -244,8 +200,6 @@ local function persist_profile(id)
   if sv then sv.settings = sv.settings or {} ; sv.settings.profile = id end
 end
 
--- Switch to "custom" without rewriting any slider values. Called from
--- every individual slider handler; cheap no-op when already on custom.
 local function mark_custom()
   if current_profile == "custom" then return end
   current_profile = "custom"
@@ -255,10 +209,6 @@ local function mark_custom()
   end
 end
 
--- Apply a named profile: writes all slider values + persists + reapplies
--- side effects (bar tick, metric windows, temporal buffer). Does NOT
--- touch viewport_alpha. Only meaningful for profile ids that have preset
--- values (i.e. anything except "custom").
 local function apply_profile(id)
   local p = profile_by_id(id)
   if not p or not p.rate then return false end
@@ -296,7 +246,6 @@ local function refresh_all_sliders()
   update_slider(c.track_vpalpha, c.fill_vpalpha, c.thumb_vpalpha, c.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
 end
 
--- ── public API ────────────────────────────────────────────────────────────────
 function M.toggle()
   local win    = controls.window
   local hidden = win:IsHidden()
@@ -316,12 +265,28 @@ function M.on_move_stop()
   sv.settings.y = controls.window:GetTop()
 end
 
--- Combobox callback: applies the profile and refreshes all slider visuals
--- so the user immediately sees the new positions.
+function M.on_unknown_click()
+  controls.window:SetHidden(true)
+  Verdant.Assign.show()
+end
+
+function M.on_logo_click()
+  local now = not Verdant.Logo.is_enabled()
+  Verdant.Logo.set_enabled(now)
+  controls.logo_btn:SetText(now and GetString(VERDANT_SETTINGS_LOGO_ON)
+                                 or GetString(VERDANT_SETTINGS_LOGO_OFF))
+  if not now then d("[V] " .. GetString(VERDANT_LOGO_HINT)) end
+end
+
+function M.on_bars_click()
+  local now = not Verdant.Visibility.is_bar_enabled()
+  Verdant.Visibility.set_bar_enabled(now)
+  controls.bars_btn:SetText(now and GetString(VERDANT_SETTINGS_BARS_ON)
+                                 or GetString(VERDANT_SETTINGS_BARS_OFF))
+end
+
 function M.on_profile_selected(id)
   if id == "custom" then
-    -- Picking "custom" from the dropdown is a no-op — the user is just
-    -- inspecting; no values change. The marker stays.
     current_profile = "custom"
     persist_profile("custom")
     return
@@ -412,9 +377,6 @@ function M.on_vpalpha_track_click(control)
   update_slider(controls.track_vpalpha, controls.fill_vpalpha, controls.thumb_vpalpha, controls.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
 end
 
--- Restores every setting to its default value, persists, reapplies.
--- Equivalent to selecting the default profile (Solo PvE) plus resetting
--- viewport_alpha (which lives outside profiles).
 function M.on_reset_click()
   log:info("reset to defaults")
   apply_profile(PROFILE_DEFAULT)
@@ -429,9 +391,6 @@ function M.on_reset_click()
   refresh_all_sliders()
 end
 
--- ── init ──────────────────────────────────────────────────────────────────────
--- Snapshot of the current configuration for /verdant report and other
--- introspection. Read-only; do NOT mutate the returned table.
 function M.snapshot()
   local hz       = math_floor(1000 / current_sample)
   local capacity = current_twindow * hz
@@ -477,18 +436,18 @@ function M.init()
   current_twindow = TWINDOW_PRESETS[nearest_idx(TWINDOW_PRESETS, sv.temporal.time_window_s     or TWINDOW_DEFAULT)]
   current_vpalpha = VPALPHA_PRESETS[nearest_idx(VPALPHA_PRESETS, sv.temporal.viewport_alpha_pct or VPALPHA_DEFAULT)]
 
-  -- Profile is just an id label; the actual slider values come from the
-  -- per-slider keys above. If the saved id is unknown (renamed or removed
-  -- in a future migration) fall back to the default profile.
   current_profile = profile_by_id(sv.settings.profile or PROFILE_DEFAULT) and (sv.settings.profile or PROFILE_DEFAULT) or PROFILE_DEFAULT
 
   Verdant.Metrics.set_window(current_heal)
   Verdant.Metrics.set_shield_window(current_shield)
 
-  -- Pre-allocate circular buffer with the saved (or default) capacity.
   reinit_buffer()
 
   controls.window         = VerdantSettingsPanel
+
+  VerdantSettingsPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
+  VerdantSettingsPanelBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
+
   controls.title_rate     = VerdantSettingsPanelTitle
   controls.label_rate     = VerdantSettingsPanelRateLabel
   controls.track_rate     = VerdantSettingsPanelSliderTrack
@@ -511,13 +470,26 @@ function M.init()
   controls.reset_btn      = VerdantSettingsPanelResetBtn
   controls.profile_label  = VerdantSettingsPanelProfileLabel
   controls.profile_combo  = VerdantSettingsPanelProfileDropdown
+  controls.unknown_btn    = VerdantSettingsPanelUnknownBtn
+  controls.unknown_label  = VerdantSettingsPanelUnknownLabel
+  controls.logo_btn       = VerdantSettingsPanelLogoBtn
+  controls.bars_btn       = VerdantSettingsPanelBarsBtn
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
   controls.profile_label:SetText(GetString(VERDANT_SETTINGS_PROFILE))
   controls.profile_label:SetColor(0.75, 0.75, 0.75, 1)
 
-  -- Populate the profile combobox.
+  controls.unknown_label:SetText(GetString(VERDANT_SETTINGS_UNKNOWN))
+  controls.unknown_label:SetColor(0.80, 0.80, 0.80, 1)
+  controls.logo_btn:SetText(Verdant.Logo.is_enabled()
+    and GetString(VERDANT_SETTINGS_LOGO_ON) or GetString(VERDANT_SETTINGS_LOGO_OFF))
+
+  local bars_on = not (Verdant.SavedVars and Verdant.SavedVars.bar
+                       and Verdant.SavedVars.bar.enabled == false)
+  controls.bars_btn:SetText(bars_on and GetString(VERDANT_SETTINGS_BARS_ON)
+                                     or GetString(VERDANT_SETTINGS_BARS_OFF))
+
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)
   profile_combo:SetSortsItems(false)
   profile_combo:ClearItems()
@@ -561,9 +533,7 @@ function M.init()
   c.fill_sample,  c.thumb_sample  = setup_slider_visuals(c.track_sample,  "VerdantSettingsSample")
   c.fill_twindow, c.thumb_twindow = setup_slider_visuals(c.track_twindow, "VerdantSettingsTWindow")
   c.fill_vpalpha, c.thumb_vpalpha = setup_slider_visuals(c.track_vpalpha, "VerdantSettingsVPAlpha")
-  -- slider display deferred to first toggle() — panel is hidden and GetWidth() returns 0
 
-  -- Restore window position from SavedVars (centered fallback).
   if sv.settings.x and sv.settings.y then
     controls.window:ClearAnchors()
     controls.window:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, sv.settings.x, sv.settings.y)
@@ -572,7 +542,5 @@ function M.init()
     controls.window:SetAnchor(zc.CENTER, GuiRoot, zc.CENTER, 0, 0)
   end
 
-  -- Log the full config snapshot at startup so /verdant report after a
-  -- reload always has the baseline.
   for _, line in ipairs(M.report_lines()) do log:info(line) end
 end

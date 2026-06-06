@@ -5,21 +5,14 @@ local M = Verdant.TemporalBuffer
 local math_floor = math.floor
 local log        = Verdant.Log.for_module("temporal_buffer")
 
--- ── state ─────────────────────────────────────────────────────────────────
--- data: pre-allocated array of {t, eHPS, MPS}.  Write pointer wraps via modulo.
--- Not persisted to SavedVars — combat data is transient.
 local state = {
   data      = {},
   capacity  = 0,
-  write     = 1,   -- next slot to overwrite (1-based, wraps)
-  count     = 0,   -- active samples (≤ capacity)
+  write     = 1,
+  count     = 0,
   recording = false,
 }
 
--- ── public API ────────────────────────────────────────────────────────────
-
--- Call once on addon load and again whenever the user changes sample rate or
--- time window.  Capacity = time_window_s * sample_hz.
 function M.init(capacity)
   capacity       = math_floor(capacity)
   if capacity < 1 then capacity = 1 end
@@ -28,34 +21,43 @@ function M.init(capacity)
   state.count    = 0
   state.data     = {}
   for i = 1, capacity do
-    state.data[i] = { t = 0, eHPS = 0, MPS = 0, ehps_groups = {}, mps_groups = {} }
+    state.data[i] = { t = 0, eHPS = 0, MPS = 0, crit = 0, noncrit = 0,
+                      ehps_groups = { count = 0 }, mps_groups = { count = 0 } }
   end
   log:info("init: capacity=", capacity)
 end
 
--- Record one sample.  Overwrites the oldest entry when full.
--- ehps_groups / mps_groups are arrays of { r, g, b, a, share } from SkillColors.group_shares.
-function M.push(timestamp, eHPS, MPS, ehps_groups, mps_groups)
-  local slot          = state.data[state.write]
-  slot.t              = timestamp
-  slot.eHPS           = eHPS
-  slot.MPS            = MPS
-  slot.ehps_groups    = ehps_groups or {}
-  slot.mps_groups     = mps_groups  or {}
+local function copy_groups(dst, src)
+  local n = (src and (src.count or #src)) or 0
+  for i = 1, n do
+    local s = src[i]
+    local d = dst[i]
+    if d == nil then d = {}; dst[i] = d end
+    d.r = s.r; d.g = s.g; d.b = s.b; d.a = s.a; d.share = s.share
+  end
+  dst.count = n
+end
+
+
+function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups)
+  local slot   = state.data[state.write]
+  slot.t       = timestamp
+  slot.eHPS    = eHPS
+  slot.MPS     = MPS
+  slot.crit    = crit or 0
+  slot.noncrit = noncrit or 0
+  copy_groups(slot.ehps_groups, ehps_groups)
+  copy_groups(slot.mps_groups,  mps_groups)
   state.write = (state.write % state.capacity) + 1
   if state.count < state.capacity then
     state.count = state.count + 1
   end
 end
 
--- Iterate samples in chronological order (oldest first).
--- fn(i, sample) where sample = { t, eHPS, MPS }.
 function M.iterate(fn)
   local n   = state.count
   if n == 0 then return end
   local cap = state.capacity
-  -- When full, state.write points at the oldest slot (about to be overwritten).
-  -- When not full, writing started at slot 1 so oldest is slot 1.
   local oldest = (n >= cap) and state.write or 1
   for i = 1, n do
     local idx = ((oldest - 1 + i - 1) % cap) + 1
@@ -77,7 +79,6 @@ function M.stop_recording()
   log:info("stop_recording: count=", state.count, "/", state.capacity)
 end
 
--- Resets write pointer and count without freeing the pre-allocated table.
 function M.clear()
   log:info("clear: discarding", state.count, "samples")
   state.write = 1

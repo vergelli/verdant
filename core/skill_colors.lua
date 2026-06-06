@@ -24,20 +24,46 @@ local GROUP_COLORS = {
   undaunted   = { r = 0.42, g = 0.42, b = 0.18, a = 0.95 },  -- olive
   support     = { r = 0.42, g = 0.31, b = 0.68, a = 0.95 },  -- muted purple
   vampire     = { r = 0.55, g = 0.05, b = 0.10, a = 0.95 },  -- carmesi (blood)
+  werewolf    = { r = 0.60, g = 0.28, b = 0.18, a = 0.95 },  -- blood-moon russet (World, sibling of vampire)
+  psijic      = { r = 0.86, g = 0.80, b = 0.52, a = 0.95 },  -- astral gold (Psijic Order)
   mages_guild = { r = 0.10, g = 0.45, b = 0.65, a = 0.95 },  -- celeste oscuro
   item        = { r = 0.95, g = 0.20, b = 0.80, a = 0.95 },  -- magenta
   other       = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
 }
 
--- Icon-path → group lookup. Locale-independent: ZOS uses a stable internal
--- naming scheme for ability art (`/esoui/art/icons/ability_<class>_NNN.dds`),
--- and effect / proc / HOT-tick abilityIds typically inherit the icon of the
--- skill that spawns them. Most class and most weapon-line abilities resolve
--- this way.
---
--- Order matters when patterns share substrings. "grimoire" comes before
--- "mageguild" because scribing grimoires use paths like
--- "ability_grimoire_magesguild.dds" — we want those classified as scribing.
+
+local GROUP_LABELS = {
+  templar        = "Templar",
+  dk             = "Dragonknight",
+  sorc           = "Sorcerer",
+  nb             = "Nightblade",
+  warden         = "Warden",
+  necro          = "Necromancer",
+  arcanist       = "Arcanist",
+  destru         = "Destruction Staff",
+  resto          = "Restoration Staff",
+  mages_guild    = "Mages Guild",
+  undaunted      = "Undaunted",
+  support        = "Alliance War",
+  scribing       = "Scribing",
+  psijic         = "Psijic Order",
+  vampire        = "Vampire",
+  werewolf       = "Werewolf",
+  item           = "Item Set / Enchant",
+  other          = "Unknown (grey)",
+}
+
+
+local GROUP_ORDER = {
+  "templar", "dk", "sorc", "nb", "warden", "necro", "arcanist",
+  "destru", "resto",
+  "mages_guild", "undaunted", "support", "scribing", "psijic",
+  "vampire", "werewolf",
+  "item",
+  "other",
+}
+
+
 local ICON_PATTERNS = {
   { "ability_grimoire_",         "scribing"    },
   { "ability_templar_",          "templar"     },
@@ -52,20 +78,14 @@ local ICON_PATTERNS = {
   { "ability_ava_",              "support"     },
   { "ability_undaunted_",        "undaunted"   },
   { "ability_mageguild_",        "mages_guild" },
+  { "ability_psijic_",           "psijic"      },
   -- Vampire current and legacy paths.
   { "ability_u26_vampire_",      "vampire"     },
   { "ability_vampire_",          "vampire"     },
+  { "ability_werewolf_",         "werewolf"    },
 }
 
--- Skill-line ID → group. Used as a third-tier fallback for cast IDs that
--- the icon classifier didn't resolve (mostly cast IDs that share generic
--- art with their effects). The skill_line_id space is global and stable;
--- this table is sourced from the VerdantSkillDump tool against the live
--- skill tree.
---
--- Both base class lines and Vengeance subclass lines (the U43 subclassing
--- experimental feature) are included, mapped to the same group as their
--- base class.
+
 local SKILL_LINE_TO_GROUP = {
   -- Class lines
   [22]  = "templar",  [27]  = "templar",  [28]  = "templar",
@@ -92,14 +112,14 @@ local SKILL_LINE_TO_GROUP = {
   -- Alliance War
   [48]  = "support",  [67]  = "support",
   [325] = "support",  [326] = "support",
+  -- Psijic Order (guild)
+  [130] = "psijic",
   -- World
   [51]  = "vampire",
+  [50]  = "werewolf",
 }
 
--- Direct ID → group overrides. Highest precedence; covers abilityIds with
--- generic icons that the icon classifier can't disambiguate (set procs,
--- some scribing variants, ZOS's catch-all proc icon).
--- Add IDs here using /verdant skills capture.
+
 local ABILITY_OVERRIDES = {
   -- example: [29483] = "resto",
   [186191] = "arcanist",
@@ -124,13 +144,13 @@ local ABILITY_OVERRIDES = {
 
 }
 
--- Runtime cache (abilityId → group string); populated on first encounter.
+
 local ability_cache = {}
 
--- IDs that fell through every classifier: { [abilityId] = "name | icon" }
--- Printed by M.print_unknown() so the user can decide whether to add an
--- override or extend a pattern. Includes the icon path because that's
--- usually enough to spot whether the ability uses ZOS's generic art.
+
+local USER_OVERRIDES = {}
+
+
 local unknown_log = {}
 
 local function classify_by_icon(abilityId)
@@ -158,29 +178,35 @@ local function lookup_group(abilityId)
   local g = ability_cache[abilityId]
   if g then return g end
 
-  -- 1. Manual override — covers items, generic-icon procs, edge cases.
+
+  g = USER_OVERRIDES[abilityId]
+  if g then
+    ability_cache[abilityId] = g
+    return g
+  end
+
+
   g = ABILITY_OVERRIDES[abilityId]
   if g then
     ability_cache[abilityId] = g
     return g
   end
 
-  -- 2. Icon-path classifier — locale-independent, the bulk of the work.
+
   g = classify_by_icon(abilityId)
   if g then
     ability_cache[abilityId] = g
     return g
   end
 
-  -- 3. Skill-tree API — picks up cast IDs and some effect IDs that the
-  --    API does resolve (a minority, but free coverage).
+
   g = classify_by_skill_tree_api(abilityId)
   if g then
     ability_cache[abilityId] = g
     return g
   end
 
-  -- 4. Give up — record for /verdant skills.
+
   local name = GetAbilityName(abilityId) or "?"
   local icon = GetAbilityIcon(abilityId) or "?"
   unknown_log[abilityId] = name .. "  | icon=" .. icon
@@ -188,8 +214,7 @@ local function lookup_group(abilityId)
   return "other"
 end
 
--- Print all unclassified abilities seen so far.
--- Use /verdant skills after a heal session to discover what to add to ABILITY_OVERRIDES.
+
 function M.print_unknown()
   local lines  = {}
   local count  = 0
@@ -211,14 +236,92 @@ function M.print_unknown()
   end
 end
 
+
+function M.unknown_lines()
+  local lines = {}
+  for id, info in pairs(unknown_log) do
+    lines[#lines + 1] = string.format("  [%d] = \"?\",  -- %s", id, info)
+  end
+  if #lines == 0 then return { "(none — all heal/shield abilities classified)" } end
+  table.sort(lines)
+  table.insert(lines, 1, "add to ABILITY_OVERRIDES:")
+  return lines
+end
+
 local FALLBACK = GROUP_COLORS.other
 
 function M.get_color(abilityId)
   return GROUP_COLORS[lookup_group(abilityId)] or FALLBACK
 end
 
--- Returns a sorted array of { r, g, b, a, share } (largest segment first).
--- All shares sum to 1.  Empty if total is 0.
+function M.group_of(abilityId)
+  return lookup_group(abilityId)
+end
+
+function M.group_color(group)
+  return GROUP_COLORS[group] or FALLBACK
+end
+
+function M.group_names()
+  local out = {}
+  for k in pairs(GROUP_COLORS) do out[#out + 1] = k end
+  table.sort(out)
+  return out
+end
+
+function M.is_group(group)
+  return GROUP_COLORS[group] ~= nil
+end
+
+function M.group_label(key)
+  return GROUP_LABELS[key] or key
+end
+
+
+function M.groups_ordered()
+  local out = {}
+  for _, key in ipairs(GROUP_ORDER) do
+    local c = GROUP_COLORS[key] or FALLBACK
+    out[#out + 1] = { key = key, label = GROUP_LABELS[key] or key, r = c.r, g = c.g, b = c.b, a = c.a }
+  end
+  return out
+end
+
+
+function M.get_unknowns()
+  local out = {}
+  for id in pairs(unknown_log) do
+    out[#out + 1] = { id = id, name = GetAbilityName(id) or ("#" .. id), icon = GetAbilityIcon(id) or "" }
+  end
+  table.sort(out, function(a, b) return a.id < b.id end)
+  return out
+end
+
+function M.unknown_count()
+  local n = 0
+  for _ in pairs(unknown_log) do n = n + 1 end
+  return n
+end
+
+function M.set_override(abilityId, group)
+  if not abilityId or abilityId <= 0 or not GROUP_COLORS[group] then return false end
+  USER_OVERRIDES[abilityId] = group
+  ability_cache[abilityId]  = group
+  unknown_log[abilityId]    = nil
+  return true
+end
+
+
+function M.load_persisted(sv)
+  if not sv then return end
+  if type(sv.skill_overrides) == "table" then
+    for id, group in pairs(sv.skill_overrides) do
+      if type(id) == "number" then M.set_override(id, group) end
+    end
+  end
+end
+
+
 function M.group_shares(buf, now_ms, predicate)
   buf:trim(now_ms)
   local buckets = {}
@@ -239,5 +342,48 @@ function M.group_shares(buf, now_ms, predicate)
     out[#out + 1] = { r = c.r, g = c.g, b = c.b, a = c.a, share = amt / total }
   end
   table.sort(out, function(a, b) return a.share > b.share end)
+  return out
+end
+
+local gs_buckets = {}
+
+function M.group_shares_into(out, buf, now_ms, predicate)
+  buf:trim(now_ms)
+  for k in pairs(gs_buckets) do gs_buckets[k] = nil end
+  local total = 0
+  for i = buf.head, buf.tail do
+    local e   = buf.entries[i]
+    local amt = e.amount or 0
+    if amt > 0 and (not predicate or predicate(e)) then
+      local key = lookup_group(e.ability_id)
+      gs_buckets[key] = (gs_buckets[key] or 0) + amt
+      total = total + amt
+    end
+  end
+  if total <= 0 then
+    out.count = 0
+    return out
+  end
+  local n = 0
+  for g, amt in pairs(gs_buckets) do
+    n = n + 1
+    local slot = out[n]
+    if slot == nil then slot = {}; out[n] = slot end
+    local c = GROUP_COLORS[g] or FALLBACK
+    slot.r = c.r; slot.g = c.g; slot.b = c.b; slot.a = c.a
+    slot.share = amt / total
+  end
+
+  for i = 2, n do
+    local key = out[i]
+    local ks  = key.share
+    local j   = i - 1
+    while j >= 1 and out[j].share < ks do
+      out[j + 1] = out[j]
+      j = j - 1
+    end
+    out[j + 1] = key
+  end
+  out.count = n
   return out
 end
