@@ -379,7 +379,7 @@ local function refresh()
       if display_pct then
         col.value:SetText(string_format("%.0f%%", frac * 100))
       else
-        col.value:SetText(string_format("%d", math_floor(v.raw)))
+        col.value:SetText(ZO_CommaDelimitNumber(math_floor(v.raw)))
       end
       col.value:SetColor(1, 1, 1, 1)
 
@@ -438,7 +438,7 @@ local function refresh()
     if display_pct then
       controls.value_label:SetText(string_format("%.0f%%", frac * 100))
     else
-      controls.value_label:SetText(string_format("%d %s", math_floor(raw), suffix))
+      controls.value_label:SetText(ZO_CommaDelimitNumber(math_floor(raw)) .. " " .. suffix)
     end
     controls.value_label:SetColor(1, 1, 1, 1)
 

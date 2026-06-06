@@ -72,8 +72,7 @@ local current_view = VIEW_EMS
 
 -- ── small helpers ─────────────────────────────────────────────────────────
 local function fmt_val(v)
-  if v >= 1000 then return string_format("%.0fk", v / 1000) end
-  return tostring(math_floor(v))
+  return ZO_AbbreviateAndLocalizeNumber(math_floor(v), 0, false)
 end
 
 local function fmt_secs(ms)

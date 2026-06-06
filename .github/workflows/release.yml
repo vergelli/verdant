@@ -41,6 +41,20 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $VERSION"
 
+      - name: Lint manifest (ESOUI §0 hard rules)
+        # UTF-8 without BOM, every line <= 301 bytes, APIVersion has 1-2 values.
+        run: |
+          MANIFEST=Verdant.txt
+          if [ "$(head -c3 "$MANIFEST" | od -An -tx1 | tr -d ' ')" = "efbbbf" ]; then
+            echo "::error::$MANIFEST has a UTF-8 BOM — must be UTF-8 without BOM"
+            exit 1
+          fi
+          LC_ALL=C awk '{ if (length($0) > 301) { printf "::error::%s line %d is %d bytes (>301)\n", FILENAME, NR, length($0); bad=1 } } END { exit bad }' "$MANIFEST"
+          APICOUNT=$(grep -E '^## APIVersion:' "$MANIFEST" | sed -E 's/^## APIVersion:[[:space:]]*//' | wc -w)
+          if [ "$APICOUNT" -lt 1 ]; then echo "::error::APIVersion directive missing or empty"; exit 1; fi
+          if [ "$APICOUNT" -gt 2 ]; then echo "::error::APIVersion has $APICOUNT values — max 2 (3+ are ignored by the parser)"; exit 1; fi
+          echo "Manifest lint passed (no BOM, lines <=301, APIVersion=$APICOUNT value(s))."
+
       - name: Verify manifest version matches tag
         run: |
           MANIFEST=$(grep -E '^## Version:' Verdant.txt | sed -E 's/## Version:\s*//')
@@ -68,6 +82,7 @@ jobs:
         run: |
           mkdir -p staging/Verdant
           cp -r \
+            assets \
             bindings.xml \
             locales \
             core \
@@ -79,6 +94,25 @@ jobs:
             Verdant.lua \
             Verdant.txt \
             staging/Verdant/
+
+      - name: Verify staged textures
+        # assets/ is referenced by XML (Verdant/assets/glow.dds, logo.dds) but
+        # is NOT in the manifest file list — forgetting it ships a broken glow.
+        # Fail loudly if any XML-referenced texture is missing from staging.
+        run: |
+          missing=0
+          refs=$(grep -rhoE 'Verdant/assets/[A-Za-z0-9_./-]+\.dds' ui/ | sort -u)
+          if [ -z "$refs" ]; then echo "::warning::no Verdant/assets textures referenced in ui/ XML"; fi
+          for ref in $refs; do
+            rel="${ref#Verdant/}"
+            if [ -f "staging/Verdant/$rel" ]; then
+              echo "ok: $rel"
+            else
+              echo "::error::texture referenced in XML is missing from the zip: $rel"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then exit 1; fi
 
       - name: Verify folder casing
         # ESOUI moderation flags zips whose top-level folder does not match
