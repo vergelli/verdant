@@ -85,7 +85,9 @@ local function on_slash(input)
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
     elseif cmd == "report" then
-      Verdant.Diagnostics.full_report() ; return
+
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      Verdant.Diagnostics.full_report(sub == "gc" or sub == "full") ; return
     elseif cmd == "gcprobe" then
 
       local n = tonumber(string_match(input, "^%s*%S+%s+(%d+)")) or 1000
@@ -132,14 +134,12 @@ local function on_slash(input)
     end
   end
 
-  -- ── window toggles ───────────────────────────────────────────────────────
+
   if cmd == "graph" then
     Verdant.Graph.toggle() ; return
   end
 
-  -- ── help ─────────────────────────────────────────────────────────────────
-  -- Lists user-facing commands. Dev commands stay hidden in release —
-  -- the user never needs to know they exist (per phase-7 design).
+
   if cmd == "help" then
     d(GetString(VERDANT_HELP_HEADER))
     d(GetString(VERDANT_HELP_TOGGLE))
@@ -148,7 +148,7 @@ local function on_slash(input)
     return
   end
 
-  -- ── /verdant (any input) → toggle bar ────────────────────────────────────
+
   Verdant.Bar.toggle()
 end
 
@@ -156,33 +156,26 @@ local function on_addon_loaded()
   local C   = Verdant.Constants
   local Log = Verdant.Log.for_module("bootstrap")
 
-  -- GetWorldName() separates EU / NA / PTS SavedVars for the same @account.
+
   local world = GetWorldName()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
     C.SV_TABLE, C.SV_VERSION, world,
     { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {}, skill_overrides = {}, logo = {}, assign = {} })
 
-  -- Restore user color assignments from the Unknown Contributions window.
+
   Verdant.SkillColors.load_persisted(Verdant.SavedVars)
 
-  -- One-time cleanup of orphan key left over by the Phase 7 font-scale
-  -- experiment. Done inline rather than via SV_VERSION bump because
-  -- bumping wipes ZO_SavedVars data (users would lose their profile +
-  -- alpha + window position). The migration framework in
-  -- zenimax/savedvars.lua remains ready for a real schema change later.
+
   if Verdant.SavedVars.settings then
     Verdant.SavedVars.settings.font_scale = nil
   end
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
 
-  -- Probe is dev-only (used by DEBUG-gated /verdant on/off/dump/...). It
-  -- registers ~10 ZOS event handlers, each doing a few conditional checks
-  -- per combat event even when probe.state.enabled is false. Skipping
-  -- init() in release keeps that cost off the hot path entirely.
+
   if C.DEBUG then Verdant.Probe.init() end
   Verdant.Pipeline.init()
   Verdant.Bar.init()
-  Verdant.Logo.init()        -- before Settings (reads Logo.is_enabled) + Visibility (calls Logo.sync)
+  Verdant.Logo.init()
   Verdant.Settings.init()
   Verdant.Graph.init()
   Verdant.Assign.init()

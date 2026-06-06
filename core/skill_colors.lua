@@ -31,7 +31,7 @@ local GROUP_COLORS = {
   other       = { r = 0.55, g = 0.55, b = 0.55, a = 0.80 },  -- unknown (grey)
 }
 
--- Human-readable label per group, shown in the Unknown Contributions picker.
+
 local GROUP_LABELS = {
   templar        = "Templar",
   dk             = "Dragonknight",
@@ -53,7 +53,7 @@ local GROUP_LABELS = {
   other          = "Unknown (grey)",
 }
 
--- Display order for the picker (groups clustered by domain).
+
 local GROUP_ORDER = {
   "templar", "dk", "sorc", "nb", "warden", "necro", "arcanist",
   "destru", "resto",
@@ -63,15 +63,7 @@ local GROUP_ORDER = {
   "other",
 }
 
--- Icon-path → group lookup. Locale-independent: ZOS uses a stable internal
--- naming scheme for ability art (`/esoui/art/icons/ability_<class>_NNN.dds`),
--- and effect / proc / HOT-tick abilityIds typically inherit the icon of the
--- skill that spawns them. Most class and most weapon-line abilities resolve
--- this way.
---
--- Order matters when patterns share substrings. "grimoire" comes before
--- "mageguild" because scribing grimoires use paths like
--- "ability_grimoire_magesguild.dds" — we want those classified as scribing.
+
 local ICON_PATTERNS = {
   { "ability_grimoire_",         "scribing"    },
   { "ability_templar_",          "templar"     },
@@ -93,15 +85,7 @@ local ICON_PATTERNS = {
   { "ability_werewolf_",         "werewolf"    },
 }
 
--- Skill-line ID → group. Used as a third-tier fallback for cast IDs that
--- the icon classifier didn't resolve (mostly cast IDs that share generic
--- art with their effects). The skill_line_id space is global and stable;
--- this table is sourced from the VerdantSkillDump tool against the live
--- skill tree.
---
--- Both base class lines and Vengeance subclass lines (the U43 subclassing
--- experimental feature) are included, mapped to the same group as their
--- base class.
+
 local SKILL_LINE_TO_GROUP = {
   -- Class lines
   [22]  = "templar",  [27]  = "templar",  [28]  = "templar",
@@ -135,10 +119,7 @@ local SKILL_LINE_TO_GROUP = {
   [50]  = "werewolf",
 }
 
--- Direct ID → group overrides. Highest precedence; covers abilityIds with
--- generic icons that the icon classifier can't disambiguate (set procs,
--- some scribing variants, ZOS's catch-all proc icon).
--- Add IDs here using /verdant skills capture.
+
 local ABILITY_OVERRIDES = {
   -- example: [29483] = "resto",
   [186191] = "arcanist",
@@ -163,17 +144,13 @@ local ABILITY_OVERRIDES = {
 
 }
 
--- Runtime cache (abilityId → group string); populated on first encounter.
+
 local ability_cache = {}
 
--- User assignments from the Unknown Contributions window. Highest precedence,
--- persisted to SavedVariables and restored at load via M.load_persisted.
+
 local USER_OVERRIDES = {}
 
--- IDs that fell through every classifier: { [abilityId] = "name | icon" }
--- Printed by M.print_unknown() so the user can decide whether to add an
--- override or extend a pattern. Includes the icon path because that's
--- usually enough to spot whether the ability uses ZOS's generic art.
+
 local unknown_log = {}
 
 local function classify_by_icon(abilityId)
@@ -201,36 +178,35 @@ local function lookup_group(abilityId)
   local g = ability_cache[abilityId]
   if g then return g end
 
-  -- 0. User assignment (Unknown Contributions window) — wins over everything.
+
   g = USER_OVERRIDES[abilityId]
   if g then
     ability_cache[abilityId] = g
     return g
   end
 
-  -- 1. Manual override — covers items, generic-icon procs, edge cases.
+
   g = ABILITY_OVERRIDES[abilityId]
   if g then
     ability_cache[abilityId] = g
     return g
   end
 
-  -- 2. Icon-path classifier — locale-independent, the bulk of the work.
+
   g = classify_by_icon(abilityId)
   if g then
     ability_cache[abilityId] = g
     return g
   end
 
-  -- 3. Skill-tree API — picks up cast IDs and some effect IDs that the
-  --    API does resolve (a minority, but free coverage).
+
   g = classify_by_skill_tree_api(abilityId)
   if g then
     ability_cache[abilityId] = g
     return g
   end
 
-  -- 4. Give up — record for /verdant skills.
+
   local name = GetAbilityName(abilityId) or "?"
   local icon = GetAbilityIcon(abilityId) or "?"
   unknown_log[abilityId] = name .. "  | icon=" .. icon
@@ -238,8 +214,7 @@ local function lookup_group(abilityId)
   return "other"
 end
 
--- Print all unclassified abilities seen so far.
--- Use /verdant skills after a heal session to discover what to add to ABILITY_OVERRIDES.
+
 function M.print_unknown()
   local lines  = {}
   local count  = 0
@@ -259,6 +234,18 @@ function M.print_unknown()
     d(header)
     for _, line in ipairs(lines) do d(line) end
   end
+end
+
+
+function M.unknown_lines()
+  local lines = {}
+  for id, info in pairs(unknown_log) do
+    lines[#lines + 1] = string.format("  [%d] = \"?\",  -- %s", id, info)
+  end
+  if #lines == 0 then return { "(none — all heal/shield abilities classified)" } end
+  table.sort(lines)
+  table.insert(lines, 1, "add to ABILITY_OVERRIDES:")
+  return lines
 end
 
 local FALLBACK = GROUP_COLORS.other
@@ -290,8 +277,7 @@ function M.group_label(key)
   return GROUP_LABELS[key] or key
 end
 
--- Ordered list of pickable groups for the Unknown Contributions window:
--- { key, label, r, g, b, a } in GROUP_ORDER sequence.
+
 function M.groups_ordered()
   local out = {}
   for _, key in ipairs(GROUP_ORDER) do
@@ -301,8 +287,7 @@ function M.groups_ordered()
   return out
 end
 
--- Abilities that fell through every classifier, for the assignment window:
--- { id, name, icon } sorted by id.
+
 function M.get_unknowns()
   local out = {}
   for id in pairs(unknown_log) do
@@ -318,9 +303,6 @@ function M.unknown_count()
   return n
 end
 
--- Assign a group to an ability from the Unknown Contributions window.
--- Wins over every classifier, drops the id from the unknown log, and updates
--- the cache so the next sample tick picks up the new color (no reload).
 function M.set_override(abilityId, group)
   if not abilityId or abilityId <= 0 or not GROUP_COLORS[group] then return false end
   USER_OVERRIDES[abilityId] = group
@@ -329,7 +311,7 @@ function M.set_override(abilityId, group)
   return true
 end
 
--- Restore persisted user assignments from SavedVariables at load.
+
 function M.load_persisted(sv)
   if not sv then return end
   if type(sv.skill_overrides) == "table" then
@@ -339,8 +321,7 @@ function M.load_persisted(sv)
   end
 end
 
--- Returns a sorted array of { r, g, b, a, share } (largest segment first).
--- All shares sum to 1.  Empty if total is 0.
+
 function M.group_shares(buf, now_ms, predicate)
   buf:trim(now_ms)
   local buckets = {}
