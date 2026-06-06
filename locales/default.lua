@@ -29,6 +29,23 @@ ZO_CreateStringId("VERDANT_SETTING_SHIELD_WINDOW",   "Shield Window")
 ZO_CreateStringId("VERDANT_SETTING_SAMPLE_RATE",     "Sampling Rate")
 ZO_CreateStringId("VERDANT_SETTING_TIME_WINDOW",     "Time Window")
 ZO_CreateStringId("VERDANT_SETTING_VIEWPORT_ALPHA",  "Viewport Alpha")
+ZO_CreateStringId("VERDANT_SETTINGS_UNKNOWN",        "Unknown Contributions")
+ZO_CreateStringId("VERDANT_SETTINGS_LOGO_ON",        "Logo: Visible")
+ZO_CreateStringId("VERDANT_SETTINGS_LOGO_OFF",       "Logo: Hidden")
+ZO_CreateStringId("VERDANT_SETTINGS_BARS_ON",        "Individual Bars: On")
+ZO_CreateStringId("VERDANT_SETTINGS_BARS_OFF",       "Individual Bars: Off")
+ZO_CreateStringId("VERDANT_LOGO_HINT",               "Logo hidden. Bind a key to Verdant under Settings > Controls > Keybindings (Add-Ons), or type /verdant.")
+
+-- Unknown-contributions assignment window
+ZO_CreateStringId("VERDANT_ASSIGN_TITLE",  "Unknown Contributions")
+ZO_CreateStringId("VERDANT_ASSIGN_PICK",   "pick category")
+ZO_CreateStringId("VERDANT_ASSIGN_EMPTY",  "Nothing to classify — every contribution has a color.")
+ZO_CreateStringId("VERDANT_ASSIGN_DONE",   "Assign")
+ZO_CreateStringId("VERDANT_ASSIGN_MORE",   "+ %d more — assign some to reveal the rest")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_TITLE", "Confirm assignment")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_NOTE",  "These assignments are irreversible. Review them before confirming.")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_YES",   "Assign")
+ZO_CreateStringId("VERDANT_ASSIGN_CONFIRM_NO",    "Cancel")
 
 -- Profile preset names
 ZO_CreateStringId("VERDANT_PROFILE_SOLO",            "Solo PvE")
@@ -37,7 +54,6 @@ ZO_CreateStringId("VERDANT_PROFILE_TRIALS",          "Trials")
 ZO_CreateStringId("VERDANT_PROFILE_PVP",             "PvP")
 ZO_CreateStringId("VERDANT_PROFILE_CUSTOM",          "Custom")
 
--- Heavy buffer warning (chat) — args: window_s, hz, capacity
 ZO_CreateStringId("VERDANT_WARN_HEAVY_BUFFER", "%ds x %d Hz = %d samples may impact FPS. Consider lower sample rate for long windows.")
 
 -- Help command output
@@ -47,7 +63,7 @@ ZO_CreateStringId("VERDANT_HELP_GRAPH",   "  /verdant graph   toggle the tempora
 ZO_CreateStringId("VERDANT_HELP_HELP",    "  /verdant help    show this list")
 
 -- Graph window
-ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Temporal Analytics")
+ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Healing Analysis")
 ZO_CreateStringId("VERDANT_GRAPH_RECORD",         "Record")
 ZO_CreateStringId("VERDANT_GRAPH_STOP",           "Stop")
 ZO_CreateStringId("VERDANT_GRAPH_FLUSH",          "Flush")

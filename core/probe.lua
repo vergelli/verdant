@@ -65,7 +65,7 @@ local EFFECT_RESULT_TRANSFER     = C.EFFECT_RESULT_TRANSFER
 
 local M = Verdant.Probe
 
--- --- Buffer / state ------------------------------------------------------
+-- Buffer / state 
 
 local function new_state()
   return {
@@ -76,16 +76,16 @@ local function new_state()
     in_combat     = false,
     session_id    = (M.state and M.state.session_id or 0) + 1,
     buffers = {
-      heal          = {},  -- heals from player (filtered: hit>0 or overflow>0)
-      shield        = {},  -- DAMAGE_SHIELDED with source=player (current §3 model)
-      shield_raw    = {},  -- DAMAGE_SHIELDED with NO source filter (V2 ground truth)
-      heal_absorbed = {},  -- HEAL_ABSORBED with source=player
-      damage        = {},  -- damage with target=group (D_group denominator)
-      effect        = {},  -- effects with source=player
-      effect_self   = {},  -- effects with target=player
-      casts         = {},  -- EVENT_ACTION_SLOT_ABILITY_USED
-      combat        = {},  -- combat state transitions
-      group         = {},  -- group composition snapshots
+      heal          = {},
+      shield        = {},
+      shield_raw    = {},
+      heal_absorbed = {},
+      damage        = {},
+      effect        = {},
+      effect_self   = {},
+      casts         = {},
+      combat        = {},
+      group         = {},
     },
     stats = {
       heal=0, shield=0, shield_raw=0, heal_absorbed=0, damage=0,
@@ -93,20 +93,18 @@ local function new_state()
       noise_dropped=0, autosaves=0,
     },
     universe = {
-      abilities = {},  -- [abilityId] = name (first-seen)
-      targets   = {},  -- [unitId]    = { name=, lastType= } (first-seen)
+      abilities = {},
+      targets   = {},
     },
-    context = nil,    -- filled by snapshot_context
+    context = nil,
     last_ping_stats = nil,
-    player_unit_id  = nil,  -- learned lazily from first combat event with source=player
-    session_tag     = nil,  -- user-supplied label for this test run
+    player_unit_id  = nil,
+    session_tag     = nil,
   }
 end
 
 local state = new_state()
 M.state = state
-
--- --- Helpers -------------------------------------------------------------
 
 local function now() return GetGameTimeMilliseconds() end
 
@@ -158,12 +156,6 @@ local function effect_change_label(c)
   return tostring(c)
 end
 
--- --- Combat handlers -----------------------------------------------------
-
--- EVENT_COMBAT_EVENT signature (17 args):
---   result, isError, abilityName, abilityGraphic, abilitySlotType,
---   sourceName, sourceType, targetName, targetType, hitValue,
---   powerType, damageType, log, sourceUnitId, targetUnitId, abilityId, overflow
 local function on_combat_out(result, isError, abilityName, _g, _slot,
                              sourceName, sourceType, targetName, targetType, hitValue,
                              _pt, _dt, _log, sourceUnitId, targetUnitId,
@@ -182,7 +174,6 @@ local function on_combat_out(result, isError, abilityName, _g, _slot,
     return
   end
 
-  -- Drop noise: ESO emits ACTION_RESULT_HEAL with hit=0/ovf=0 mirrors per HoT tick.
   if (hitValue or 0) == 0 and (overflow or 0) == 0 then
     state.stats.noise_dropped = state.stats.noise_dropped + 1
     return
@@ -221,9 +212,6 @@ local function on_combat_out(result, isError, abilityName, _g, _slot,
   end
 end
 
--- Catches every shield-absorption regardless of source attribution.
--- The data here is the ground truth for V2: by inspecting source/target ids
--- we deduce whether ESO attributes shields to caster, attacker, or target.
 local function on_shield_raw(result, isError, abilityName, _g, _slot,
                              sourceName, sourceType, targetName, targetType, hitValue,
                              _pt, _dt, _log, sourceUnitId, targetUnitId,
@@ -334,10 +322,6 @@ local function on_combat_in_group(result, isError, abilityName, _g, _slot,
   end
 end
 
--- EVENT_EFFECT_CHANGED signature (16 args):
---   changeType, effectSlot, effectName, unitTag, beginTime, endTime, stackCount,
---   iconName, deprecatedBuffType, effectType, abilityType, statusEffectType,
---   unitName, unitId, abilityId, sourceType
 local function make_effect_handler(category)
   return function(changeType, _slot, effectName, unitTag, beginTime, endTime,
                   stackCount, _icon, _depBuff, effectType, abilityType,
@@ -417,7 +401,6 @@ local function snapshot_group(reason)
         name    = GetUnitName(tag),
         display = GetUnitDisplayName(tag),
         class   = GetUnitClass(tag),
-        -- unitId is not directly retrievable from API; correlate via universe.targets after events fire.
       }
     end
   end
@@ -433,8 +416,6 @@ local function snapshot_group(reason)
     chat_emit(string_format("group | %s | grouped=%s size=%d", reason or "?", tostring(grouped), size))
   end
 end
-
--- --- Context snapshot ----------------------------------------------------
 
 local function snapshot_bars()
   local bars = {}
@@ -461,7 +442,6 @@ function M.snapshot_context()
     player = {
       name      = GetUnitName("player"),
       display   = GetUnitDisplayName("player"),
-      -- unitId is filled lazily from the first combat event with sourceType=PLAYER.
       unitId    = state.player_unit_id or 0,
       level     = GetUnitLevel("player"),
       cp        = GetUnitChampionPoints("player"),
@@ -476,8 +456,6 @@ function M.snapshot_context()
     bars = snapshot_bars(),
   }
 end
-
--- --- Public API ----------------------------------------------------------
 
 function M.set_enabled(v)        state.enabled = v and true or false end
 function M.set_filter(category)  state.filter = category end
@@ -611,7 +589,6 @@ function M.persist_to_savedvars(sv)
   while #sv.probe.dumps > Verdant.Constants.PROBE.DUMP_HISTORY_LIMIT do
     sv.probe.dumps[#sv.probe.dumps] = nil
   end
-  -- Keep `last_dump` as a convenience pointer to the newest snapshot.
   sv.probe.last_dump = sv.probe.dumps[1]
 
   state.last_save_ms = now()
@@ -627,62 +604,50 @@ function M.maybe_autosave()
   end
 end
 
--- --- Wiring --------------------------------------------------------------
-
 function M.init()
   local P = Verdant.Constants.PROBE
   local E = Verdant.zenimax.events
 
-  -- 1) Heals/shields where I am the source (current §3.4 model assumption).
   E.register(P.SRC_COMBAT_OUT, EVENT_COMBAT_EVENT, on_combat_out)
   E.add_filter(P.SRC_COMBAT_OUT, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE, COMBAT_UNIT_TYPE_PLAYER)
   E.add_filter(P.SRC_COMBAT_OUT, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_IS_ERROR, false)
 
-  -- 2) DAMAGE_SHIELDED everywhere — V2 ground truth, no source filter.
   E.register(P.SRC_SHIELD_RAW, EVENT_COMBAT_EVENT, on_shield_raw)
   E.add_filter(P.SRC_SHIELD_RAW, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_COMBAT_RESULT, ACTION_RESULT_DAMAGE_SHIELDED)
   E.add_filter(P.SRC_SHIELD_RAW, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_IS_ERROR, false)
 
-  -- 3) HEAL_ABSORBED with source=player — symmetric diagnostic.
   E.register(P.SRC_HEAL_ABSORBED, EVENT_COMBAT_EVENT, on_heal_absorbed)
   E.add_filter(P.SRC_HEAL_ABSORBED, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_COMBAT_RESULT, ACTION_RESULT_HEAL_ABSORBED)
   E.add_filter(P.SRC_HEAL_ABSORBED, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE, COMBAT_UNIT_TYPE_PLAYER)
 
-  -- 4) Damage landing on the group (D_group denominator).
   E.register(P.SRC_COMBAT_IN, EVENT_COMBAT_EVENT, on_combat_in_group)
   E.add_filter(P.SRC_COMBAT_IN, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_TARGET_COMBAT_UNIT_TYPE, COMBAT_UNIT_TYPE_GROUP)
   E.add_filter(P.SRC_COMBAT_IN, EVENT_COMBAT_EVENT,
     REGISTER_FILTER_IS_ERROR, false)
 
-  -- 5) Effects with source=player (shields applied, debuffs cast, purges).
   E.register(P.SRC_EFFECT, EVENT_EFFECT_CHANGED, on_effect_player_src)
   E.add_filter(P.SRC_EFFECT, EVENT_EFFECT_CHANGED,
     REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE, COMBAT_UNIT_TYPE_PLAYER)
 
-  -- 6) Effects on player (any source) — shields received, debuffs to purge.
   E.register(P.SRC_EFFECT_ON_SELF, EVENT_EFFECT_CHANGED, on_effect_on_self)
   E.add_filter(P.SRC_EFFECT_ON_SELF, EVENT_EFFECT_CHANGED,
     REGISTER_FILTER_UNIT_TAG, "player")
 
-  -- 7) Player combat state — auto-save trigger and episode boundaries.
   E.register(P.SRC_COMBAT_STATE, EVENT_PLAYER_COMBAT_STATE, on_combat_state)
 
-  -- 8) Cast tracking (for V9/V10 purge correlation).
   E.register(P.SRC_CAST, EVENT_ACTION_SLOT_ABILITY_USED, on_action_slot_used)
 
-  -- 9) Auto-persist on deactivation (logout / /reloadui / zoning).
   E.register(P.SRC_AUTOSAVE, EVENT_PLAYER_DEACTIVATED, function()
     if Verdant.SavedVars then M.persist_to_savedvars(Verdant.SavedVars) end
   end)
 
-  -- 10) Group state observers.
   E.register(P.SRC_GROUP_J, EVENT_GROUP_MEMBER_JOINED, function() snapshot_group("joined") end)
   E.register(P.SRC_GROUP_L, EVENT_GROUP_MEMBER_LEFT,   function() snapshot_group("left") end)
   E.register(P.SRC_GROUP_U, EVENT_GROUP_UPDATE,        function() snapshot_group("update") end)

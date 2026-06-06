@@ -1,18 +1,3 @@
--- pipeline/pipeline.lua
---
--- Orchestrator for the four-stage event pipeline (acquisition → filter →
--- processing). Owns ZOS event subscriptions and the per-ZOS-event
--- bookkeeping (counters, side effects, mode pre-check) that doesn't fit
--- the per-VerdantEvent stage contract.
---
--- Entry points:
---   M.dispatch_heal_out(...)       — combat handler, healing player→target
---   M.dispatch_shield_abs(...)     — combat handler, DAMAGE_SHIELDED
---   M.dispatch_group_damage(...)   — combat handler, group target taking dmg
---   M.dispatch_effect_player_src() — EFFECT_CHANGED, feeds ShieldRegistry
---   M.dispatch_group_change()      — group lifecycle: refresh coverage mode
---   M.dispatch_group_left()        — group lifecycle: tear down groupset
---   M.init()                       — registers all ZOS subscriptions
 
 Verdant = Verdant or {}
 local Verdant = Verdant
@@ -63,8 +48,7 @@ end
 
 local now = Acquisition.now
 
--- ── combat: heal out ──────────────────────────────────────────────────────
-function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
+function M.dispatch_heal_out(result, isError, _name, _g, _slot,
                               _src, sourceType, _tgt, targetType, hit,
                               _pt, _dt, _log, sourceUnitId, targetUnitId,
                               abilityId, overflow)
@@ -92,7 +76,7 @@ function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
   local t = now()
   prof_enter("pipeline.combat_event.acquisition")
   local ev_heal, ev_overheal = Acquisition.acquire_heal_out(
-    t, hit, overflow, targetUnitId, targetType, abilityId)
+    t, hit, overflow, targetUnitId, targetType, abilityId, result)
   prof_exit("pipeline.combat_event.acquisition")
 
   if ev_heal then
@@ -129,7 +113,6 @@ function M.dispatch_heal_out(_result, isError, _name, _g, _slot,
   prof_exit("pipeline.combat_event")
 end
 
--- ── combat: shield absorb ─────────────────────────────────────────────────
 function M.dispatch_shield_abs(_result, isError, _name, _g, _slot,
                                 _src, _sourceType, _tgt, targetType, hit,
                                 _pt, _dt, _log, _suid, targetUnitId,
@@ -155,19 +138,16 @@ function M.dispatch_shield_abs(_result, isError, _name, _g, _slot,
       Processing.process(ev)
       prof_exit("pipeline.combat_event.processing")
     else
-      release(ev)  -- foreign counter bumped inside Filter.allow
+      release(ev)
     end
   elseif (hit or 0) > 0 then
     bump("engine.pool.exhausted")
     Log:warn("event pool exhausted (shield)")
   end
-  -- Coverage tracks shield events regardless of whether they were ours
-  -- (mirrors pre-pipeline engine semantics).
   Verdant.Coverage.touch(targetUnitId, t)
   prof_exit("pipeline.combat_event")
 end
 
--- ── combat: group damage ──────────────────────────────────────────────────
 function M.dispatch_group_damage(_result, isError, _name, _g, _slot,
                                   _src, _sourceType, _tgt, _targetType, hit,
                                   _pt, _dt, _log, _suid, targetUnitId,
@@ -193,7 +173,7 @@ function M.dispatch_group_damage(_result, isError, _name, _g, _slot,
       Processing.process(ev)
       prof_exit("pipeline.combat_event.processing")
     else
-      release(ev)  -- not_in_groupset counter bumped inside Filter.allow
+      release(ev)
     end
   elseif (hit or 0) > 0 then
     bump("engine.pool.exhausted")
@@ -202,7 +182,6 @@ function M.dispatch_group_damage(_result, isError, _name, _g, _slot,
   prof_exit("pipeline.combat_event")
 end
 
--- ── effect (player src): feeds ShieldRegistry ─────────────────────────────
 function M.dispatch_effect_player_src(changeType, _slot, _name, _tag, _bt, endTime,
                                        _stack, _icon, _depBuff, _et, _at,
                                        _stat, _uname, unitId, abilityId, sourceType)
@@ -215,7 +194,6 @@ function M.dispatch_effect_player_src(changeType, _slot, _name, _tag, _bt, endTi
   Verdant.ShieldRegistry.on_effect(changeType, abilityId, unitId, sourceType, endTime)
 end
 
--- ── group lifecycle ───────────────────────────────────────────────────────
 function M.dispatch_group_change()
   bump("engine.group.changed")
   Log:info("group changed; refreshing coverage mode")
@@ -229,7 +207,6 @@ function M.dispatch_group_left()
   Verdant.GroupSet.reset()
 end
 
--- ── init: subscribe all ZOS events ────────────────────────────────────────
 function M.init()
   local E = Verdant.zenimax.events
 

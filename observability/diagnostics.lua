@@ -1,22 +1,23 @@
--- Diagnostics — counters + event ring + 1Hz timeseries collector. The
--- aggregation surface that /verdant diag and /verdant report read from.
--- Stays partially live in release (counter bumps from pipeline.lua are
--- always called) — the formatting/dump paths are dev-only.
---
--- Public surface:
---   bump(key, n)        increment a counter
---   log_event(cat, p)   append a categorized entry to the event ring
---   snapshot()          structured dump for SavedVars / probe persist
---   print_diag()        human-readable dump (CopyBox in DEBUG, chat in release)
---   full_report()       aggregated /verdant report (DEBUG only)
---   reset()             clears counters/ring; also rebuilds start_time
---   init()              wires the 1Hz ts_sample tick
+
 
 Verdant = Verdant or {}
 local Verdant = Verdant
 
 Verdant.Diagnostics = {}
 local M = Verdant.Diagnostics
+
+local NOOP = function() end
+M.bump        = NOOP
+M.get         = function() return 0 end
+M.log_event   = NOOP
+M.snapshot    = function() return {} end
+M.print_diag  = function() d("[diag] disabled (DEBUG=false)") end
+M.full_report = function() d("[report] disabled (DEBUG=false)") end
+M.reset       = NOOP
+M.init        = NOOP
+
+if not Verdant.Constants.DEBUG then return end
+
 
 local GetGameTimeMilliseconds = Verdant.zenimax.api.GetGameTimeMilliseconds
 local d           = d
@@ -193,10 +194,8 @@ function M.print_diag()
   end
 end
 
--- Unified one-shot dev report: concatenates /diag + /prof + /validate
--- + recent log entries into a single CopyBox dump. Saves the dev from
--- running each command separately when sharing context.
-function M.full_report()
+
+function M.full_report(include_gc)
   if not Verdant.Constants.DEBUG then
     d("[report] disabled (DEBUG=false)")
     return
@@ -219,8 +218,14 @@ function M.full_report()
   if Verdant.Validation and Verdant.Validation.report_lines then
     section("validation", Verdant.Validation.report_lines())
   end
+  if Verdant.SkillColors and Verdant.SkillColors.unknown_lines then
+    section("unclassified abilities", Verdant.SkillColors.unknown_lines())
+  end
   if Verdant.Log and Verdant.Log.recent_lines then
     section("log (last 20)", Verdant.Log.recent_lines(20))
+  end
+  if include_gc and M.gc_probe_lines then
+    section("gcprobe  (WARNING: this CLEARED the recording buffer)", M.gc_probe_lines())
   end
   if Verdant.CopyBox and Verdant.CopyBox.show then
     Verdant.CopyBox.show("Verdant /report", table.concat(out, "\n"))
@@ -245,4 +250,57 @@ end
 function M.init()
   start_time = GetGameTimeMilliseconds()
   Verdant.zenimax.events.register_update("Verdant_DiagTick", TICK_MS, ts_sample)
+end
+
+local gcprobe_eg = { count = 0 }
+local gcprobe_mg = { count = 0 }
+local gcprobe_sink
+
+function M.gc_probe_lines(n)
+  n = n or 1000
+  local Metrics = Verdant.Metrics
+  local TB      = Verdant.TemporalBuffer
+  local now     = GetGameTimeMilliseconds()
+
+
+  local lines = {}
+  local function emit(s) lines[#lines + 1] = s; d("[gcprobe] " .. s) end
+
+  local function measure(label, body)
+    for _ = 1, 64 do body() end
+    for _ = 1, 2 do collectgarbage("collect") end
+    local before = collectgarbage("count")
+    for _ = 1, n do body() end
+    local after  = collectgarbage("count")
+    local bytes  = (after - before) * 1024 / n
+    emit(string.format("%-26s %9.2f bytes/sample", label, bytes))
+    return bytes
+  end
+
+  emit(string.format("=== Verdant gcprobe  N=%d  (ZOS double-collect) ===", n))
+  measure("control (1 table/iter)", function()
+    gcprobe_sink = { r = 0, g = 0, b = 0, a = 0, share = 0 }
+  end)
+  local dp = measure("data path (M1)", function()
+    local e     = Metrics.eHPS(now)
+    local m     = Metrics.MPS(now)
+    local c, nc = Metrics.eHPS_crit_split(now)
+    Metrics.eHPS_by_group_into(gcprobe_eg, now)
+    Metrics.MPS_by_group_into(gcprobe_mg, now)
+    TB.push(now, e, m, c, nc, gcprobe_eg, gcprobe_mg)
+  end)
+
+  TB.clear()
+  emit(dp < 1 and "VERDICT: data path ~0 -> ZERO-ALLOC CONFIRMED"
+               or "VERDICT: data path NONZERO -> an alloc leaked, investigate")
+  emit("(temporal buffer cleared)")
+  return lines
+end
+
+-- Standalone /verdant gcprobe → its own CopyBox.
+function M.gc_probe(n)
+  local lines = M.gc_probe_lines(n)
+  if Verdant.CopyBox then
+    Verdant.CopyBox.show("Verdant gcprobe", table.concat(lines, "\n"))
+  end
 end

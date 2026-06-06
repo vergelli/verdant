@@ -3,12 +3,6 @@ local Verdant = Verdant
 
 Verdant.ShieldRegistry = {}
 
--- Tracks effects the player has applied. EVENT_COMBAT_EVENT/DAMAGE_SHIELDED
--- reports the shield-ability id and the shielded entity, but not the caster.
--- We mirror the active-shield set from EFFECT_CHANGED (source=player) so
--- DAMAGE_SHIELDED can be attributed to us iff the (ability, target) pair is in
--- the registry at impact time.
-
 local M = Verdant.ShieldRegistry
 
 local pairs    = pairs
@@ -59,7 +53,6 @@ function M.is_self_cast(abilityId, targetUnitId)
 end
 
 function M.expire_stale(now_ms)
-  -- endTime from EFFECT_CHANGED is in seconds (game time); convert to ms.
   for k, v in pairs(active) do
     if v.endTime and v.endTime > 0 and (v.endTime * 1000) < now_ms then
       active[k] = nil
