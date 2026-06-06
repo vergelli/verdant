@@ -1,3 +1,10 @@
+--[[
+
+  " ... my only aspiration is that death finds me alive "
+                              — Indio Solari · Jan 17, 1949 – Jun 5, 2026
+
+]]
+
 Verdant = Verdant or {}
 local Verdant = Verdant
 
@@ -35,7 +42,6 @@ local function on_slash(input)
   input = input or ""
   local cmd = string_match(string_lower(input), "^%s*(%S+)") or ""
 
-  -- ── debug commands (developer only) ──────────────────────────────────────
   if DEBUG then
     if cmd == "on" then
       Verdant.Probe.set_enabled(true)
@@ -134,11 +140,9 @@ local function on_slash(input)
     end
   end
 
-
   if cmd == "graph" then
     Verdant.Graph.toggle() ; return
   end
-
 
   if cmd == "help" then
     d(GetString(VERDANT_HELP_HEADER))
@@ -148,7 +152,6 @@ local function on_slash(input)
     return
   end
 
-
   Verdant.Bar.toggle()
 end
 
@@ -156,21 +159,17 @@ local function on_addon_loaded()
   local C   = Verdant.Constants
   local Log = Verdant.Log.for_module("bootstrap")
 
-
   local world = GetWorldName()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
     C.SV_TABLE, C.SV_VERSION, world,
     { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {}, skill_overrides = {}, logo = {}, assign = {} })
 
-
   Verdant.SkillColors.load_persisted(Verdant.SavedVars)
-
 
   if Verdant.SavedVars.settings then
     Verdant.SavedVars.settings.font_scale = nil
   end
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
-
 
   if C.DEBUG then Verdant.Probe.init() end
   Verdant.Pipeline.init()

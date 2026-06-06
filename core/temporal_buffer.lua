@@ -5,21 +5,14 @@ local M = Verdant.TemporalBuffer
 local math_floor = math.floor
 local log        = Verdant.Log.for_module("temporal_buffer")
 
--- ── state ─────────────────────────────────────────────────────────────────
--- data: pre-allocated array of {t, eHPS, MPS}.  Write pointer wraps via modulo.
--- Not persisted to SavedVars — combat data is transient.
 local state = {
   data      = {},
   capacity  = 0,
-  write     = 1,   -- next slot to overwrite (1-based, wraps)
-  count     = 0,   -- active samples (≤ capacity)
+  write     = 1,
+  count     = 0,
   recording = false,
 }
 
--- ── public API ────────────────────────────────────────────────────────────
-
--- Call once on addon load and again whenever the user changes sample rate or
--- time window.  Capacity = time_window_s * sample_hz.
 function M.init(capacity)
   capacity       = math_floor(capacity)
   if capacity < 1 then capacity = 1 end
@@ -61,14 +54,10 @@ function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups)
   end
 end
 
--- Iterate samples in chronological order (oldest first).
--- fn(i, sample) where sample = { t, eHPS, MPS }.
 function M.iterate(fn)
   local n   = state.count
   if n == 0 then return end
   local cap = state.capacity
-  -- When full, state.write points at the oldest slot (about to be overwritten).
-  -- When not full, writing started at slot 1 so oldest is slot 1.
   local oldest = (n >= cap) and state.write or 1
   for i = 1, n do
     local idx = ((oldest - 1 + i - 1) % cap) + 1
@@ -90,7 +79,6 @@ function M.stop_recording()
   log:info("stop_recording: count=", state.count, "/", state.capacity)
 end
 
--- Resets write pointer and count without freeing the pre-allocated table.
 function M.clear()
   log:info("clear: discarding", state.count, "samples")
   state.write = 1

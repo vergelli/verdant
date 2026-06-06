@@ -1,21 +1,3 @@
--- pipeline/filter.lua
---
--- Stage 2 of the pipeline. Pure predicate over a populated VerdantEvent.
--- Returns true to allow the event through, false to drop. Drops bump
--- the kind-specific drop counter so behavioral diff with the pre-pipeline
--- engine stays exact.
---
--- Pre-acquire filters (mode pre-check, isError, noise) live in
--- pipeline/pipeline.lua because they fire once per raw ZOS event,
--- whereas a HEAL+OVERHEAL pair shares one ZOS event but produces two
--- VerdantEvents — bumping a per-ZOS counter from a per-event filter
--- would double-count.
---
--- This stage handles only kind-specific predicates that operate on the
--- populated event:
---   SHIELD       — ShieldRegistry.is_self_cast (was-it-ours check)
---   DAMAGE_GROUP — GroupSet.contains (target-in-set check)
---   HEAL/OVERHEAL — no per-event predicate; always allow.
 
 Verdant = Verdant or {}
 local Verdant = Verdant
@@ -45,6 +27,5 @@ function M.allow(ev)
     end
     return true
   end
-  -- HEAL / OVERHEAL: no per-event predicate.
   return true
 end

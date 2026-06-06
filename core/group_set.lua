@@ -8,7 +8,7 @@ local M = Verdant.GroupSet
 local pairs = pairs
 local log   = Verdant.Log.for_module("group_set")
 
-local members = {}   -- [unitId] = true
+local members = {}
 local player_unit_id = nil
 
 function M.add(unitId)

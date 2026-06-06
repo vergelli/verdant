@@ -1,18 +1,3 @@
--- pipeline/acquisition.lua
---
--- Stage 1 of the pipeline. Acquires VerdantEvents from the pool and
--- populates them from the raw 17-arg ZOS combat event tuple. No filtering
--- logic here (filter is the next stage). No state mutation here (processing
--- is the third stage).
---
--- Each acquire_* function returns 0..N populated events depending on the
--- ZOS event semantics:
---   acquire_heal_out    → 0, 1, or 2 events (heal + overflow split)
---   acquire_shield_abs  → 0 or 1 event
---   acquire_damage_group→ 0 or 1 event
---
--- A nil return value means the pool was exhausted; callers must bump
--- engine.pool.exhausted.
 
 Verdant = Verdant or {}
 local Verdant = Verdant
@@ -33,11 +18,6 @@ local function acquire()
   return Verdant.Metrics.acquire_event()
 end
 
--- Heal out: ZOS sends one combat event with `hit` and `overflow` amounts.
--- Each non-zero amount becomes a separate VerdantEvent so the buffers in
--- metrics own them independently. Returns (ev_heal, ev_overheal); either
--- may be nil. Caller is responsible for processing each independently
--- (filter+process), or releasing on filter rejection.
 function M.acquire_heal_out(t, hit, overflow, targetUnitId, targetType, abilityId, result)
   local ev_heal, ev_overheal
   if (hit or 0) > 0 then

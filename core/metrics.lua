@@ -6,7 +6,7 @@ Verdant.Metrics = {}
 local M = Verdant.Metrics
 
 local W_MS       = 5000
-local W_SHIELD_MS = 30000   -- shields are sparse; wider window avoids permanent zero
+local W_SHIELD_MS = 30000
 
 local heal_buf, overheal_buf, shield_buf, damage_buf
 local event_pool
@@ -16,7 +16,6 @@ local function in_M(entry)
   return Verdant.Coverage.is_in_M(entry.target_type)
 end
 
--- Crit-heal result codes, bound in init (zenimax.constants is loaded by then).
 local CRIT_HEAL, CRIT_HOT
 
 local function is_crit(e)
@@ -24,9 +23,6 @@ local function is_crit(e)
   return r == CRIT_HEAL or r == CRIT_HOT
 end
 
--- Pool acquired event from the engine. Used by both metrics.ingest_* (when
--- the engine hands off an event) and metrics.acquire (when a caller needs
--- to populate a fresh event before calling ingest_*).
 function M.acquire_event()
   return event_pool:acquire()
 end
@@ -43,8 +39,6 @@ function M.pool_capacity()
   return event_pool:capacity()
 end
 
--- on_evict for buffers: when an entry leaves a window-trim or capacity
--- overflow, release the underlying pooled event back to the pool.
 local function release_to_pool(entry)
   event_pool:release(entry)
 end
@@ -75,7 +69,6 @@ function M.set_window(ms)
   overheal_buf.window_ms = W_MS
   damage_buf.window_ms   = W_MS
   log:info("window ->", W_MS, "ms")
-  -- shield window is intentionally independent; use set_shield_window to change it
 end
 
 function M.set_shield_window(ms)
@@ -86,13 +79,6 @@ end
 
 function M.window_seconds() return W_MS / 1000 end
 
--- Ingest a populated VerdantEvent. The event becomes the buffer's owned
--- entry — callers must NOT release it themselves; the buffer's on_evict
--- handles release when the entry trims out of the window.
---
--- For overheal, the engine acquires a separate event and passes it via
--- ingest_overheal. Splitting the two avoids buffer entries needing two
--- amount fields and keeps the heal-vs-overheal selection in the engine.
 function M.ingest_heal(ev)
   if ev.amount > 0 then
     heal_buf:push(ev)
@@ -180,9 +166,6 @@ function M.contribution(now_ms)
   }
 end
 
--- Splits effective healing (eHPS) into its critical and non-critical halves in
--- one pass over the same window/buffer/predicate eHPS uses, so crit + noncrit
--- == eHPS exactly. Only landed (in-M) heals count. Returns (crit_hps, noncrit_hps).
 function M.eHPS_crit_split(now_ms)
   heal_buf:trim(now_ms)
   local ws    = W_MS / 1000

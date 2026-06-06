@@ -1,5 +1,46 @@
 # Changelog
 
+## [2.1.0] - 2026-06-07
+
+A feature + performance pass on top of the 2.0.0 rewrite. New CRIT view,
+two more skill-line colors, locale-aware number formatting, and a
+zero-allocation graph sampling path. Update 50 ready.
+
+### Added
+- **CRIT view** — a third graph view splitting your healing into a muted
+  green non-crit base and a bright gold crit cap, scaled against the
+  window's max eHPS so the crit ratio reads at full vertical resolution.
+  Cycles alongside EMS and SKILL.
+- **Two new skill-line colors** — **Werewolf** (blood-moon russet) and
+  **Psijic Order** (astral gold), bringing the classifier to 18 groups.
+
+### Changed
+- **Locale-aware number formatting** — abbreviated graph values now go
+  through `ZO_AbbreviateAndLocalizeNumber` and raw bar values through
+  `ZO_CommaDelimitNumber`, so DE/FR clients get the correct decimal and
+  thousands separators (e.g. "12,3k" / "8.500"). EN output is unchanged.
+- **Update 50 compatible** — manifest declares both API 101049 and
+  101050, so the addon runs clean across the U49 → U50 transition with
+  no out-of-date warning.
+
+### Internal
+- **Zero-allocation graph sampling path** — the per-sample data path now
+  allocates 0 bytes. Group-share aggregation reuses module-level buckets
+  with an in-place insertion sort (no `table.sort` over a reused array),
+  metrics fill caller-owned tables (`eHPS_by_group_into` /
+  `MPS_by_group_into`), and the temporal buffer copies groups in place.
+  Verified on Live (`/verdant gcprobe` reports 0.00 B/sample under load).
+- **Render scratch hoisted** — per-render scratch arrays moved to reused
+  module-level tables (one set per render function, no cross-view
+  aliasing), removing ~90% of per-frame render garbage.
+- **Diagnostics gated to no-ops** in release builds before the 1 Hz
+  sample tick is wired, keeping dev instrumentation fully out of the
+  release hot path.
+- **`/verdant gcprobe`** and **`/verdant report gc`** expose the GC probe
+  (note: the probe clears the temporal buffer, so it is opt-in).
+
+---
+
 ## [2.0.0] - 2026-05-09
 
 A foundation rewrite focused on architecture, observability, and UX

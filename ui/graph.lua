@@ -13,7 +13,6 @@ local math_max                   = math.max
 local math_floor                 = math.floor
 local string_format              = string.format
 
--- ── UI constants (local cache for hot anchor / type lookups) ──────────────
 local log               = Verdant.Log.for_module("graph")
 local TOPLEFT           = zc.TOPLEFT
 local TOPRIGHT          = zc.TOPRIGHT
@@ -35,32 +34,23 @@ local C_MPS       = { r = 0.95, g = 0.68, b = 0.83, a = 0.90 }  -- pastel pink f
 local C_LINE_EHPS = { r = 0.65, g = 1.00, b = 0.72, a = 1.00 }  -- brighter green line
 local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink line
 
--- CRIT view: muted green base (non-crit heal) + bright gold cap (crit heal).
 local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green base
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
 
--- Viewport (the dark graph area) carries a faint green hue so the whole window
--- reads as Verdant's. Only the RGB bias changes — the user's alpha (the
--- darkness level) is preserved, so the dark stays dark.
 local C_VIEWPORT  = { r = 0.78, g = 1.00, b = 0.86 }
--- Canvas is intentionally dark so it contrasts with the lighter outer frame
 
 local FILL_TEXTURE   = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
 local FILL_T, FILL_B = 0, 0.53125
 local LINE_THICKNESS = 2
 local LABEL_H        = 12
-
--- Grid: 3 horizontal + 3 vertical reference lines
--- TIME_STRIP_H: pixels reserved at canvas bottom for X-axis time labels.
--- Fills and polylines are shifted up by this amount so they never overlap.
 local N_HGRID      = 3
 local N_VGRID      = 3
 local TIME_STRIP_H = 18
 local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.25 }
-local C_GRID_LBL  = { r = 0.82, g = 0.85, b = 0.90, a = 0.92 }   -- bright, readable
+local C_GRID_LBL  = { r = 0.82, g = 0.85, b = 0.90, a = 0.92 }
 local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
 
--- ── state ─────────────────────────────────────────────────────────────────
+
 local controls           = {}
 local recording_start_ms = 0
 
@@ -70,7 +60,6 @@ local VIEW_CRIT   = 3
 local VIEW_LABELS = { "EMS", "SKILL", "CRIT" }
 local current_view = VIEW_EMS
 
--- ── small helpers ─────────────────────────────────────────────────────────
 local function fmt_val(v)
   return ZO_AbbreviateAndLocalizeNumber(math_floor(v), 0, false)
 end
@@ -81,22 +70,11 @@ local function fmt_secs(ms)
   return s .. "s"
 end
 
-
--- ── pool factories ────────────────────────────────────────────────────────
--- ── pool factories (lib/plot/Pool wrappers) ──────────────────────────────
--- All four pool kinds (fills + lines × per-canvas variants) share a small
--- factory closure: bind a parent canvas + on_factory texture/thickness
--- setup, then defer to Verdant.lib.plot.Pool. Reset semantics differ for
--- lines: they must clear anchors on release so a re-acquired line starts
--- fresh (otherwise a "ghost" segment from the previous use can persist).
 local Pool = Verdant.lib.plot.Pool
 
 local function fill_factory(c)
   c:SetTexture(FILL_TEXTURE)
   c:SetTextureCoords(0, 1, FILL_T, FILL_B)
-  -- Sub-pixel positioning: prevent ESO from snapping bar edges to integer
-  -- pixels so adjacent bars share a clean float boundary instead of
-  -- producing a periodic "narrow / wide" pattern at fractional slot widths.
   c:SetPixelRoundingEnabled(false)
 end
 
@@ -129,15 +107,10 @@ local function make_skill_line_pool(name_prefix, canvas_key)
   return Pool.new_virtual(name_prefix, controls[canvas_key], "VerdantGraphLineTemplate", line_factory, line_reset)
 end
 
--- ── grid system ───────────────────────────────────────────────────────────
--- Creates N_HGRID horizontal + N_VGRID vertical reference lines,
--- Y-axis value labels (one per H-line), and 3 X-axis time labels.
--- All controls are children of parent_ctrl so they render behind pool objects.
 local function create_grid(prefix, parent_ctrl)
   local WM  = WINDOW_MANAGER
   local obj = { hlines = {}, vlines = {}, ylabels = {} }
 
-  -- Horizontal lines + Y-axis value labels
   for i = 1, N_HGRID do
     local gl = WM:CreateControl(prefix .. "H" .. i, parent_ctrl, CT_TEXTURE)
     gl:SetTexture(FILL_TEXTURE)
@@ -157,7 +130,6 @@ local function create_grid(prefix, parent_ctrl)
     obj.ylabels[i] = lbl
   end
 
-  -- Vertical lines (X-axis grid)
   for i = 1, N_VGRID do
     local vl = WM:CreateControl(prefix .. "V" .. i, parent_ctrl, CT_TEXTURE)
     vl:SetTexture(FILL_TEXTURE)
@@ -168,7 +140,6 @@ local function create_grid(prefix, parent_ctrl)
     obj.vlines[i] = vl
   end
 
-  -- X-axis time labels: left (0s), centre (T/2), right (T)
   local function make_time_lbl(name, align)
     local t = WM:CreateControl(name, parent_ctrl, CT_LABEL)
     t:SetFont("ZoFontGameSmall")
@@ -199,11 +170,6 @@ local function hide_grid(grid)
   grid.time_r:SetHidden(true)
 end
 
--- Positions and shows the grid for a given canvas.
--- max_val > 0: draw H-lines + Y-axis value labels.
--- span_ms > 0: reserve TIME_STRIP_H at canvas bottom and draw X-axis time labels.
--- The two are INDEPENDENT — the MPS sub-canvas may have time labels even
--- when max_mps == 0 (eg recording shows healing only but still has duration).
 local function draw_grid(grid, canvas, max_val, span_ms)
   local cw = canvas:GetWidth()
   local ch = canvas:GetHeight()
@@ -222,10 +188,9 @@ local function draw_grid(grid, canvas, max_val, span_ms)
   local y_base   = has_time and TIME_STRIP_H or 0
   local ch_plot  = math_max(1, ch - y_base)
 
-  -- Horizontal lines + Y-axis labels (only when we have a value scale)
   if has_y then
     for i = 1, N_HGRID do
-      local frac = i / (N_HGRID + 1)   -- 0.25, 0.50, 0.75
+      local frac = i / (N_HGRID + 1)
       local y    = y_base + math_floor(ch_plot * frac)
 
       local gl = grid.hlines[i]
@@ -247,7 +212,6 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     end
   end
 
-  -- Vertical lines (span data area only, do not intrude into time strip)
   for i = 1, N_VGRID do
     local frac = i / (N_VGRID + 1)
     local x    = math_floor(cw * frac)
@@ -259,7 +223,6 @@ local function draw_grid(grid, canvas, max_val, span_ms)
     vl:SetHidden(false)
   end
 
-  -- X-axis time labels sit in the reserved bottom strip
   if has_time then
     grid.time_l:ClearAnchors()
     grid.time_l:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  2, 0)
@@ -282,7 +245,6 @@ local function draw_grid(grid, canvas, max_val, span_ms)
   end
 end
 
--- ── release all pools ─────────────────────────────────────────────────────
 local function release_all_pools()
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -300,7 +262,6 @@ local function hide_all_grids()
   hide_grid(controls.grid_bot)
 end
 
--- ── skill area layout ─────────────────────────────────────────────────────
 local function layout_skill_area()
   local sa = controls.skill_area
   local sw = sa:GetWidth()
@@ -330,12 +291,11 @@ local function layout_skill_area()
   controls.mps_canvas:SetDimensions(sw, bot_h)
 end
 
-local r1_xs, r1_ehps_hs, r1_ems_hs = {}, {}, {}   -- view1 (EMS)
-local r2_xs_top, r2_colh_top       = {}, {}       -- view2 eHPS sub-plot
-local r2_xs_bot, r2_colh_bot       = {}, {}       -- view2 MPS sub-plot
-local r3_xs, r3_top_hs             = {}, {}       -- view3 (CRIT)
+local r1_xs, r1_ehps_hs, r1_ems_hs = {}, {}, {}
+local r2_xs_top, r2_colh_top       = {}, {}
+local r2_xs_bot, r2_colh_bot       = {}, {}
+local r3_xs, r3_top_hs             = {}, {}
 
--- ── rendering: View 1 — EMS stacked fills + polylines + grid ──────────────
 local function render_view1()
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -354,7 +314,7 @@ local function render_view1()
   local cw      = canvas:GetWidth()
   local ch      = canvas:GetHeight()
   if cw <= 4 or ch <= 4 then return end
-  -- Bottom TIME_STRIP_H pixels reserved for X-axis time labels.
+
   local ch_plot = math_max(4, ch - TIME_STRIP_H)
 
   local max_ems = 0
@@ -371,10 +331,10 @@ local function render_view1()
 
 
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity                              -- float
+  local slot_w      = cw / capacity
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
-  local slot_offset = capacity - n  -- leftmost slot of current data
+  local bw          = math_max(1, slot_w - bar_gap)
+  local slot_offset = capacity - n
   local xs          = r1_xs
   local ehps_hs     = r1_ehps_hs
   local ems_hs      = r1_ems_hs
@@ -390,7 +350,6 @@ local function render_view1()
     ehps_hs[i] = ehps_h
     ems_hs[i]  = ehps_h + mps_h
 
-    -- Fills start at TIME_STRIP_H above canvas bottom (clear of time labels)
     if ehps_h > 0 then
       local te = controls.pool_ehps:AcquireObject()
       te:ClearAnchors()
@@ -412,11 +371,6 @@ local function render_view1()
     end
   end)
 
-  -- Polylines only draw when bars are wide enough for the line to add
-  -- visual signal beyond the bar edges themselves.  Below ~3 px slot width
-  -- the 2 px line overlaps the 1 px bars and produces no visible benefit
-  -- — skipping ~2(n-1) controls per render is a meaningful FPS win at
-  -- high capacities (eg 10 Hz × 60 s = 600 samples).
   if slot_w >= 3 then
     for i = 2, n do
       local x1, x2 = xs[i-1], xs[i]
@@ -426,7 +380,7 @@ local function render_view1()
       le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, x1, -(ehps_hs[i-1] + TIME_STRIP_H))
       le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, x2, -(ehps_hs[i]   + TIME_STRIP_H))
       le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
-      le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
+      le:SetThickness(LINE_THICKNESS)
       le:SetHidden(false)
 
       local lm = controls.pool_line_ems:AcquireObject()
@@ -440,7 +394,6 @@ local function render_view1()
   end
 end
 
--- ── rendering: View 2 — skill breakdown + polylines + grid ────────────────
 local function render_view2()
   controls.pool_skill_top:ReleaseAllObjects()
   controls.pool_skill_bot:ReleaseAllObjects()
@@ -470,22 +423,17 @@ local function render_view2()
     t_last = s.t
   end)
   local span_ms    = t_last - t_first
-  -- Shared Y-axis range: both sub-plots scale to the SAME max so eHPS and MPS
-  -- bars are directly comparable.  Time labels appear on the MPS canvas even
-  -- when max_mps == 0 (eg. healing-only recording still has duration).
   local max_shared = math_max(max_ehps, max_mps)
 
-  draw_grid(controls.grid_top, ec, max_shared, 0)          -- no time labels on top
-  draw_grid(controls.grid_bot, mc, max_shared, span_ms)    -- time labels on bottom
+  draw_grid(controls.grid_top, ec, max_shared, 0)
+  draw_grid(controls.grid_bot, mc, max_shared, span_ms)
 
-  -- Shared slot grid for both sub-plots (same width, same capacity).
   local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity                              -- float
+  local slot_w      = cw / capacity
   local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, slot_w - bar_gap)              -- float, sub-pixel
+  local bw          = math_max(1, slot_w - bar_gap)
   local slot_offset = capacity - n
 
-  -- ── eHPS sub-plot ──
   if max_ehps > 0 then
     local ch     = ec:GetHeight()
     local xs     = r2_xs_top
@@ -520,13 +468,12 @@ local function render_view2()
         le:SetAnchor(BOTTOMLEFT,  ec, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
         le:SetAnchor(BOTTOMRIGHT, ec, BOTTOMLEFT, xs[i],   -col_hs[i])
         le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
-        le:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
+        le:SetThickness(LINE_THICKNESS)
         le:SetHidden(false)
       end
     end
   end
 
-  -- ── MPS sub-plot (carries time labels → reserve TIME_STRIP_H at bottom) ──
   if max_mps > 0 then
     local ch_plot = math_max(1, mc:GetHeight() - TIME_STRIP_H)
     local xs      = r2_xs_bot
@@ -568,9 +515,6 @@ local function render_view2()
   end
 end
 
--- ── rendering: View 3 — CRIT: non-crit (base) + crit (cap) of eHPS ────────
--- Shares the EMS canvas + EMS fill/line pools. Stack sums to eHPS, scaled to
--- the window's max eHPS so the crit ratio reads at full vertical resolution.
 local function render_view3()
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -620,7 +564,7 @@ local function render_view3()
     xs[i]     = x + bw * 0.5
     top_hs[i] = noncrit_h + crit_h
 
-    -- Non-crit base (bottom), muted green.
+
     if noncrit_h > 0 then
       local tn = controls.pool_ehps:AcquireObject()
       tn:ClearAnchors()
@@ -631,7 +575,7 @@ local function render_view3()
       tn:SetHidden(false)
     end
 
-    -- Crit cap (top), gold.
+
     if crit_h > 0 then
       local tc = controls.pool_mps:AcquireObject()
       tc:ClearAnchors()
@@ -643,7 +587,7 @@ local function render_view3()
     end
   end)
 
-  -- Single frontier polyline at the top of the stack (= eHPS level).
+
   if slot_w >= 3 then
     for i = 2, n do
       local lt = controls.pool_line_ehps:AcquireObject()
@@ -668,24 +612,16 @@ local function render_current_view()
   end
 end
 
--- ── button state visuals ──────────────────────────────────────────────────
--- Buttons inherit ZO_DefaultButton: SetEnabled(false) renders the built-in
--- disabled (greyed) frame, giving clear visual feedback for which action is
--- currently available without needing custom colour logic.
 local function refresh_button_colors()
   local recording = Verdant.TemporalBuffer.is_recording()
-  controls.btn_record:SetEnabled(not recording)  -- Start: only when idle
-  controls.btn_stop:SetEnabled(recording)        -- Stop:  only while recording
-  -- Flush is intentionally always enabled (works in both states).
+  controls.btn_record:SetEnabled(not recording)
+  controls.btn_stop:SetEnabled(recording)
 end
 
--- ── view switching ────────────────────────────────────────────────────────
 local function set_view(v)
   current_view = v
   controls.view_label:SetText(VIEW_LABELS[v])
 
-  -- EMS and CRIT both render onto the single main canvas; only SKILL uses the
-  -- split skill_area with its two sub-plots.
   local use_main_canvas = (v == VIEW_EMS or v == VIEW_CRIT)
   controls.canvas:SetHidden(not use_main_canvas)
   controls.skill_area:SetHidden(use_main_canvas)
@@ -699,7 +635,6 @@ local function set_view(v)
   render_current_view()
 end
 
--- ── sampling loop ─────────────────────────────────────────────────────────
 local prof_enter = Verdant.Profiler.enter
 local prof_exit  = Verdant.Profiler.exit
 
@@ -725,7 +660,6 @@ local function on_sample_update()
   prof_exit("graph.sample_tick")
 end
 
--- ── public API ────────────────────────────────────────────────────────────
 function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
   log:info("record click")
@@ -806,7 +740,6 @@ function M.next_view()
   set_view(v)
 end
 
--- Live-applies viewport alpha (0..1).  Called by the settings slider.
 function M.set_viewport_alpha(a)
   VerdantGraphWindowViewportBg:SetCenterColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, a)
 end
@@ -816,8 +749,6 @@ function M.toggle()
   log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
   if now_visible then
-    -- Sync the main-canvas / skill_area sub-controls with current_view, then
-    -- render fresh. EMS and CRIT use the main canvas; SKILL uses skill_area.
     local use_main_canvas = (current_view == VIEW_EMS or current_view == VIEW_CRIT)
     controls.canvas:SetHidden(not use_main_canvas)
     controls.skill_area:SetHidden(use_main_canvas)
@@ -827,7 +758,7 @@ function M.toggle()
   end
 end
 
--- ── init ──────────────────────────────────────────────────────────────────
+
 function M.init()
   local WM = WINDOW_MANAGER
 
@@ -840,7 +771,6 @@ function M.init()
   controls.btn_prev_view = VerdantGraphWindowPrevViewBtn
   controls.view_label    = VerdantGraphWindowViewLabel
   controls.btn_next_view = VerdantGraphWindowNextViewBtn
-  -- Graph canvases now live inside the inner Viewport sub-control:
   controls.viewport      = VerdantGraphWindowViewport
   controls.canvas        = VerdantGraphWindowViewportCanvas
   controls.no_data       = VerdantGraphWindowViewportNoDataLabel
@@ -850,7 +780,6 @@ function M.init()
   controls.mps_label     = VerdantGraphWindowViewportSkillAreaMpsLabel
   controls.mps_canvas    = VerdantGraphWindowViewportSkillAreaMpsCanvas
 
-  -- Restore saved position and size
   local sv = Verdant.SavedVars
   sv.temporal = sv.temporal or {}
   if sv.temporal.graph_x then
@@ -861,46 +790,25 @@ function M.init()
     controls.window:SetDimensions(sv.temporal.graph_w, sv.temporal.graph_h)
   end
 
-  -- Resize bounds: prevent the user from collapsing the window so small
-  -- the chrome (buttons, view nav) overlaps, or expanding it past sensible
-  -- screen sizes.  Min must accommodate the controls row + a usable viewport.
   controls.window:SetDimensionConstraints(360, 240, 1000, 700)
 
-  -- Donut chrome: 4 sibling textures paint the parchment around the viewport,
-  -- so the outer Backdrop's <Center> is disabled (commented in graph.xml) and
-  -- chrome / viewport alphas are fully independent (no composition overlap).
-  -- VerdantGraphWindowBg:SetCenterColor(1, 1, 1, 0.90)  -- legacy outer center; kept for revert
-  -- Donut chrome layering.  Outer center is forced to alpha 0 from Lua
-  -- because the XML comment of <Center> doesn't reliably disable it across
-  -- ESO's Backdrop machinery.  Chrome strips paint parchment around the
-  -- viewport; inner Backdrop's edge provides the inner frame, its center
-  -- is the only viewport bg layer (no overlap → independent alphas).
-  -- Chrome parchment carries a soft green wash so the window reads as
-  -- Verdant's at a glance (identity / anti-clone signature).
   VerdantGraphWindowBg:SetCenterColor(0, 0, 0, 0)
   VerdantGraphWindowChromeTop   :SetColor(0.62, 1.00, 0.74, 0.82)
   VerdantGraphWindowChromeBottom:SetColor(0.62, 1.00, 0.74, 0.82)
   VerdantGraphWindowChromeLeft  :SetColor(0.62, 1.00, 0.74, 0.82)
   VerdantGraphWindowChromeRight :SetColor(0.62, 1.00, 0.74, 0.82)
-  -- Crisp green border: the border texture takes color cleanly and is never
-  -- covered by buttons, so it's the surface that actually reads as "Verdant".
   VerdantGraphWindowBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
-  -- Viewport alpha is user-tunable via the settings panel (slider 0..100%).
-  -- Read the saved value (default 30% if first run / pre-feature SV).
+
   local sv_a = (Verdant.SavedVars and Verdant.SavedVars.temporal
                 and Verdant.SavedVars.temporal.viewport_alpha_pct) or 30
   VerdantGraphWindowViewportBg:SetCenterColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, sv_a / 100)
 
-  -- The "container above viewport" effect is now driven by the XML structure
-  -- itself: outer Backdrop + inner Viewport Backdrop create two nested frames
-  -- that read as "panel containing inset graphs" — no Lua texture hacks.
 
-  -- ── grids (behind pools, created after BGs) ───────────────────────────
   controls.grid_ems = create_grid("VerdantGridEms", controls.canvas)
   controls.grid_top = create_grid("VerdantGridTop", controls.ehps_canvas)
   controls.grid_bot = create_grid("VerdantGridBot", controls.mps_canvas)
 
-  -- ── object pools (created after grids; pool objects render on top) ─────
+
   controls.pool_ehps           = make_fill_pool("VerdantGraphFillEhps")
   controls.pool_mps            = make_fill_pool("VerdantGraphFillMps")
   controls.pool_line_ehps      = make_line_pool("VerdantGraphLineEhps")
@@ -910,12 +818,9 @@ function M.init()
   controls.pool_line_skill_top = make_skill_line_pool("VerdantSkillLineTop", "ehps_canvas")
   controls.pool_line_skill_bot = make_skill_line_pool("VerdantSkillLineBot", "mps_canvas")
 
-  -- ── label / button text and colors ────────────────────────────────────
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
 
-  -- ZO_DefaultButton supports SetText: the button frame is the texture,
-  -- the label inside renders the text we set here.
   controls.btn_record:SetText(GetString(VERDANT_GRAPH_RECORD))
   controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
   controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
@@ -927,7 +832,7 @@ function M.init()
   controls.no_data:SetColor(0.45, 0.45, 0.45, 1)
   controls.no_data:SetHidden(false)
 
-  -- View nav buttons are icon Buttons (textures in XML); no SetText/SetColor.
+
   controls.view_label:SetText(VIEW_LABELS[current_view])
   controls.view_label:SetColor(0.75, 0.75, 0.75, 1)
 
@@ -937,6 +842,4 @@ function M.init()
   controls.mps_label:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, 0.80)
 
   refresh_button_colors()
-  -- VerdantBarWindowGraphBtn is now an icon Button (pointsplus_* textures
-  -- defined in bar.xml); no Lua-side text/color setup needed.
 end

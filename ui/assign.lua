@@ -31,9 +31,6 @@ local TEXT_ALIGN_LEFT   = zc.TEXT_ALIGN_LEFT
 local TEXT_ALIGN_CENTER = zc.TEXT_ALIGN_CENTER
 
 local SkillColors = Verdant.SkillColors
-
--- "|cRRGGBB" colour-markup prefix for a group colour, so a category name can be
--- printed in its own colour inside a button/label (the name IS the swatch).
 local function hex(c)
   return string_format("%02X%02X%02X",
     math_floor(c.r * 255 + 0.5), math_floor(c.g * 255 + 0.5), math_floor(c.b * 255 + 0.5))
@@ -44,26 +41,22 @@ local function colored_label(key)
   return "|c" .. hex(c) .. SkillColors.group_label(key) .. "|r"
 end
 
--- ── layout constants ───────────────────────────────────────────────────────
-local ROW_H            = 30   -- per-unknown row height
-local FALLBACK_MAXROWS = 8    -- used if the list height isn't measurable yet
+
+local ROW_H            = 30
+local FALLBACK_MAXROWS = 8
 local FLYOUT_PAD       = 6
 local FLYOUT_ENTRY_H   = 16
 local FLYOUT_COL_W     = 158
 local FLYOUT_COLS      = 2
 
--- ── state ───────────────────────────────────────────────────────────────────
+
 local controls  = {}
 local row_pool
-local active_id          -- abilityId the flyout is currently choosing for
-local pending   = {}     -- staged picks { [abilityId] = group } not yet committed
-local open_flyout_for    -- forward declarations (used inside row_factory)
+local active_id
+local pending   = {}
+local open_flyout_for
 local assign_active
 
--- ── row pool ────────────────────────────────────────────────────────────────
--- Each row is a CT_CONTROL holding: [icon] [name] ............ [pick category].
--- The pick button reads row.vm_id at click time, so a recycled row always acts
--- on whatever ability it currently displays.
 local function row_factory(row, counter)
   local nm = "VerdantAssignRow" .. counter
   row:SetMouseEnabled(false)
@@ -94,9 +87,6 @@ local function row_reset(row)
   row:ClearAnchors()
 end
 
--- ── category flyout ─────────────────────────────────────────────────────────
--- Built once: a 2-column grid of category labels, each painted in its own
--- group color (the name IS the swatch). Clicking one assigns it to active_id.
 local function build_flyout()
   local fly    = controls.flyout
   local groups = SkillColors.groups_ordered()
@@ -133,7 +123,6 @@ open_flyout_for = function(row)
   local fly = controls.flyout
   local btn = row.vm_pick
   fly:ClearAnchors()
-  -- Flip the flyout above the button when it would spill off the screen bottom.
   local _, screen_h = GuiRoot:GetDimensions()
   if btn:GetBottom() + fly:GetHeight() > screen_h then
     fly:SetAnchor(BOTTOMRIGHT, btn, TOPRIGHT, 0, -2)
@@ -143,8 +132,6 @@ open_flyout_for = function(row)
   fly:SetHidden(false)
 end
 
--- Stage a pick. Nothing is committed (and nothing leaves the list) until the
--- user confirms via Assign — so they can review and re-pick freely.
 assign_active = function(key)
   local id = active_id
   controls.flyout:SetHidden(true)
@@ -154,7 +141,6 @@ assign_active = function(key)
   M.refresh()
 end
 
--- ── list refresh ────────────────────────────────────────────────────────────
 function M.refresh()
   row_pool:ReleaseAllObjects()
   controls.flyout:SetHidden(true)
@@ -199,14 +185,11 @@ function M.refresh()
   end
 end
 
--- ── confirm dialog ──────────────────────────────────────────────────────────
--- Confirm-window geometry. Height is computed from the pick count so the dialog
--- grows with the list instead of clipping (the previous fixed height did).
 local CONFIRM_W       = 420
-local CONFIRM_LINE_H  = 26   -- ZoFontGame line, with slack to avoid clipping
-local CONFIRM_TOP_H   = 44   -- title strip above the message
-local CONFIRM_BTM_H   = 44   -- button strip below the message
-local CONFIRM_EXTRA   = 3    -- blank separator + ~2 note lines
+local CONFIRM_LINE_H  = 26
+local CONFIRM_TOP_H   = 44
+local CONFIRM_BTM_H   = 44
+local CONFIRM_EXTRA   = 3
 
 local function clear_pending()
   for id in pairs(pending) do pending[id] = nil end
@@ -218,9 +201,6 @@ local function pending_count()
   return n
 end
 
--- Builds the review text ("AbilityName → Category", colored) and shows the
--- confirm window, sized to fit every pick. The note states the assignment is
--- irreversible — because it is (committing drops the id from the unknown log).
 local function show_confirm()
   controls.flyout:SetHidden(true)
 
@@ -228,21 +208,20 @@ local function show_confirm()
   for id, key in pairs(pending) do
     local name = GetAbilityName(id)
     if not name or name == "" then name = "#" .. id end
-    lines[#lines + 1] = name .. "  \226\134\146  " .. colored_label(key)  -- " → "
+    lines[#lines + 1] = name .. "  \226\134\146  " .. colored_label(key)
   end
-  table.sort(lines)  -- stable, readable order (by ability name)
+  table.sort(lines)
 
   controls.confirm_msg:SetText(table_concat(lines, "\n") .. "\n\n" .. GetString(VERDANT_ASSIGN_CONFIRM_NOTE))
 
-  -- One row per pick + separator + note, bracketed by the title/button strips.
+
   local h = CONFIRM_TOP_H + (#lines + CONFIRM_EXTRA) * CONFIRM_LINE_H + CONFIRM_BTM_H
   controls.confirm:SetDimensions(CONFIRM_W, h)
 
-  controls.window:SetHidden(true)   -- hide the list window so the two never overlap
+  controls.window:SetHidden(true)
   controls.confirm:SetHidden(false)
 end
 
--- ── public API ──────────────────────────────────────────────────────────────
 function M.show()
   controls.confirm:SetHidden(true)
   clear_pending()
@@ -264,8 +243,6 @@ end
 
 function M.on_close_click() M.hide() end
 
--- Assign: with staged picks, open the review dialog; with none, it's just a
--- friendly close (the user looked and left nothing to do).
 function M.on_assign_click()
   if pending_count() == 0 then
     M.hide()
@@ -276,12 +253,10 @@ end
 
 function M.on_confirm_no()
   controls.confirm:SetHidden(true)
-  controls.window:SetHidden(false)   -- bring the list back to keep editing
+  controls.window:SetHidden(false)
   M.refresh()
 end
 
--- Commit every staged pick to SkillColors + SavedVars, then close. Colors apply
--- live on the next sample tick (no /reloadui).
 function M.on_confirm_yes()
   local sv = Verdant.SavedVars
   for id, key in pairs(pending) do
@@ -320,7 +295,7 @@ function M.init()
   controls.confirm_yes   = VerdantAssignConfirmYesBtn
   controls.confirm_no    = VerdantAssignConfirmNoBtn
 
-  -- Brand wash: green-tint the parchment to match the rest of Verdant.
+
   VerdantAssignPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantAssignPanelBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
   VerdantAssignConfirmBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
@@ -328,7 +303,7 @@ function M.init()
 
   controls.title:SetText(GetString(VERDANT_ASSIGN_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
-  controls.help:SetColor(0.85, 0.70, 0.30, 1)  -- overflow notice (amber)
+  controls.help:SetColor(0.85, 0.70, 0.30, 1)
   controls.empty:SetText(GetString(VERDANT_ASSIGN_EMPTY))
   controls.empty:SetColor(0.45, 0.45, 0.45, 1)
   controls.empty:SetHidden(true)
@@ -344,7 +319,6 @@ function M.init()
   row_pool = Verdant.lib.plot.Pool.new("VerdantAssignRowC", controls.list, CT_CONTROL, row_factory, row_reset)
   build_flyout()
 
-  -- Restore window position (centered fallback).
   local sv = Verdant.SavedVars
   sv.assign = sv.assign or {}
   controls.window:ClearAnchors()

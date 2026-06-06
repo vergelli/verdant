@@ -1,15 +1,3 @@
--- observability/profiler.lua
---
--- Dev-only. In release (DEBUG=false) the file defines NOOP stubs and
--- returns early — the histograms, stack tracking, percentile machinery,
--- and all real implementations are not parsed at all. Only tiny stubs
--- live in memory so call sites that locally cache M.enter / M.exit
--- don't crash.
---
--- Per SPEC_04 §5: enter/exit balance via stack; mismatches log to
--- log.write("error", "profiler.unbalanced"). Time source is the only
--- millisecond clock (zenimax.api.GetGameTimeMilliseconds); sub-ms
--- stages report 0 most of the time — what matters is catching spikes.
 
 Verdant = Verdant or {}
 local Verdant = Verdant
@@ -17,7 +5,6 @@ local Verdant = Verdant
 Verdant.Profiler = {}
 local M = Verdant.Profiler
 
--- ── public surface stubs (always defined so local caches work) ───────────
 local NOOP = function() end
 M.enter        = NOOP
 M.exit         = NOOP
@@ -29,11 +16,8 @@ M.reset        = NOOP
 
 if not Verdant.Constants.DEBUG then return end
 
--- ── below this line: only parses when DEBUG=true ────────────────────────
-
 local now_ms = Verdant.zenimax.api.GetGameTimeMilliseconds
 
--- ── histograms ────────────────────────────────────────────────────────────
 local BUCKET_BOUNDS = { 0, 1, 2, 4, 8, 16, 32, 64, 128, 256 }
 local BUCKET_COUNT  = #BUCKET_BOUNDS
 
@@ -61,13 +45,11 @@ local function percentile(h, p)
   return BUCKET_BOUNDS[BUCKET_COUNT]
 end
 
--- ── state ─────────────────────────────────────────────────────────────────
 local stages       = {}
 local enter_stack  = {}
 local stack_top    = 0
 local started_at   = now_ms()
 
--- ── real implementations (replace stubs at the bottom) ──────────────────
 function M.enter(name)
   stack_top = stack_top + 1
   local frame = enter_stack[stack_top]

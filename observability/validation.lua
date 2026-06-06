@@ -1,9 +1,3 @@
--- observability/validation.lua
---
--- Dev-only. In release the file defines NOOP stubs and returns early —
--- the outstanding-handle tracking, failure ring, and check
--- implementations are not parsed. Per SPEC_04 §6: invariant checks at
--- boundaries (pool acquire/release, monotonic clock, ring shape).
 
 Verdant = Verdant or {}
 local Verdant = Verdant
@@ -11,7 +5,6 @@ local Verdant = Verdant
 Verdant.Validation = {}
 local M = Verdant.Validation
 
--- ── public surface stubs ─────────────────────────────────────────────────
 local NOOP = function() end
 M.pool_acquired         = NOOP
 M.pool_released         = NOOP
@@ -25,8 +18,6 @@ M.dump_to_chat          = function() d("[validate] disabled (DEBUG=false)") end
 M.reset                 = NOOP
 
 if not Verdant.Constants.DEBUG then return end
-
--- ── below this line: only parses when DEBUG=true ────────────────────────
 
 local outstanding = {}
 local failures    = {}
@@ -107,9 +98,6 @@ function M.check_payload_shape(payload, expected_keys, label)
   end
 end
 
--- Pure query — must NOT mutate state (no log.write here).
--- /verdant report calls this multiple times; logging each call would
--- pollute the very log ring we're reporting on (self-fulfilling artifact).
 function M.run_all_checks()
   local leaked_count = 0
   for _, s in pairs(outstanding) do

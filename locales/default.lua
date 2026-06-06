@@ -54,7 +54,6 @@ ZO_CreateStringId("VERDANT_PROFILE_TRIALS",          "Trials")
 ZO_CreateStringId("VERDANT_PROFILE_PVP",             "PvP")
 ZO_CreateStringId("VERDANT_PROFILE_CUSTOM",          "Custom")
 
--- Heavy buffer warning (chat) — args: window_s, hz, capacity
 ZO_CreateStringId("VERDANT_WARN_HEAVY_BUFFER", "%ds x %d Hz = %d samples may impact FPS. Consider lower sample rate for long windows.")
 
 -- Help command output

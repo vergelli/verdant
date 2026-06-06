@@ -1,13 +1,3 @@
--- pipeline/processing.lua
---
--- Stage 3 of the pipeline. Routes a filtered VerdantEvent to the
--- appropriate ingestor in metrics. The event becomes the buffer's owned
--- entry from this point — the caller MUST NOT release it. Buffer trim
--- (on_evict) returns it to the pool when the time window passes.
---
--- Per-ZOS-event side effects (counters that fire regardless of HEAL/OVERHEAL
--- split, set_player, GroupSet.add, Coverage.touch on shields) live in
--- pipeline/pipeline.lua. This module is the per-event ingestion sink.
 
 Verdant = Verdant or {}
 local Verdant = Verdant
@@ -31,8 +21,6 @@ function M.process(ev)
     Verdant.Metrics.ingest_overheal(ev)
   elseif k == KIND_SHIELD then
     Verdant.Metrics.ingest_shield(ev)
-    -- Shield Coverage.touch fires unconditionally per ZOS event in
-    -- pipeline.lua, even on foreign drops. Don't touch here.
   elseif k == KIND_DAMAGE_GROUP then
     Verdant.Metrics.ingest_damage_group(ev)
   end
