@@ -372,6 +372,7 @@ function M.group_shares_into(out, buf, now_ms, predicate)
     local c = GROUP_COLORS[g] or FALLBACK
     slot.r = c.r; slot.g = c.g; slot.b = c.b; slot.a = c.a
     slot.share = amt / total
+    slot.key = g   -- stable group id (string) for the hover highlight + card name
   end
 
   for i = 2, n do

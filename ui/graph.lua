@@ -60,6 +60,29 @@ local VIEW_CRIT   = 3
 local VIEW_LABELS = { "EMS", "SKILL", "CRIT" }
 local current_view = VIEW_EMS
 
+-- ── Hover (Datadog-style, ported from Verditer) ───────────────────────────────
+-- Verdant has THREE canvases: the main one (VIEW_EMS / VIEW_CRIT) and the SKILL
+-- view's split top (eHPS) + bottom (MPS). Each gets its own hit index. Frozen-session
+-- only. hover_key (a group-key string) is applied to BOTH skill stacks.
+local GetUIMousePosition = api.GetUIMousePosition
+local hover_key  = nil
+local hit_main = { cols = {}, n = 0 }
+local hit_top  = { cols = {}, n = 0 }
+local hit_bot  = { cols = {}, n = 0 }
+local C_DIM_BIAS = 0.05
+local render_current_view   -- forward decl (hover helpers call it before it's defined)
+
+local FADE_MS = 120
+local card_fader, crosshair_fader
+
+local CARD_W, CARD_H = 196, 56
+local C_CARD_BG     = { r = 0.05, g = 0.11, b = 0.07, a = 0.96 }  -- dark green tint
+local C_CARD_ACCENT = { r = 0.40, g = 0.85, b = 0.52, a = 1.0 }   -- Verdant green accent
+local C_CARD_STAT   = { r = 0.84, g = 0.92, b = 0.86, a = 1.0 }
+local C_CARD_NAME   = { r = 0.90, g = 1.00, b = 0.92, a = 1.0 }
+local C_CARD_TIME   = { r = 0.64, g = 0.72, b = 0.66, a = 1.0 }
+local C_CROSSHAIR   = { r = 0.50, g = 1.00, b = 0.62, a = 0.50 }
+
 local function fmt_val(v)
   return ZO_AbbreviateAndLocalizeNumber(math_floor(v), 0, false)
 end
@@ -296,6 +319,314 @@ local r2_xs_top, r2_colh_top       = {}, {}
 local r2_xs_bot, r2_colh_bot       = {}, {}
 local r3_xs, r3_top_hs             = {}, {}
 
+-- ── Decimation (ported from Verditer; M4-style, specialized to bars) ──────────
+-- Render cost was O(samples): drawing samples × groups controls, which at high
+-- sample-rate × long window blows past the canvas pixel count → freezes / 303
+-- disconnect. Fix: never draw more columns than the canvas has pixels. Bucket the
+-- buffer's logical slots into num_cols pixel columns and fold each with a SPIKE-
+-- PRESERVING reducer (MAX — Verdant is healing/shielding output, "spike" = max).
+-- Verdant's views use DIFFERENT primary metrics, so we keep THREE peak samples per
+-- column to keep every stack coherent + bounded (a stacked height stays ≤ its global
+-- max only if its parts come from ONE real sample):
+--   ems-peak  (max eHPS+MPS)  -> e1 / m1                     for VIEW1 (eHPS+MPS bars)
+--   ehps-peak (max eHPS)      -> eHPS / ehps_groups / crit   for VIEW2-top + VIEW3
+--   mps-peak  (max MPS)       -> MPS / mps_groups            for VIEW2-bot
+-- No hover hit-index here (Verdant has none) → simpler than Verditer.
+local MIN_COL_PX = 2
+local dec_cols   = {}
+
+local function decimate(cw)
+  local TB       = Verdant.TemporalBuffer
+  local capacity = TB.capacity()
+  local n        = TB.count()
+  local num_cols = math_floor(cw / MIN_COL_PX)
+  if num_cols < 1 then num_cols = 1 end
+  if num_cols > capacity then num_cols = capacity end
+  local offset   = capacity - n
+  local m, cur_c = 0, -1
+  local col
+  TB.iterate(function(i, s)
+    local c   = math_floor((offset + i - 1) * num_cols / capacity)
+    local ems = s.eHPS + s.MPS
+    if c ~= cur_c then
+      m = m + 1
+      col = dec_cols[m]
+      if not col then col = {}; dec_cols[m] = col end
+      col.c = c; col.t = s.t
+      col.ems_peak = ems; col.e1 = s.eHPS; col.m1 = s.MPS
+      col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.noncrit = s.noncrit; col.crit = s.crit
+      col.MPS = s.MPS; col.mps_groups = s.mps_groups
+      cur_c = c
+    else
+      if ems > col.ems_peak then col.ems_peak = ems; col.e1 = s.eHPS; col.m1 = s.MPS end
+      if s.eHPS > col.eHPS then    -- eHPS-peak: drives VIEW2-top stack + VIEW3 crit split
+        col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.noncrit = s.noncrit; col.crit = s.crit
+      end
+      if s.MPS > col.MPS then col.MPS = s.MPS; col.mps_groups = s.mps_groups end  -- MPS-peak
+      col.t = s.t
+    end
+  end)
+  local col_w   = cw / num_cols
+  local bar_gap = (col_w > 3) and 1 or 0
+  return m, num_cols, col_w, bar_gap
+end
+
+-- Pixel-snapped column rect (also kills the moiré): integer left/right via cumulative
+-- rounding so columns tile the pixel grid exactly.
+local function dec_rect(c, num_cols, cw)
+  local left  = math_floor(c       * cw / num_cols + 0.5)
+  local right = math_floor((c + 1) * cw / num_cols + 0.5)
+  return left, right
+end
+
+-- ── Hover helpers (ported from Verditer; parameterized by hit table H) ─────────
+local function make_fader(control)
+  return { anim = ZO_AlphaAnimation:New(control), control = control, visible = false }
+end
+local function fade_in(f)
+  if not f or f.visible then return end
+  f.visible = true
+  f.anim:FadeIn(0, FADE_MS)
+end
+local function fade_out(f)
+  if not f or not f.visible then return end
+  f.visible = false
+  local control = f.control
+  f.anim:FadeOut(0, FADE_MS, nil, function() control:SetHidden(true) end)
+end
+
+local function hexc(c)
+  return string_format("%02x%02x%02x",
+    math_floor(c.r * 255 + 0.5), math_floor(c.g * 255 + 0.5), math_floor(c.b * 255 + 0.5))
+end
+
+local function hover_allowed()
+  return not Verdant.TemporalBuffer.is_recording()
+     and Verdant.TemporalBuffer.count() > 0
+     and not controls.window:IsHidden()
+end
+
+local function hover_label(key)
+  if not key or key == "" then return "Skill" end
+  if key == "other" then return "Other" end
+  return (tostring(key):gsub("_", " "))
+end
+
+local function stop_hover_poll() zev.unregister_update("VerdantHoverPoll") end
+
+local function hide_hover_ui()
+  fade_out(card_fader)
+  fade_out(crosshair_fader)
+end
+
+local function build_hover_card()
+  local WM   = WINDOW_MANAGER
+  local root = WM:CreateControl("VerdantHoverCard", controls.window, zc.CT_CONTROL)
+  root:SetDimensions(CARD_W, CARD_H)
+  root:SetMouseEnabled(false)
+  root:SetDrawLevel(20)
+  root:SetAlpha(0)
+  root:SetHidden(true)
+
+  local bg = WM:CreateControl("VerdantHoverCardBg", root, CT_TEXTURE)
+  bg:SetTexture(FILL_TEXTURE)
+  bg:SetTextureCoords(0, 1, 0, 0.05)
+  bg:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
+  bg:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
+  bg:SetColor(C_CARD_BG.r, C_CARD_BG.g, C_CARD_BG.b, C_CARD_BG.a)
+
+  local accent = WM:CreateControl("VerdantHoverCardAccent", root, CT_TEXTURE)
+  accent:SetTexture(FILL_TEXTURE)
+  accent:SetTextureCoords(0, 0.05, 0, 1)
+  accent:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
+  accent:SetAnchor(BOTTOMLEFT, root, BOTTOMLEFT, 0, 0)
+  accent:SetWidth(3)
+  accent:SetColor(C_CARD_ACCENT.r, C_CARD_ACCENT.g, C_CARD_ACCENT.b, 1.0)
+
+  local swatch = WM:CreateControl("VerdantHoverCardSwatch", root, CT_TEXTURE)
+  swatch:SetTexture(FILL_TEXTURE)
+  swatch:SetTextureCoords(0, 1, 0, 0.05)
+  swatch:SetDimensions(10, 10)
+  swatch:SetAnchor(TOPLEFT, root, TOPLEFT, 12, 9)
+
+  local name = WM:CreateControl("VerdantHoverCardName", root, CT_LABEL)
+  name:SetFont("ZoFontGameBold")
+  name:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  name:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+  name:SetAnchor(TOPLEFT, root, TOPLEFT, 28, 6)
+  name:SetDimensions(CARD_W - 36, 16)
+
+  local stat = WM:CreateControl("VerdantHoverCardStat", root, CT_LABEL)
+  stat:SetFont("ZoFontGameSmall")
+  stat:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  stat:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+  stat:SetColor(C_CARD_STAT.r, C_CARD_STAT.g, C_CARD_STAT.b, 1.0)
+  stat:SetAnchor(TOPLEFT, root, TOPLEFT, 12, 24)
+  stat:SetDimensions(CARD_W - 20, 14)
+
+  local time = WM:CreateControl("VerdantHoverCardTime", root, CT_LABEL)
+  time:SetFont("ZoFontGameSmall")
+  time:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  time:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+  time:SetColor(C_CARD_TIME.r, C_CARD_TIME.g, C_CARD_TIME.b, 1.0)
+  time:SetAnchor(TOPLEFT, root, TOPLEFT, 12, 40)
+  time:SetDimensions(CARD_W - 20, 12)
+
+  controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time }
+end
+
+local function position_card(mx, my)
+  local card = controls.card
+  local sw, sh = GuiRoot:GetDimensions()
+  local x = mx + 16
+  local y = my + 18
+  if x + CARD_W > sw - 4 then x = mx - CARD_W - 16 end
+  if x < 4 then x = 4 end
+  if y + CARD_H > sh - 4 then y = my - CARD_H - 18 end
+  if y < 4 then y = 4 end
+  card.root:ClearAnchors()
+  card.root:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, x, y)
+  fade_in(card_fader)
+end
+
+local function show_card(band, unit, mx, my, elapsed_ms)
+  local card = controls.card
+  if not card then return end
+  card.swatch:SetColor(band.r, band.g, band.b, 1.0)
+  card.name:SetColor(band.r, band.g, band.b, 1.0)
+  card.name:SetText(hover_label(band.key))
+  local pct = math_floor((band.share or 0) * 100 + 0.5)
+  local val = (band.share or 0) * (band.total or 0)
+  card.stat:SetText(string_format("%s %s  ·  %d%%", fmt_val(val), unit, pct))
+  card.time:SetText("t  " .. fmt_secs(elapsed_ms or 0))
+  position_card(mx, my)
+end
+
+local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, my)
+  local card = controls.card
+  if not card then return end
+  card.swatch:SetColor(swatch_c.r, swatch_c.g, swatch_c.b, 1.0)
+  card.name:SetColor(C_CARD_NAME.r, C_CARD_NAME.g, C_CARD_NAME.b, 1.0)
+  card.name:SetText(name_text)
+  card.stat:SetText(stat_text)
+  card.time:SetText("t  " .. fmt_secs(elapsed_ms or 0))
+  position_card(mx, my)
+end
+
+local function hit_begin(H, n) H.n = n end
+
+local function hit_col(H, i, x, bw, s)
+  if i == 1 then H.t0 = s.t end
+  local col = H.cols[i]
+  if not col then col = { bands = {} }; H.cols[i] = col end
+  col.x0 = x; col.x1 = x + bw; col.nb = 0; col.t = s.t
+  col.ehps = s.e1; col.mps = s.m1; col.crit = s.crit; col.noncrit = s.noncrit
+  return col
+end
+
+local function hover_pick(H, rel_x, height_above)
+  if H.n == 0 then return nil, nil end
+  local col = nil
+  for i = 1, H.n do
+    local c = H.cols[i]
+    if c and rel_x >= c.x0 and rel_x <= c.x1 then col = c; break end
+  end
+  if not col then return nil, nil end
+  local band = nil
+  for b = 1, col.nb do
+    local bd = col.bands[b]
+    if height_above >= bd.lo and height_above <= bd.hi then band = bd; break end
+  end
+  return band, col
+end
+
+-- probe a canvas: returns inside?, band, col, rel-height baseline handled by caller
+local function probe(canvas, H, mx, my)
+  local rel_x = mx - canvas:GetLeft()
+  local above = canvas:GetBottom() - my
+  local cw, ch = canvas:GetWidth(), canvas:GetHeight()
+  if rel_x < 0 or rel_x > cw or above < 0 or above > ch then return false end
+  local band, col = hover_pick(H, rel_x, above)
+  return true, band, col
+end
+
+local function hover_poll()
+  if not hover_allowed() then
+    if hover_key ~= nil then hover_key = nil; render_current_view() end
+    hide_hover_ui()
+    return
+  end
+  local mx, my = GetUIMousePosition()
+  local band, col, canvas, H, unit
+  if current_view == VIEW_SKILL then
+    local inside, b, c = probe(controls.ehps_canvas, hit_top, mx, my)
+    if inside then band, col, canvas, H, unit = b, c, controls.ehps_canvas, hit_top, "HPS" end
+    if not inside then
+      inside, b, c = probe(controls.mps_canvas, hit_bot, mx, my)
+      if inside then band, col, canvas, H, unit = b, c, controls.mps_canvas, hit_bot, "MPS" end
+    end
+  else
+    local inside, b, c = probe(controls.canvas, hit_main, mx, my)
+    if inside then band, col, canvas, H = b, c, controls.canvas, hit_main end
+  end
+
+  local new = band and band.key or nil
+  if new ~= hover_key then hover_key = new; render_current_view() end
+
+  if not col then hide_hover_ui(); return end
+
+  if controls.crosshair then
+    local cx = math_floor((col.x0 + col.x1) * 0.5)
+    controls.crosshair:ClearAnchors()
+    controls.crosshair:SetAnchor(TOPLEFT,    canvas, TOPLEFT,    cx, 0)
+    controls.crosshair:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, cx, 0)
+    fade_in(crosshair_fader)
+  end
+
+  local elapsed = (col.t and H.t0) and (col.t - H.t0) or 0
+  if band then
+    show_card(band, unit or "HPS", mx, my, elapsed)
+  elseif current_view == VIEW_EMS then
+    show_moment_card(C_EHPS, "Healing",
+      string_format("|c%s%s HPS|r  ·  |c%s%s MPS|r",
+        hexc(C_EHPS), fmt_val(col.ehps or 0), hexc(C_MPS), fmt_val(col.mps or 0)),
+      elapsed, mx, my)
+  elseif current_view == VIEW_CRIT then
+    local tot = (col.crit or 0) + (col.noncrit or 0)
+    local cp  = (tot > 0) and math_floor((col.crit or 0) / tot * 100 + 0.5) or 0
+    show_moment_card(C_CRIT, "Crit",
+      string_format("|c%s%d%% crit|r  ·  %s HPS", hexc(C_CRIT), cp, fmt_val(tot)),
+      elapsed, mx, my)
+  else
+    fade_out(card_fader)
+  end
+end
+
+local function update_hover_gate()
+  local on    = hover_allowed()
+  local skill = (current_view == VIEW_SKILL)
+  if controls.hit_main then
+    controls.hit_main:SetMouseEnabled(on and not skill)
+    controls.hit_main:SetHidden(not (on and not skill))
+  end
+  if controls.hit_top then
+    controls.hit_top:SetMouseEnabled(on and skill)
+    controls.hit_top:SetHidden(not (on and skill))
+  end
+  if controls.hit_bot then
+    controls.hit_bot:SetMouseEnabled(on and skill)
+    controls.hit_bot:SetHidden(not (on and skill))
+  end
+  if not on then
+    stop_hover_poll()
+    hide_hover_ui()
+    if hover_key ~= nil then
+      hover_key = nil
+      if not controls.window:IsHidden() then render_current_view() end
+    end
+  end
+end
+
 local function render_view1()
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -330,21 +661,23 @@ local function render_view1()
   draw_grid(controls.grid_ems, canvas, max_ems, t_last - t_first)
 
 
-  local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity
-  local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, slot_w - bar_gap)
-  local slot_offset = capacity - n
+  local m, num_cols, col_w, bar_gap = decimate(cw)
   local xs          = r1_xs
   local ehps_hs     = r1_ehps_hs
   local ems_hs      = r1_ems_hs
+  local capture = not Verdant.TemporalBuffer.is_recording()
+  if capture then hit_begin(hit_main, m) end
 
-  Verdant.TemporalBuffer.iterate(function(i, s)
-    local x  = (slot_offset + i - 1) * slot_w
+  for i = 1, m do
+    local s = dec_cols[i]
+    local left, right = dec_rect(s.c, num_cols, cw)
+    local x  = left
+    local bw = math_max(1, right - left - bar_gap)
+    if capture then hit_col(hit_main, i, left, right - left, s) end
     local xc = x + bw * 0.5
 
-    local ehps_h = math_max(0, math_floor(ch_plot * (s.eHPS / max_ems) + 0.5))
-    local mps_h  = math_max(0, math_floor(ch_plot * (s.MPS  / max_ems) + 0.5))
+    local ehps_h = math_max(0, math_floor(ch_plot * (s.e1 / max_ems) + 0.5))   -- ems-peak parts
+    local mps_h  = math_max(0, math_floor(ch_plot * (s.m1 / max_ems) + 0.5))
 
     xs[i]      = xc
     ehps_hs[i] = ehps_h
@@ -369,10 +702,10 @@ local function render_view1()
       tm:SetColor(C_MPS.r, C_MPS.g, C_MPS.b, C_MPS.a)
       tm:SetHidden(false)
     end
-  end)
+  end
 
-  if slot_w >= 3 then
-    for i = 2, n do
+  if col_w >= 3 then
+    for i = 2, m do
       local x1, x2 = xs[i-1], xs[i]
 
       local le = controls.pool_line_ehps:AcquireObject()
@@ -428,22 +761,26 @@ local function render_view2()
   draw_grid(controls.grid_top, ec, max_shared, 0)
   draw_grid(controls.grid_bot, mc, max_shared, span_ms)
 
-  local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity
-  local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, slot_w - bar_gap)
-  local slot_offset = capacity - n
+  local m, num_cols, col_w, bar_gap = decimate(cw)
+  local capture = not Verdant.TemporalBuffer.is_recording()
+  local hk = hover_key   -- nil = no highlight; else dim every group but this key
 
   if max_ehps > 0 then
     local ch     = ec:GetHeight()
     local xs     = r2_xs_top
     local col_hs = r2_colh_top
+    if capture then hit_begin(hit_top, m) end
 
-    Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = (slot_offset + i - 1) * slot_w
+    for i = 1, m do
+      local s = dec_cols[i]
+      local left, right = dec_rect(s.c, num_cols, cw)
+      local x     = left
+      local bw    = math_max(1, right - left - bar_gap)
       local col_h = math_max(0, math_floor(ch * (s.eHPS / max_shared) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
+
+      local col = capture and hit_col(hit_top, i, left, right - left, s) or nil
 
       local y_off   = 0
       local egroups = s.ehps_groups
@@ -455,14 +792,33 @@ local function render_view2()
         t:SetAnchor(BOTTOMLEFT, ec, BOTTOMLEFT, x, -y_off)
         t:SetWidth(bw)
         t:SetHeight(seg_h)
-        t:SetColor(grp.r, grp.g, grp.b, grp.a)
+        if hk ~= nil and grp.key ~= hk then
+          t:SetColor(grp.r * 0.30 + C_DIM_BIAS, grp.g * 0.30 + C_DIM_BIAS,
+                     grp.b * 0.30 + C_DIM_BIAS, 0.28)
+        else
+          t:SetColor(grp.r, grp.g, grp.b, grp.a)
+        end
         t:SetHidden(false)
+
+        if capture then
+          local nb   = col.nb + 1
+          local band = col.bands[nb]
+          if not band then band = {}; col.bands[nb] = band end
+          band.key   = grp.key
+          band.lo    = y_off                 -- top canvas anchors at -y_off (no time strip)
+          band.hi    = y_off + seg_h
+          band.share = grp.share
+          band.total = s.eHPS
+          band.r = grp.r; band.g = grp.g; band.b = grp.b
+          col.nb = nb
+        end
+
         y_off = y_off + seg_h
       end
-    end)
+    end
 
-    if slot_w >= 3 then
-      for i = 2, n do
+    if col_w >= 3 then
+      for i = 2, m do
         local le = controls.pool_line_skill_top:AcquireObject()
         le:ClearAnchors()
         le:SetAnchor(BOTTOMLEFT,  ec, BOTTOMLEFT, xs[i-1], -col_hs[i-1])
@@ -478,12 +834,18 @@ local function render_view2()
     local ch_plot = math_max(1, mc:GetHeight() - TIME_STRIP_H)
     local xs      = r2_xs_bot
     local col_hs  = r2_colh_bot
+    if capture then hit_begin(hit_bot, m) end
 
-    Verdant.TemporalBuffer.iterate(function(i, s)
-      local x     = (slot_offset + i - 1) * slot_w
+    for i = 1, m do
+      local s = dec_cols[i]
+      local left, right = dec_rect(s.c, num_cols, cw)
+      local x     = left
+      local bw    = math_max(1, right - left - bar_gap)
       local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_shared) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
+
+      local col = capture and hit_col(hit_bot, i, left, right - left, s) or nil
 
       local y_off   = 0
       local mgroups = s.mps_groups
@@ -495,14 +857,33 @@ local function render_view2()
         t:SetAnchor(BOTTOMLEFT, mc, BOTTOMLEFT, x, -(y_off + TIME_STRIP_H))
         t:SetWidth(bw)
         t:SetHeight(seg_h)
-        t:SetColor(grp.r, grp.g, grp.b, grp.a)
+        if hk ~= nil and grp.key ~= hk then
+          t:SetColor(grp.r * 0.30 + C_DIM_BIAS, grp.g * 0.30 + C_DIM_BIAS,
+                     grp.b * 0.30 + C_DIM_BIAS, 0.28)
+        else
+          t:SetColor(grp.r, grp.g, grp.b, grp.a)
+        end
         t:SetHidden(false)
+
+        if capture then
+          local nb   = col.nb + 1
+          local band = col.bands[nb]
+          if not band then band = {}; col.bands[nb] = band end
+          band.key   = grp.key
+          band.lo    = TIME_STRIP_H + y_off   -- bot canvas anchors at -(y_off + TIME_STRIP_H)
+          band.hi    = TIME_STRIP_H + y_off + seg_h
+          band.share = grp.share
+          band.total = s.MPS
+          band.r = grp.r; band.g = grp.g; band.b = grp.b
+          col.nb = nb
+        end
+
         y_off = y_off + seg_h
       end
-    end)
+    end
 
-    if slot_w >= 3 then
-      for i = 2, n do
+    if col_w >= 3 then
+      for i = 2, m do
         local lm = controls.pool_line_skill_bot:AcquireObject()
         lm:ClearAnchors()
         lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(col_hs[i-1] + TIME_STRIP_H))
@@ -549,16 +930,18 @@ local function render_view3()
 
   draw_grid(controls.grid_ems, canvas, max_ehps, t_last - t_first)
 
-  local capacity    = Verdant.TemporalBuffer.capacity()
-  local slot_w      = cw / capacity
-  local bar_gap     = (slot_w > 3) and 1 or 0
-  local bw          = math_max(1, slot_w - bar_gap)
-  local slot_offset = capacity - n
+  local m, num_cols, col_w, bar_gap = decimate(cw)
   local xs          = r3_xs
   local top_hs      = r3_top_hs
+  local capture = not Verdant.TemporalBuffer.is_recording()
+  if capture then hit_begin(hit_main, m) end
 
-  Verdant.TemporalBuffer.iterate(function(i, s)
-    local x  = (slot_offset + i - 1) * slot_w
+  for i = 1, m do
+    local s = dec_cols[i]
+    local left, right = dec_rect(s.c, num_cols, cw)
+    local x  = left
+    local bw = math_max(1, right - left - bar_gap)
+    if capture then hit_col(hit_main, i, left, right - left, s) end
     local noncrit_h = math_max(0, math_floor(ch_plot * (s.noncrit / max_ehps) + 0.5))
     local crit_h    = math_max(0, math_floor(ch_plot * (s.crit    / max_ehps) + 0.5))
     xs[i]     = x + bw * 0.5
@@ -585,11 +968,11 @@ local function render_view3()
       tc:SetColor(C_CRIT.r, C_CRIT.g, C_CRIT.b, C_CRIT.a)
       tc:SetHidden(false)
     end
-  end)
+  end
 
 
-  if slot_w >= 3 then
-    for i = 2, n do
+  if col_w >= 3 then
+    for i = 2, m do
       local lt = controls.pool_line_ehps:AcquireObject()
       lt:ClearAnchors()
       lt:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, xs[i-1], -(top_hs[i-1] + TIME_STRIP_H))
@@ -601,7 +984,7 @@ local function render_view3()
   end
 end
 
-local function render_current_view()
+function render_current_view()
   if current_view == VIEW_EMS then
     render_view1()
   elseif current_view == VIEW_CRIT then
@@ -616,11 +999,13 @@ local function refresh_button_colors()
   local recording = Verdant.TemporalBuffer.is_recording()
   controls.btn_record:SetEnabled(not recording)
   controls.btn_stop:SetEnabled(recording)
+  update_hover_gate()
 end
 
 local function set_view(v)
   current_view = v
   controls.view_label:SetText(VIEW_LABELS[v])
+  hover_key = nil   -- changing view drops any highlight from the old one
 
   local use_main_canvas = (v == VIEW_EMS or v == VIEW_CRIT)
   controls.canvas:SetHidden(not use_main_canvas)
@@ -628,11 +1013,13 @@ local function set_view(v)
 
   if Verdant.TemporalBuffer.count() == 0 then
     controls.no_data:SetHidden(false)
+    update_hover_gate()
     return
   end
   controls.no_data:SetHidden(true)
 
   render_current_view()
+  update_hover_gate()
 end
 
 local prof_enter = Verdant.Profiler.enter
@@ -701,6 +1088,7 @@ end
 
 function M.on_close_click()
   Verdant.Visibility.set("graph", false)
+  stop_hover_poll(); hide_hover_ui(); hover_key = nil
   release_all_pools()
 end
 
@@ -753,7 +1141,9 @@ function M.toggle()
     controls.canvas:SetHidden(not use_main_canvas)
     controls.skill_area:SetHidden(use_main_canvas)
     render_current_view()
+    update_hover_gate()
   else
+    stop_hover_poll(); hide_hover_ui(); hover_key = nil
     release_all_pools()
   end
 end
@@ -825,6 +1215,17 @@ function M.init()
   controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
   controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
 
+  -- colour-code the action buttons (brand colour propagated, ported from Verditer):
+  -- record = Verdant green, stop = amber, flush = danger red.
+  local function tint_btn(btn, r, g, b)
+    btn:SetNormalFontColor(r, g, b, 1)
+    btn:SetMouseOverFontColor(math.min(1, r + 0.12), math.min(1, g + 0.12), math.min(1, b + 0.12), 1)
+    btn:SetPressedFontColor(r * 0.85, g * 0.85, b * 0.85, 1)
+  end
+  tint_btn(controls.btn_record, 0.46, 0.86, 0.55)   -- Verdant green
+  tint_btn(controls.btn_stop,   0.96, 0.80, 0.34)   -- amber
+  tint_btn(controls.btn_flush,  0.90, 0.40, 0.36)   -- danger red
+
   controls.status:SetText("")
   controls.status:SetColor(0.65, 0.65, 0.65, 1)
 
@@ -840,6 +1241,43 @@ function M.init()
   controls.ehps_label:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, 0.80)
   controls.mps_label:SetText("MPS")
   controls.mps_label:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, 0.80)
+
+  -- hover (Datadog scrubber): card + crosshair + a hit layer per canvas (main / skill
+  -- top / skill bottom). The crosshair is parented to the window so it can anchor to
+  -- whichever canvas the cursor is over.
+  build_hover_card()
+  card_fader = make_fader(controls.card.root)
+
+  local crosshair = WINDOW_MANAGER:CreateControl("VerdantGraphCrosshair", controls.window, CT_TEXTURE)
+  crosshair:SetTexture(FILL_TEXTURE)
+  crosshair:SetTextureCoords(0, 0.05, 0, 1)
+  crosshair:SetWidth(1)
+  crosshair:SetColor(C_CROSSHAIR.r, C_CROSSHAIR.g, C_CROSSHAIR.b, C_CROSSHAIR.a)
+  crosshair:SetDrawLevel(15)
+  crosshair:SetAnchor(TOPLEFT,    controls.canvas, TOPLEFT,    0, 0)
+  crosshair:SetAnchor(BOTTOMLEFT, controls.canvas, BOTTOMLEFT, 0, 0)
+  crosshair:SetAlpha(0)
+  crosshair:SetHidden(true)
+  controls.crosshair = crosshair
+  crosshair_fader = make_fader(crosshair)
+
+  local function make_hit(name, canvas)
+    local h = WINDOW_MANAGER:CreateControl(name, canvas, zc.CT_CONTROL)
+    h:SetAnchorFill(canvas)
+    h:SetMouseEnabled(false)
+    h:SetHidden(true)
+    h:SetHandler("OnMouseEnter", function()
+      if hover_allowed() then zev.register_update("VerdantHoverPoll", 50, hover_poll) end
+    end)
+    h:SetHandler("OnMouseExit", function()
+      stop_hover_poll(); hide_hover_ui()
+      if hover_key ~= nil then hover_key = nil; render_current_view() end
+    end)
+    return h
+  end
+  controls.hit_main = make_hit("VerdantGraphHitMain", controls.canvas)
+  controls.hit_top  = make_hit("VerdantGraphHitTop",  controls.ehps_canvas)
+  controls.hit_bot  = make_hit("VerdantGraphHitBot",  controls.mps_canvas)
 
   refresh_button_colors()
 end
