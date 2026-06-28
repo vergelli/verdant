@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.2.0] - 2026-06-28
+
+The big visual + performance pass: pixel-perfect chart decimation (M4), a
+per-ability rich hover, and a redesigned SKILL view. The chart now stays smooth
+at any sample rate or window length.
+
+### Added
+- **Pixel-perfect decimation (M4)** — the chart aggregates samples per pixel
+  column, so it never draws more bars than the screen has pixels. FPS stays flat
+  whether the recording holds 300 samples or 6000.
+- **Rich hover** — hovering a skill segment now lists that group's abilities as
+  icons, ranked by contribution, each with its healing number and percentage.
+- **Datadog-style hover card** — crosshair, group highlight/dim, and a cursor
+  card, built off the decimated hit-index.
+- **Shield orientation toggle** — a SKILL-view setting to switch the shield
+  subplot between growing up from the floor and hanging down from the healing
+  bars (a diverging, mirror layout).
+- **GC pacing** — incremental garbage collection per frame for smoother long
+  fights.
+
+### Changed
+- **Independent SKILL-view scales** — healing (eHPS) and shields (MPS) now use
+  separate vertical scales, so shields are no longer squashed against the
+  healing peak.
+- **Sampling rate capped at 5 Hz** (was 10) — above ~5 Hz only adds redundant
+  bars, so the cap keeps long recordings light. Existing presets above 5 Hz
+  snap down when the settings panel is next opened.
+
+---
+
 ## [2.1.1] - 2026-06-06
 
 Packaging fix — removed stray empty `.gitkeep` placeholder files from the

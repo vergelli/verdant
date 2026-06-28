@@ -1,8 +1,8 @@
 ## Title: Verdant
 ## Description: Real-time healer contribution bar — eHPS, shield mitigation and EMS, with skill-colour breakdown
 ## Author: Federico Vergelli
-## Version: 2.1.1
-## AddOnVersion: 6
+## Version: 2.2.0
+## AddOnVersion: 7
 ## APIVersion: 101049 101050
 ## SavedVariables: VerdantSavedVars
 
@@ -15,6 +15,7 @@ bindings.xml
 locales/default.lua
 locales/$(language).lua
 core/constants.lua
+core/gc.lua
 lib/mem/buffer_pool.lua
 lib/mem/ring_buffer.lua
 lib/mem/event.lua

@@ -172,6 +172,7 @@ local function on_addon_loaded()
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
 
   if C.DEBUG then Verdant.Probe.init() end
+  Verdant.GC.init()            -- GC pacing (ported): smooth the incremental collector
   Verdant.Pipeline.init()
   Verdant.Bar.init()
   Verdant.Logo.init()

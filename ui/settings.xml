@@ -1,24 +1,13 @@
 <GuiXml>
   <Controls>
 
-    <!--
-      Verdant settings — a proper movable window. Phase 7.1: was a popup
-      anchored next to the bar via Lua positioning; now it's a TopLevelControl
-      with title, close button, drag handler. Position is persisted in
-      SavedVars.settings.{x,y}. Both bar and graph chrome carry a gear
-      button that targets this same window.
-
-      Phase 7 final addition: a Profile dropdown at the top selects
-      preset combinations. Touching any individual slider switches the
-      profile to "Custom" automatically.
-    -->
     <TopLevelControl name="VerdantSettingsPanel"
                      hidden="true"
                      clampedToScreen="true"
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="280" y="462"/>
+      <Dimensions x="280" y="494"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -257,6 +246,17 @@
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-44"/>
           <Dimensions y="22"/>
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
+        </Button>
+
+        <!-- ── SKILL-view shield orientation toggle (up from floor / hang down) ── -->
+        <Button name="$(parent)ShieldDirBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMLEFT"  offsetX="14"  offsetY="-142"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-142"/>
+          <Dimensions y="22"/>
+          <OnClicked>Verdant.Settings.on_shielddir_click()</OnClicked>
         </Button>
 
         <!-- ── Reset to Defaults button ────────────────────────────────── -->

@@ -199,6 +199,14 @@ function M.MPS_by_group_into(out, now_ms)
   return Verdant.SkillColors.group_shares_into(out, shield_buf, now_ms, in_M)
 end
 
+function M.eHPS_by_ability_into(out, now_ms)
+  return Verdant.SkillColors.ability_shares_into(out, heal_buf, now_ms, in_M)
+end
+
+function M.MPS_by_ability_into(out, now_ms)
+  return Verdant.SkillColors.ability_shares_into(out, shield_buf, now_ms, in_M)
+end
+
 function M.reset()
   log:info("reset: heal=", heal_buf:size(), "overheal=", overheal_buf:size(),
            "shield=", shield_buf:size(), "damage=", damage_buf:size(),

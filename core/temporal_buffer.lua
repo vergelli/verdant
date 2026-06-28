@@ -22,7 +22,8 @@ function M.init(capacity)
   state.data     = {}
   for i = 1, capacity do
     state.data[i] = { t = 0, eHPS = 0, MPS = 0, crit = 0, noncrit = 0,
-                      ehps_groups = { count = 0 }, mps_groups = { count = 0 } }
+                      ehps_groups = { count = 0 }, mps_groups = { count = 0 },
+                      ehps_abilities = { count = 0 }, mps_abilities = { count = 0 } }
   end
   log:info("init: capacity=", capacity)
 end
@@ -34,12 +35,25 @@ local function copy_groups(dst, src)
     local d = dst[i]
     if d == nil then d = {}; dst[i] = d end
     d.r = s.r; d.g = s.g; d.b = s.b; d.a = s.a; d.share = s.share
+    d.key = s.key
+  end
+  dst.count = n
+end
+
+local function copy_abilities(dst, src)
+  local n = (src and (src.count or #src)) or 0
+  for i = 1, n do
+    local s = src[i]
+    local d = dst[i]
+    if d == nil then d = {}; dst[i] = d end
+    d.id = s.id; d.share = s.share; d.key = s.key
+    d.r = s.r; d.g = s.g; d.b = s.b; d.a = s.a
   end
   dst.count = n
 end
 
 
-function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups)
+function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups, ehps_abilities, mps_abilities)
   local slot   = state.data[state.write]
   slot.t       = timestamp
   slot.eHPS    = eHPS
@@ -48,6 +62,8 @@ function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups)
   slot.noncrit = noncrit or 0
   copy_groups(slot.ehps_groups, ehps_groups)
   copy_groups(slot.mps_groups,  mps_groups)
+  copy_abilities(slot.ehps_abilities, ehps_abilities)
+  copy_abilities(slot.mps_abilities,  mps_abilities)
   state.write = (state.write % state.capacity) + 1
   if state.count < state.capacity then
     state.count = state.count + 1
