@@ -3,7 +3,7 @@ local Verdant = Verdant
 
 Verdant.Constants = {
   ADDON_NAME    = "Verdant",
-  VERSION       = "2.1.0",
+  VERSION       = "2.2.0",
   SLASH_COMMAND = "/verdant",
 
   DEBUG         = false,
@@ -48,6 +48,12 @@ Verdant.Constants = {
 
   POOL = {
     EVENT_CAPACITY = 4096,
+  },
+
+  GC = {
+    PACING      = true,
+    STEP_KB     = 2,
+    INTERVAL_MS = 0,
   },
 
   ABILITY_KIND = {

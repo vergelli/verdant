@@ -372,6 +372,7 @@ function M.group_shares_into(out, buf, now_ms, predicate)
     local c = GROUP_COLORS[g] or FALLBACK
     slot.r = c.r; slot.g = c.g; slot.b = c.b; slot.a = c.a
     slot.share = amt / total
+    slot.key = g   -- stable group id (string) for the hover highlight + card name
   end
 
   for i = 2, n do
@@ -387,3 +388,54 @@ function M.group_shares_into(out, buf, now_ms, predicate)
   out.count = n
   return out
 end
+
+local ab_amt = {}
+local ab_grp = {}
+
+function M.ability_shares_into(out, buf, now_ms, predicate)
+  buf:trim(now_ms)
+  for k in pairs(ab_amt) do ab_amt[k] = nil end
+  for k in pairs(ab_grp) do ab_grp[k] = nil end
+  local total = 0
+  for i = buf.head, buf.tail do
+    local e   = buf.entries[i]
+    local amt = e.amount or 0
+    if amt > 0 and (not predicate or predicate(e)) then
+      local id = e.ability_id or 0
+      ab_amt[id] = (ab_amt[id] or 0) + amt
+      if ab_grp[id] == nil then ab_grp[id] = lookup_group(id) end
+      total = total + amt
+    end
+  end
+  if total <= 0 then
+    out.count = 0
+    return out
+  end
+  local n = 0
+  for id, amt in pairs(ab_amt) do
+    n = n + 1
+    local slot = out[n]
+    if slot == nil then slot = {}; out[n] = slot end
+    local g = ab_grp[id] or "other"
+    local c = GROUP_COLORS[g] or FALLBACK
+    slot.id    = id
+    slot.share = amt / total
+    slot.key   = g
+    slot.r = c.r; slot.g = c.g; slot.b = c.b; slot.a = c.a
+  end
+  for i = 2, n do
+    local key = out[i]
+    local ks  = key.share
+    local j   = i - 1
+    while j >= 1 and out[j].share < ks do
+      out[j + 1] = out[j]
+      j = j - 1
+    end
+    out[j + 1] = key
+  end
+  out.count = n
+  return out
+end
+
+function M.ability_icon(id) return GetAbilityIcon(id) or "" end
+function M.ability_name(id) return GetAbilityName(id) or ("#" .. tostring(id)) end

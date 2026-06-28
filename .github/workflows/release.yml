@@ -124,6 +124,15 @@ jobs:
             exit 1
           fi
 
+      - name: Strip hidden/junk files (ESOUI hard rule)
+        # ESOUI moderation rejects any hidden/dot-prefixed file in the zip
+        # (including empty .gitkeep) plus OS junk. Defensive sweep — the tree is
+        # kept clean, but this guarantees a moderator-clean zip regardless.
+        run: |
+          find staging -depth -name '__MACOSX' -type d -exec rm -rf {} +
+          find staging -type f \( -name '.*' -o -name 'Thumbs.db' -o -name 'desktop.ini' \) -delete
+          echo "staging swept of hidden/junk files"
+
       - name: Build zip
         run: |
           cd staging
