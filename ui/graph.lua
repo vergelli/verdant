@@ -75,7 +75,10 @@ local render_current_view   -- forward decl (hover helpers call it before it's d
 local FADE_MS = 120
 local card_fader, crosshair_fader
 
-local CARD_W, CARD_H = 196, 56
+local CARD_W, CARD_H = 210, 56
+local CARD_ROW_H     = 16   -- height of one ability row in the rich hover
+local CARD_MAX_ROWS  = 5    -- top-N abilities shown; rest fold into "+N more"
+local CARD_ROWS_Y0   = 54   -- y where ability rows begin (below name/stat/time)
 local C_CARD_BG     = { r = 0.05, g = 0.11, b = 0.07, a = 0.96 }  -- dark green tint
 local C_CARD_ACCENT = { r = 0.40, g = 0.85, b = 0.52, a = 1.0 }   -- Verdant green accent
 local C_CARD_STAT   = { r = 0.84, g = 0.92, b = 0.86, a = 1.0 }
@@ -354,15 +357,17 @@ local function decimate(cw)
       if not col then col = {}; dec_cols[m] = col end
       col.c = c; col.t = s.t
       col.ems_peak = ems; col.e1 = s.eHPS; col.m1 = s.MPS
-      col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.noncrit = s.noncrit; col.crit = s.crit
-      col.MPS = s.MPS; col.mps_groups = s.mps_groups
+      col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.ehps_abilities = s.ehps_abilities
+      col.noncrit = s.noncrit; col.crit = s.crit
+      col.MPS = s.MPS; col.mps_groups = s.mps_groups; col.mps_abilities = s.mps_abilities
       cur_c = c
     else
       if ems > col.ems_peak then col.ems_peak = ems; col.e1 = s.eHPS; col.m1 = s.MPS end
       if s.eHPS > col.eHPS then    -- eHPS-peak: drives VIEW2-top stack + VIEW3 crit split
-        col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.noncrit = s.noncrit; col.crit = s.crit
+        col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.ehps_abilities = s.ehps_abilities
+        col.noncrit = s.noncrit; col.crit = s.crit
       end
-      if s.MPS > col.MPS then col.MPS = s.MPS; col.mps_groups = s.mps_groups end  -- MPS-peak
+      if s.MPS > col.MPS then col.MPS = s.MPS; col.mps_groups = s.mps_groups; col.mps_abilities = s.mps_abilities end  -- MPS-peak
       col.t = s.t
     end
   end)
@@ -472,33 +477,123 @@ local function build_hover_card()
   time:SetAnchor(TOPLEFT, root, TOPLEFT, 12, 40)
   time:SetDimensions(CARD_W - 20, 12)
 
-  controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time }
+  -- Rich-hover ability rows: [icon] name ............... value · %
+  local rows = {}
+  for i = 1, CARD_MAX_ROWS do
+    local y = CARD_ROWS_Y0 + (i - 1) * CARD_ROW_H
+
+    local icon = WM:CreateControl("VerdantHoverCardIcon" .. i, root, CT_TEXTURE)
+    icon:SetDimensions(13, 13)
+    icon:SetAnchor(TOPLEFT, root, TOPLEFT, 12, y + 1)
+    icon:SetHidden(true)
+
+    local rn = WM:CreateControl("VerdantHoverCardRowName" .. i, root, CT_LABEL)
+    rn:SetFont("ZoFontGameSmall")
+    rn:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    rn:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+    rn:SetColor(C_CARD_STAT.r, C_CARD_STAT.g, C_CARD_STAT.b, 1.0)
+    rn:SetAnchor(TOPLEFT, root, TOPLEFT, 30, y)
+    rn:SetDimensions(108, CARD_ROW_H)
+    rn:SetHidden(true)
+
+    local rv = WM:CreateControl("VerdantHoverCardRowVal" .. i, root, CT_LABEL)
+    rv:SetFont("ZoFontGameSmall")
+    rv:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+    rv:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+    rv:SetColor(C_CARD_TIME.r, C_CARD_TIME.g, C_CARD_TIME.b, 1.0)
+    rv:SetAnchor(TOPRIGHT, root, TOPRIGHT, -8, y)
+    rv:SetDimensions(60, CARD_ROW_H)
+    rv:SetHidden(true)
+
+    rows[i] = { icon = icon, name = rn, val = rv }
+  end
+
+  controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time, rows = rows }
+end
+
+-- Hide every rich-hover ability row (used by moment cards and when no breakdown).
+local function clear_card_rows(card)
+  local rows = card.rows
+  if not rows then return end
+  for i = 1, CARD_MAX_ROWS do
+    local r = rows[i]
+    r.icon:SetHidden(true); r.name:SetHidden(true); r.val:SetHidden(true)
+  end
 end
 
 local function position_card(mx, my)
   local card = controls.card
   local sw, sh = GuiRoot:GetDimensions()
+  local h = card.root:GetHeight()
   local x = mx + 16
   local y = my + 18
   if x + CARD_W > sw - 4 then x = mx - CARD_W - 16 end
   if x < 4 then x = 4 end
-  if y + CARD_H > sh - 4 then y = my - CARD_H - 18 end
+  if y + h > sh - 4 then y = my - h - 18 end
   if y < 4 then y = 4 end
   card.root:ClearAnchors()
   card.root:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, x, y)
   fade_in(card_fader)
 end
 
-local function show_card(band, unit, mx, my, elapsed_ms)
+local function show_card(band, col, unit, mx, my, elapsed_ms)
   local card = controls.card
   if not card then return end
+  local total = band.total or 0
   card.swatch:SetColor(band.r, band.g, band.b, 1.0)
   card.name:SetColor(band.r, band.g, band.b, 1.0)
   card.name:SetText(hover_label(band.key))
   local pct = math_floor((band.share or 0) * 100 + 0.5)
-  local val = (band.share or 0) * (band.total or 0)
+  local val = (band.share or 0) * total
   card.stat:SetText(string_format("%s %s  ·  %d%%", fmt_val(val), unit, pct))
   card.time:SetText("t  " .. fmt_secs(elapsed_ms or 0))
+
+  -- Rich breakdown: the hovered group's individual abilities, ranked (SKILL view).
+  -- Each ability's share is of the whole column, so the rows sum to the group %.
+  clear_card_rows(card)
+  local shown = 0
+  local list = nil
+  if current_view == VIEW_SKILL and col then
+    list = (unit == "MPS") and col.mps_abilities or col.ehps_abilities
+  end
+  if list and (list.count or 0) > 0 then
+    local SC      = Verdant.SkillColors
+    local n       = list.count
+    local matched = 0
+    for a = 1, n do
+      local ab = list[a]
+      if ab and ab.key == band.key then matched = matched + 1 end
+    end
+    for a = 1, n do
+      if shown >= CARD_MAX_ROWS then break end
+      local ab = list[a]
+      if ab and ab.key == band.key then
+        shown = shown + 1
+        local row = card.rows[shown]
+        if shown == CARD_MAX_ROWS and matched > CARD_MAX_ROWS then
+          -- last slot collapses the remaining abilities into one "+N more" line
+          row.icon:SetHidden(true)
+          row.name:SetText(string_format("+%d more", matched - (CARD_MAX_ROWS - 1)))
+          row.name:SetColor(C_CARD_TIME.r, C_CARD_TIME.g, C_CARD_TIME.b, 1.0)
+          row.name:SetHidden(false)
+          row.val:SetText("")
+          row.val:SetHidden(false)
+          break
+        end
+        row.icon:SetTexture(SC.ability_icon(ab.id))
+        row.icon:SetHidden(false)
+        row.name:SetText(SC.ability_name(ab.id))
+        row.name:SetColor(C_CARD_STAT.r, C_CARD_STAT.g, C_CARD_STAT.b, 1.0)
+        row.name:SetHidden(false)
+        local av = (ab.share or 0) * total
+        local ap = math_floor((ab.share or 0) * 100 + 0.5)
+        row.val:SetText(string_format("%s · %d%%", fmt_val(av), ap))
+        row.val:SetHidden(false)
+      end
+    end
+  end
+  card.root:SetHeight((shown > 0) and (CARD_ROWS_Y0 + shown * CARD_ROW_H + 4) or CARD_H)
+
   position_card(mx, my)
 end
 
@@ -510,6 +605,8 @@ local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, 
   card.name:SetText(name_text)
   card.stat:SetText(stat_text)
   card.time:SetText("t  " .. fmt_secs(elapsed_ms or 0))
+  clear_card_rows(card)
+  card.root:SetHeight(CARD_H)
   position_card(mx, my)
 end
 
@@ -521,6 +618,7 @@ local function hit_col(H, i, x, bw, s)
   if not col then col = { bands = {} }; H.cols[i] = col end
   col.x0 = x; col.x1 = x + bw; col.nb = 0; col.t = s.t
   col.ehps = s.e1; col.mps = s.m1; col.crit = s.crit; col.noncrit = s.noncrit
+  col.ehps_abilities = s.ehps_abilities; col.mps_abilities = s.mps_abilities
   return col
 end
 
@@ -585,7 +683,7 @@ local function hover_poll()
 
   local elapsed = (col.t and H.t0) and (col.t - H.t0) or 0
   if band then
-    show_card(band, unit or "HPS", mx, my, elapsed)
+    show_card(band, col, unit or "HPS", mx, my, elapsed)
   elseif current_view == VIEW_EMS then
     show_moment_card(C_EHPS, "Healing",
       string_format("|c%s%s HPS|r  ·  |c%s%s MPS|r",
@@ -756,10 +854,10 @@ local function render_view2()
     t_last = s.t
   end)
   local span_ms    = t_last - t_first
-  local max_shared = math_max(max_ehps, max_mps)
-
-  draw_grid(controls.grid_top, ec, max_shared, 0)
-  draw_grid(controls.grid_bot, mc, max_shared, span_ms)
+  -- Independent per-subplot scales: shields (MPS, bottom) no longer ride the
+  -- healing (eHPS, top) peak. Each canvas fills on its own terms.
+  draw_grid(controls.grid_top, ec, max_ehps, 0)
+  draw_grid(controls.grid_bot, mc, max_mps, span_ms)
 
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local capture = not Verdant.TemporalBuffer.is_recording()
@@ -776,7 +874,7 @@ local function render_view2()
       local left, right = dec_rect(s.c, num_cols, cw)
       local x     = left
       local bw    = math_max(1, right - left - bar_gap)
-      local col_h = math_max(0, math_floor(ch * (s.eHPS / max_shared) + 0.5))
+      local col_h = math_max(0, math_floor(ch * (s.eHPS / max_ehps) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
 
@@ -841,7 +939,7 @@ local function render_view2()
       local left, right = dec_rect(s.c, num_cols, cw)
       local x     = left
       local bw    = math_max(1, right - left - bar_gap)
-      local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_shared) + 0.5))
+      local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_mps) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
 
@@ -1027,6 +1125,8 @@ local prof_exit  = Verdant.Profiler.exit
 
 local sample_ehps_groups = { count = 0 }
 local sample_mps_groups  = { count = 0 }
+local sample_ehps_abilities = { count = 0 }
+local sample_mps_abilities  = { count = 0 }
 
 local function on_sample_update()
   prof_enter("graph.sample_tick")
@@ -1036,7 +1136,11 @@ local function on_sample_update()
   local crit, noncrit = Verdant.Metrics.eHPS_crit_split(now)
   Verdant.Metrics.eHPS_by_group_into(sample_ehps_groups, now)
   Verdant.Metrics.MPS_by_group_into(sample_mps_groups, now)
-  Verdant.TemporalBuffer.push(now, ehps, mps, crit, noncrit, sample_ehps_groups, sample_mps_groups)
+  Verdant.Metrics.eHPS_by_ability_into(sample_ehps_abilities, now)
+  Verdant.Metrics.MPS_by_ability_into(sample_mps_abilities, now)
+  Verdant.TemporalBuffer.push(now, ehps, mps, crit, noncrit,
+                              sample_ehps_groups, sample_mps_groups,
+                              sample_ehps_abilities, sample_mps_abilities)
 
   local elapsed = math_floor((now - recording_start_ms) / 1000)
   controls.status:SetText(string_format("%d:%02d", math_floor(elapsed / 60), elapsed % 60))

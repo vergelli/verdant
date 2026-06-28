@@ -388,3 +388,59 @@ function M.group_shares_into(out, buf, now_ms, predicate)
   out.count = n
   return out
 end
+
+-- Per-ability breakdown for the rich hover. Same windowed buffer as
+-- group_shares_into, but keyed by ability id instead of color group, so the card
+-- can list the individual skills that made up a moment. Runs at sample-tick only
+-- (~1 Hz) and folds into reused scratch -> no hot-path cost, no steady alloc.
+local ab_amt = {}   -- ability_id -> summed amount (reused)
+local ab_grp = {}   -- ability_id -> group key     (reused)
+
+function M.ability_shares_into(out, buf, now_ms, predicate)
+  buf:trim(now_ms)
+  for k in pairs(ab_amt) do ab_amt[k] = nil end
+  for k in pairs(ab_grp) do ab_grp[k] = nil end
+  local total = 0
+  for i = buf.head, buf.tail do
+    local e   = buf.entries[i]
+    local amt = e.amount or 0
+    if amt > 0 and (not predicate or predicate(e)) then
+      local id = e.ability_id or 0
+      ab_amt[id] = (ab_amt[id] or 0) + amt
+      if ab_grp[id] == nil then ab_grp[id] = lookup_group(id) end
+      total = total + amt
+    end
+  end
+  if total <= 0 then
+    out.count = 0
+    return out
+  end
+  local n = 0
+  for id, amt in pairs(ab_amt) do
+    n = n + 1
+    local slot = out[n]
+    if slot == nil then slot = {}; out[n] = slot end
+    local g = ab_grp[id] or "other"
+    local c = GROUP_COLORS[g] or FALLBACK
+    slot.id    = id
+    slot.share = amt / total
+    slot.key   = g   -- owning color group (lets the card filter by hovered band)
+    slot.r = c.r; slot.g = c.g; slot.b = c.b; slot.a = c.a
+  end
+  for i = 2, n do
+    local key = out[i]
+    local ks  = key.share
+    local j   = i - 1
+    while j >= 1 and out[j].share < ks do
+      out[j + 1] = out[j]
+      j = j - 1
+    end
+    out[j + 1] = key
+  end
+  out.count = n
+  return out
+end
+
+-- Lazy icon/name lookups (called post-STOP at hover time, never on the hot path).
+function M.ability_icon(id) return GetAbilityIcon(id) or "" end
+function M.ability_name(id) return GetAbilityName(id) or ("#" .. tostring(id)) end
