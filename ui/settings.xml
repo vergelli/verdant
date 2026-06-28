@@ -18,7 +18,7 @@
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="280" y="462"/>
+      <Dimensions x="280" y="494"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -257,6 +257,17 @@
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-44"/>
           <Dimensions y="22"/>
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
+        </Button>
+
+        <!-- ── SKILL-view shield orientation toggle (up from floor / hang down) ── -->
+        <Button name="$(parent)ShieldDirBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMLEFT"  offsetX="14"  offsetY="-142"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-142"/>
+          <Dimensions y="22"/>
+          <OnClicked>Verdant.Settings.on_shielddir_click()</OnClicked>
         </Button>
 
         <!-- ── Reset to Defaults button ────────────────────────────────── -->

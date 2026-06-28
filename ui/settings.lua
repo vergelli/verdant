@@ -289,6 +289,17 @@ function M.on_bars_click()
                                  or GetString(VERDANT_SETTINGS_BARS_OFF))
 end
 
+local SHIELDDIR_LABEL = { [true] = "Shields: hang down", [false] = "Shields: grow up" }
+
+function M.on_shielddir_click()
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  local now = not (sv.settings.shield_down == true)
+  sv.settings.shield_down = now
+  controls.shielddir_btn:SetText(SHIELDDIR_LABEL[now])
+  Verdant.Graph.set_shield_down(now)
+end
+
 function M.on_profile_selected(id)
   if id == "custom" then
     current_profile = "custom"
@@ -478,6 +489,7 @@ function M.init()
   controls.unknown_label  = VerdantSettingsPanelUnknownLabel
   controls.logo_btn       = VerdantSettingsPanelLogoBtn
   controls.bars_btn       = VerdantSettingsPanelBarsBtn
+  controls.shielddir_btn  = VerdantSettingsPanelShieldDirBtn
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
@@ -493,6 +505,10 @@ function M.init()
                        and Verdant.SavedVars.bar.enabled == false)
   controls.bars_btn:SetText(bars_on and GetString(VERDANT_SETTINGS_BARS_ON)
                                      or GetString(VERDANT_SETTINGS_BARS_OFF))
+
+  local shield_down = (sv.settings.shield_down == true)
+  controls.shielddir_btn:SetText(SHIELDDIR_LABEL[shield_down])
+  Verdant.Graph.set_shield_down(shield_down)
 
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)
   profile_combo:SetSortsItems(false)

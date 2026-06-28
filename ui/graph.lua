@@ -60,6 +60,11 @@ local VIEW_CRIT   = 3
 local VIEW_LABELS = { "EMS", "SKILL", "CRIT" }
 local current_view = VIEW_EMS
 
+-- SKILL view shield orientation: false = shields grow UP from the subplot floor
+-- (default); true = shields hang DOWN from the ceiling, mirroring the healing bars
+-- above them (Verditer-OUTCOME-style diverging look). Toggled from settings.
+local shield_down = false
+
 -- ── Hover (Datadog-style, ported from Verditer) ───────────────────────────────
 -- Verdant has THREE canvases: the main one (VIEW_EMS / VIEW_CRIT) and the SKILL
 -- view's split top (eHPS) + bottom (MPS). Each gets its own hit index. Frozen-session
@@ -929,7 +934,8 @@ local function render_view2()
   end
 
   if max_mps > 0 then
-    local ch_plot = math_max(1, mc:GetHeight() - TIME_STRIP_H)
+    local mc_h    = mc:GetHeight()
+    local ch_plot = math_max(1, mc_h - TIME_STRIP_H)
     local xs      = r2_xs_bot
     local col_hs  = r2_colh_bot
     if capture then hit_begin(hit_bot, m) end
@@ -952,7 +958,11 @@ local function render_view2()
         local seg_h = math_max(1, math_floor(col_h * grp.share + 0.5))
         local t = controls.pool_skill_bot:AcquireObject()
         t:ClearAnchors()
-        t:SetAnchor(BOTTOMLEFT, mc, BOTTOMLEFT, x, -(y_off + TIME_STRIP_H))
+        if shield_down then
+          t:SetAnchor(TOPLEFT, mc, TOPLEFT, x, y_off)   -- hang from the ceiling, grow down
+        else
+          t:SetAnchor(BOTTOMLEFT, mc, BOTTOMLEFT, x, -(y_off + TIME_STRIP_H))  -- grow up from floor
+        end
         t:SetWidth(bw)
         t:SetHeight(seg_h)
         if hk ~= nil and grp.key ~= hk then
@@ -968,8 +978,13 @@ local function render_view2()
           local band = col.bands[nb]
           if not band then band = {}; col.bands[nb] = band end
           band.key   = grp.key
-          band.lo    = TIME_STRIP_H + y_off   -- bot canvas anchors at -(y_off + TIME_STRIP_H)
-          band.hi    = TIME_STRIP_H + y_off + seg_h
+          if shield_down then
+            band.lo  = mc_h - (y_off + seg_h)   -- mirror: convert top-down stack to above-bottom
+            band.hi  = mc_h - y_off
+          else
+            band.lo  = TIME_STRIP_H + y_off     -- bot canvas anchors at -(y_off + TIME_STRIP_H)
+            band.hi  = TIME_STRIP_H + y_off + seg_h
+          end
           band.share = grp.share
           band.total = s.MPS
           band.r = grp.r; band.g = grp.g; band.b = grp.b
@@ -984,8 +999,13 @@ local function render_view2()
       for i = 2, m do
         local lm = controls.pool_line_skill_bot:AcquireObject()
         lm:ClearAnchors()
-        lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(col_hs[i-1] + TIME_STRIP_H))
-        lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(col_hs[i]   + TIME_STRIP_H))
+        if shield_down then
+          lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(mc_h - col_hs[i-1]))
+          lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(mc_h - col_hs[i]))
+        else
+          lm:SetAnchor(BOTTOMLEFT,  mc, BOTTOMLEFT, xs[i-1], -(col_hs[i-1] + TIME_STRIP_H))
+          lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(col_hs[i]   + TIME_STRIP_H))
+        end
         lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
         lm:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
         lm:SetHidden(false)
@@ -1235,6 +1255,15 @@ end
 function M.set_viewport_alpha(a)
   VerdantGraphWindowViewportBg:SetCenterColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, a)
 end
+
+function M.set_shield_down(on)
+  shield_down = on and true or false
+  if current_view == VIEW_SKILL and controls.window and not controls.window:IsHidden() then
+    render_current_view()
+  end
+end
+
+function M.get_shield_down() return shield_down end
 
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
