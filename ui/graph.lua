@@ -222,7 +222,7 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip)
   if has_y then
     for i = 1, N_HGRID do
       local frac = i / (N_HGRID + 1)
-      local pos  = flip and (1 - frac) or frac   -- flip: 0 at top, max at bottom (hang-down)
+      local pos  = flip and (1 - frac) or frac
       local y    = y_base + math_floor(ch_plot * pos)
 
       local gl = grid.hlines[i]
@@ -315,9 +315,6 @@ local function layout_skill_area()
   controls.ehps_canvas:SetDimensions(sw, top_h)
 
   if shield_down then
-    -- Diverging: shield canvas butts directly under the healing floor (no mid-label
-    -- gap), so the hanging bars mirror the healing bars. The "Shields" title drops to
-    -- the very bottom — top region reads as healing, bottom region as shields.
     controls.mps_canvas:ClearAnchors()
     controls.mps_canvas:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, LABEL_H + top_h)
     controls.mps_canvas:SetDimensions(sw, bot_h)
