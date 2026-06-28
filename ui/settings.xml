@@ -1,17 +1,6 @@
 <GuiXml>
   <Controls>
 
-    <!--
-      Verdant settings — a proper movable window. Phase 7.1: was a popup
-      anchored next to the bar via Lua positioning; now it's a TopLevelControl
-      with title, close button, drag handler. Position is persisted in
-      SavedVars.settings.{x,y}. Both bar and graph chrome carry a gear
-      button that targets this same window.
-
-      Phase 7 final addition: a Profile dropdown at the top selects
-      preset combinations. Touching any individual slider switches the
-      profile to "Custom" automatically.
-    -->
     <TopLevelControl name="VerdantSettingsPanel"
                      hidden="true"
                      clampedToScreen="true"

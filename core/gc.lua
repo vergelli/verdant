@@ -1,10 +1,3 @@
---* core/gc.lua  (ported from Verditer — APOD GC-pacing lever)
---*
---* Lua's incremental collector only steps when the heap crosses a threshold, so it
---* bursts into multi-ms atomic pauses that land inside render frames (visible hitch).
---* Driving a small step every frame keeps it ahead so it never needs a big pause
---* (lua-users "GC In Real-Time Games"). Conservative + tunable (Constants.GC); ships
---* in release (it's a real optimization). Flip Constants.GC.PACING=false to A/B.
 
 Verdant = Verdant or {}
 local Verdant = Verdant

@@ -1,14 +1,6 @@
 <GuiXml>
   <Controls>
 
-    <!--
-      Unknown-contributions assignment window. Opened from the Settings panel
-      (which closes itself to avoid window flood). Lists every abilityId that
-      fell through classification (icon + name) and lets the user pick a
-      category from a colored flyout; the pick persists to SavedVars and takes
-      effect live (no /reloadui). Rows are built by a ZO_ObjectPool in
-      ui/assign.lua; the Flyout is declared LAST so it draws over the rows.
-    -->
     <TopLevelControl name="VerdantAssignPanel"
                      hidden="true"
                      clampedToScreen="true"

@@ -389,12 +389,8 @@ function M.group_shares_into(out, buf, now_ms, predicate)
   return out
 end
 
--- Per-ability breakdown for the rich hover. Same windowed buffer as
--- group_shares_into, but keyed by ability id instead of color group, so the card
--- can list the individual skills that made up a moment. Runs at sample-tick only
--- (~1 Hz) and folds into reused scratch -> no hot-path cost, no steady alloc.
-local ab_amt = {}   -- ability_id -> summed amount (reused)
-local ab_grp = {}   -- ability_id -> group key     (reused)
+local ab_amt = {}
+local ab_grp = {}
 
 function M.ability_shares_into(out, buf, now_ms, predicate)
   buf:trim(now_ms)
@@ -424,7 +420,7 @@ function M.ability_shares_into(out, buf, now_ms, predicate)
     local c = GROUP_COLORS[g] or FALLBACK
     slot.id    = id
     slot.share = amt / total
-    slot.key   = g   -- owning color group (lets the card filter by hovered band)
+    slot.key   = g
     slot.r = c.r; slot.g = c.g; slot.b = c.b; slot.a = c.a
   end
   for i = 2, n do
@@ -441,6 +437,5 @@ function M.ability_shares_into(out, buf, now_ms, predicate)
   return out
 end
 
--- Lazy icon/name lookups (called post-STOP at hover time, never on the hot path).
 function M.ability_icon(id) return GetAbilityIcon(id) or "" end
 function M.ability_name(id) return GetAbilityName(id) or ("#" .. tostring(id)) end

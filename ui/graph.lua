@@ -75,17 +75,17 @@ local hit_main = { cols = {}, n = 0 }
 local hit_top  = { cols = {}, n = 0 }
 local hit_bot  = { cols = {}, n = 0 }
 local C_DIM_BIAS = 0.05
-local render_current_view   -- forward decl (hover helpers call it before it's defined)
+local render_current_view
 
 local FADE_MS = 120
 local card_fader, crosshair_fader
 
 local CARD_W, CARD_H = 210, 56
-local CARD_ROW_H     = 16   -- height of one ability row in the rich hover
-local CARD_MAX_ROWS  = 5    -- top-N abilities shown; rest fold into "+N more"
-local CARD_ROWS_Y0   = 54   -- y where ability rows begin (below name/stat/time)
-local C_CARD_BG     = { r = 0.05, g = 0.11, b = 0.07, a = 0.96 }  -- dark green tint
-local C_CARD_ACCENT = { r = 0.40, g = 0.85, b = 0.52, a = 1.0 }   -- Verdant green accent
+local CARD_ROW_H     = 16
+local CARD_MAX_ROWS  = 5
+local CARD_ROWS_Y0   = 54
+local C_CARD_BG     = { r = 0.05, g = 0.11, b = 0.07, a = 0.96 }
+local C_CARD_ACCENT = { r = 0.40, g = 0.85, b = 0.52, a = 1.0 }
 local C_CARD_STAT   = { r = 0.84, g = 0.92, b = 0.86, a = 1.0 }
 local C_CARD_NAME   = { r = 0.90, g = 1.00, b = 0.92, a = 1.0 }
 local C_CARD_TIME   = { r = 0.64, g = 0.72, b = 0.66, a = 1.0 }
@@ -341,19 +341,6 @@ local r2_xs_top, r2_colh_top       = {}, {}
 local r2_xs_bot, r2_colh_bot       = {}, {}
 local r3_xs, r3_top_hs             = {}, {}
 
--- ── Decimation (ported from Verditer; M4-style, specialized to bars) ──────────
--- Render cost was O(samples): drawing samples × groups controls, which at high
--- sample-rate × long window blows past the canvas pixel count → freezes / 303
--- disconnect. Fix: never draw more columns than the canvas has pixels. Bucket the
--- buffer's logical slots into num_cols pixel columns and fold each with a SPIKE-
--- PRESERVING reducer (MAX — Verdant is healing/shielding output, "spike" = max).
--- Verdant's views use DIFFERENT primary metrics, so we keep THREE peak samples per
--- column to keep every stack coherent + bounded (a stacked height stays ≤ its global
--- max only if its parts come from ONE real sample):
---   ems-peak  (max eHPS+MPS)  -> e1 / m1                     for VIEW1 (eHPS+MPS bars)
---   ehps-peak (max eHPS)      -> eHPS / ehps_groups / crit   for VIEW2-top + VIEW3
---   mps-peak  (max MPS)       -> MPS / mps_groups            for VIEW2-bot
--- No hover hit-index here (Verdant has none) → simpler than Verditer.
 local MIN_COL_PX = 2
 local dec_cols   = {}
 
@@ -395,15 +382,12 @@ local function decimate(cw)
   return m, num_cols, col_w, bar_gap
 end
 
--- Pixel-snapped column rect (also kills the moiré): integer left/right via cumulative
--- rounding so columns tile the pixel grid exactly.
 local function dec_rect(c, num_cols, cw)
   local left  = math_floor(c       * cw / num_cols + 0.5)
   local right = math_floor((c + 1) * cw / num_cols + 0.5)
   return left, right
 end
 
--- ── Hover helpers (ported from Verditer; parameterized by hit table H) ─────────
 local function make_fader(control)
   return { anim = ZO_AlphaAnimation:New(control), control = control, visible = false }
 end
@@ -496,7 +480,6 @@ local function build_hover_card()
   time:SetAnchor(TOPLEFT, root, TOPLEFT, 12, 40)
   time:SetDimensions(CARD_W - 20, 12)
 
-  -- Rich-hover ability rows: [icon] name ............... value · %
   local rows = {}
   for i = 1, CARD_MAX_ROWS do
     local y = CARD_ROWS_Y0 + (i - 1) * CARD_ROW_H
@@ -530,7 +513,6 @@ local function build_hover_card()
   controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time, rows = rows }
 end
 
--- Hide every rich-hover ability row (used by moment cards and when no breakdown).
 local function clear_card_rows(card)
   local rows = card.rows
   if not rows then return end
@@ -567,8 +549,6 @@ local function show_card(band, col, unit, mx, my, elapsed_ms)
   card.stat:SetText(string_format("%s %s  ·  %d%%", fmt_val(val), unit, pct))
   card.time:SetText("t  " .. fmt_secs(elapsed_ms or 0))
 
-  -- Rich breakdown: the hovered group's individual abilities, ranked (SKILL view).
-  -- Each ability's share is of the whole column, so the rows sum to the group %.
   clear_card_rows(card)
   local shown = 0
   local list = nil
@@ -590,7 +570,6 @@ local function show_card(band, col, unit, mx, my, elapsed_ms)
         shown = shown + 1
         local row = card.rows[shown]
         if shown == CARD_MAX_ROWS and matched > CARD_MAX_ROWS then
-          -- last slot collapses the remaining abilities into one "+N more" line
           row.icon:SetHidden(true)
           row.name:SetText(string_format("+%d more", matched - (CARD_MAX_ROWS - 1)))
           row.name:SetColor(C_CARD_TIME.r, C_CARD_TIME.g, C_CARD_TIME.b, 1.0)
@@ -657,7 +636,6 @@ local function hover_pick(H, rel_x, height_above)
   return band, col
 end
 
--- probe a canvas: returns inside?, band, col, rel-height baseline handled by caller
 local function probe(canvas, H, mx, my)
   local rel_x = mx - canvas:GetLeft()
   local above = canvas:GetBottom() - my
@@ -793,7 +771,7 @@ local function render_view1()
     if capture then hit_col(hit_main, i, left, right - left, s) end
     local xc = x + bw * 0.5
 
-    local ehps_h = math_max(0, math_floor(ch_plot * (s.e1 / max_ems) + 0.5))   -- ems-peak parts
+    local ehps_h = math_max(0, math_floor(ch_plot * (s.e1 / max_ems) + 0.5))
     local mps_h  = math_max(0, math_floor(ch_plot * (s.m1 / max_ems) + 0.5))
 
     xs[i]      = xc
@@ -873,14 +851,12 @@ local function render_view2()
     t_last = s.t
   end)
   local span_ms    = t_last - t_first
-  -- Independent per-subplot scales: shields (MPS, bottom) no longer ride the
-  -- healing (eHPS, top) peak. Each canvas fills on its own terms.
   draw_grid(controls.grid_top, ec, max_ehps, 0)
   draw_grid(controls.grid_bot, mc, max_mps, span_ms, shield_down)
 
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local capture = not Verdant.TemporalBuffer.is_recording()
-  local hk = hover_key   -- nil = no highlight; else dim every group but this key
+  local hk = hover_key
 
   if max_ehps > 0 then
     local ch     = ec:GetHeight()
@@ -922,7 +898,7 @@ local function render_view2()
           local band = col.bands[nb]
           if not band then band = {}; col.bands[nb] = band end
           band.key   = grp.key
-          band.lo    = y_off                 -- top canvas anchors at -y_off (no time strip)
+          band.lo    = y_off
           band.hi    = y_off + seg_h
           band.share = grp.share
           band.total = s.eHPS
@@ -973,9 +949,9 @@ local function render_view2()
         local t = controls.pool_skill_bot:AcquireObject()
         t:ClearAnchors()
         if shield_down then
-          t:SetAnchor(TOPLEFT, mc, TOPLEFT, x, y_off)   -- hang from the ceiling, grow down
+          t:SetAnchor(TOPLEFT, mc, TOPLEFT, x, y_off)
         else
-          t:SetAnchor(BOTTOMLEFT, mc, BOTTOMLEFT, x, -(y_off + TIME_STRIP_H))  -- grow up from floor
+          t:SetAnchor(BOTTOMLEFT, mc, BOTTOMLEFT, x, -(y_off + TIME_STRIP_H))
         end
         t:SetWidth(bw)
         t:SetHeight(seg_h)
@@ -993,10 +969,10 @@ local function render_view2()
           if not band then band = {}; col.bands[nb] = band end
           band.key   = grp.key
           if shield_down then
-            band.lo  = mc_h - (y_off + seg_h)   -- mirror: convert top-down stack to above-bottom
+            band.lo  = mc_h - (y_off + seg_h)
             band.hi  = mc_h - y_off
           else
-            band.lo  = TIME_STRIP_H + y_off     -- bot canvas anchors at -(y_off + TIME_STRIP_H)
+            band.lo  = TIME_STRIP_H + y_off
             band.hi  = TIME_STRIP_H + y_off + seg_h
           end
           band.share = grp.share
@@ -1021,7 +997,7 @@ local function render_view2()
           lm:SetAnchor(BOTTOMRIGHT, mc, BOTTOMLEFT, xs[i],   -(col_hs[i]   + TIME_STRIP_H))
         end
         lm:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, C_LINE_EMS.a)
-        lm:SetThickness(LINE_THICKNESS)   -- invalidate cached segment geometry
+        lm:SetThickness(LINE_THICKNESS)
         lm:SetHidden(false)
       end
     end
@@ -1137,7 +1113,7 @@ end
 local function set_view(v)
   current_view = v
   controls.view_label:SetText(VIEW_LABELS[v])
-  hover_key = nil   -- changing view drops any highlight from the old one
+  hover_key = nil
 
   local use_main_canvas = (v == VIEW_EMS or v == VIEW_CRIT)
   controls.canvas:SetHidden(not use_main_canvas)
@@ -1362,16 +1338,14 @@ function M.init()
   controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
   controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
 
-  -- colour-code the action buttons (brand colour propagated, ported from Verditer):
-  -- record = Verdant green, stop = amber, flush = danger red.
   local function tint_btn(btn, r, g, b)
     btn:SetNormalFontColor(r, g, b, 1)
     btn:SetMouseOverFontColor(math.min(1, r + 0.12), math.min(1, g + 0.12), math.min(1, b + 0.12), 1)
     btn:SetPressedFontColor(r * 0.85, g * 0.85, b * 0.85, 1)
   end
-  tint_btn(controls.btn_record, 0.46, 0.86, 0.55)   -- Verdant green
-  tint_btn(controls.btn_stop,   0.96, 0.80, 0.34)   -- amber
-  tint_btn(controls.btn_flush,  0.90, 0.40, 0.36)   -- danger red
+  tint_btn(controls.btn_record, 0.46, 0.86, 0.55)
+  tint_btn(controls.btn_stop,   0.96, 0.80, 0.34)
+  tint_btn(controls.btn_flush,  0.90, 0.40, 0.36)
 
   controls.status:SetText("")
   controls.status:SetColor(0.65, 0.65, 0.65, 1)
@@ -1389,9 +1363,6 @@ function M.init()
   controls.mps_label:SetText("MPS")
   controls.mps_label:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, 0.80)
 
-  -- hover (Datadog scrubber): card + crosshair + a hit layer per canvas (main / skill
-  -- top / skill bottom). The crosshair is parented to the window so it can anchor to
-  -- whichever canvas the cursor is over.
   build_hover_card()
   card_fader = make_fader(controls.card.root)
 

@@ -46,10 +46,6 @@ local HEAL_PRESETS,   HEAL_LABELS   = range_presets(1, 30)
 local SHIELD_PRESETS, SHIELD_LABELS = range_presets(1, 30)
 local HEAL_DEFAULT   = 5000
 local SHIELD_DEFAULT = 10000
-
--- Sample-rate cap 5 Hz (ported from Verditer). Nyquist: combat is ~1s-scale and the
--- per-second metrics are already windowed, so >5 Hz only adds redundant bars. Old 10 Hz
--- SavedVars clamp to 5 Hz via nearest_idx on load.
 local SAMPLE_MAX_HZ  = 5
 local SAMPLE_PRESETS = {}
 local SAMPLE_LABELS  = {}

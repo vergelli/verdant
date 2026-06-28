@@ -26,22 +26,21 @@ local tostring    = tostring
 local math_min    = math.min
 local table_sort  = table.sort
 
--- ── config ────────────────────────────────────────────────────────────────
-local EVENT_CAP   = 200   -- ring buffer capacity for discrete events
-local TS_CAP      = 120   -- timeseries samples (1 Hz → 2 min of history)
-local TICK_MS     = 1000  -- sample interval
 
--- ── state ─────────────────────────────────────────────────────────────────
-local counters    = {}    -- [key:string] = number
-local ev_buf      = {}    -- ring of { t, cat, payload }
-local ev_head     = 0     -- next write index (1-based, wraps)
-local ev_count    = 0     -- total events ever logged (for overflow detection)
-local ts_buf      = {}    -- ring of { t, snap }
+local EVENT_CAP   = 200
+local TS_CAP      = 120
+local TICK_MS     = 1000
+
+
+local counters    = {}
+local ev_buf      = {}
+local ev_head     = 0
+local ev_count    = 0
+local ts_buf      = {}
 local ts_head     = 0
 local ts_count    = 0
 local start_time  = 0
 
--- ── counters ──────────────────────────────────────────────────────────────
 function M.bump(key, n)
   counters[key] = (counters[key] or 0) + (n or 1)
 end
@@ -50,24 +49,19 @@ function M.get(key)
   return counters[key] or 0
 end
 
--- ── event log ─────────────────────────────────────────────────────────────
 function M.log_event(cat, payload)
   ev_head = (ev_head % EVENT_CAP) + 1
   ev_buf[ev_head] = { t = GetGameTimeMilliseconds(), cat = cat, p = payload }
   ev_count = ev_count + 1
 end
 
--- ── timeseries ────────────────────────────────────────────────────────────
 local function ts_sample()
   local snap = {
     t      = GetGameTimeMilliseconds(),
-    -- engine ingestion totals
     heals  = counters["engine.heal.accepted"]      or 0,
     shields= counters["engine.shield.accepted"]    or 0,
     dmg    = counters["engine.damage.accepted"]    or 0,
-    -- groupset size
     grp_sz = Verdant.GroupSet and Verdant.GroupSet.size() or 0,
-    -- live metric snapshot (contribution summary)
     metric = (function()
       if not Verdant.Metrics then return nil end
       local ok, r = pcall(Verdant.Metrics.contribution, GetGameTimeMilliseconds())
@@ -80,14 +74,11 @@ local function ts_sample()
   ts_count = ts_count + 1
 end
 
--- ── snapshot (for SavedVars) ───────────────────────────────────────────────
 function M.snapshot()
-  -- ordered copy of event ring (oldest → newest)
   local events = {}
   if ev_count <= EVENT_CAP then
     for i = 1, ev_count do events[i] = ev_buf[i] end
   else
-    -- ring has wrapped; start from ev_head+1 (oldest)
     local n = 0
     for i = 1, EVENT_CAP do
       local idx = (ev_head - 1 + i) % EVENT_CAP + 1
@@ -96,7 +87,6 @@ function M.snapshot()
     end
   end
 
-  -- ordered timeseries
   local ts = {}
   local ts_len = math.min(ts_count, TS_CAP)
   if ts_count <= TS_CAP then
@@ -110,7 +100,6 @@ function M.snapshot()
     end
   end
 
-  -- module snapshots
   local group_snap    = Verdant.GroupSet     and Verdant.GroupSet.snapshot()     or {}
   local coverage_snap = Verdant.Coverage     and Verdant.Coverage.snapshot()     or {}
   local shield_snap   = Verdant.ShieldRegistry and Verdant.ShieldRegistry.snapshot() or {}
@@ -130,9 +119,6 @@ function M.snapshot()
   }
 end
 
--- ── diag dump (/verdant diag) ─────────────────────────────────────────────
--- In DEBUG, output goes to the CopyBox (selectable / copyable). Otherwise
--- chat output as before. The CopyBox itself also no-ops outside DEBUG.
 local function build_diag_lines()
   local lines = {}
   lines[#lines+1] = "[diag] uptime=" .. (GetGameTimeMilliseconds() - start_time)
@@ -234,7 +220,6 @@ function M.full_report(include_gc)
   end
 end
 
--- ── reset ─────────────────────────────────────────────────────────────────
 function M.reset()
   counters = {}
   ev_buf   = {}
@@ -246,7 +231,6 @@ function M.reset()
   start_time = GetGameTimeMilliseconds()
 end
 
--- ── init ──────────────────────────────────────────────────────────────────
 function M.init()
   start_time = GetGameTimeMilliseconds()
   Verdant.zenimax.events.register_update("Verdant_DiagTick", TICK_MS, ts_sample)
@@ -297,7 +281,6 @@ function M.gc_probe_lines(n)
   return lines
 end
 
--- Standalone /verdant gcprobe → its own CopyBox.
 function M.gc_probe(n)
   local lines = M.gc_probe_lines(n)
   if Verdant.CopyBox then

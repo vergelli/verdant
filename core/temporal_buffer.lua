@@ -35,12 +35,11 @@ local function copy_groups(dst, src)
     local d = dst[i]
     if d == nil then d = {}; dst[i] = d end
     d.r = s.r; d.g = s.g; d.b = s.b; d.a = s.a; d.share = s.share
-    d.key = s.key   -- stable group id (hover highlight + card name)
+    d.key = s.key
   end
   dst.count = n
 end
 
--- Per-ability rows for the rich hover: id + share + owning group key + color.
 local function copy_abilities(dst, src)
   local n = (src and (src.count or #src)) or 0
   for i = 1, n do
