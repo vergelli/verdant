@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1] - 2026-06-06
+
+Packaging fix — removed stray empty `.gitkeep` placeholder files from the
+distributed zip (flagged on upload). No code or behavior changes from 2.1.0.
+
+---
+
 ## [2.1.0] - 2026-06-07
 
 A feature + performance pass on top of the 2.0.0 rewrite. New CRIT view,
