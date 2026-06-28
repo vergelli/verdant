@@ -24,6 +24,9 @@ at any sample rate or window length.
 - **Independent SKILL-view scales** — healing (eHPS) and shields (MPS) now use
   separate vertical scales, so shields are no longer squashed against the
   healing peak.
+- **Sampling rate capped at 5 Hz** (was 10) — above ~5 Hz only adds redundant
+  bars, so the cap keeps long recordings light. Existing presets above 5 Hz
+  snap down when the settings panel is next opened.
 
 ---
 

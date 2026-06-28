@@ -7,7 +7,7 @@
 ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![Verdant logo](docs/assets/verdant-readme-header.png)
+![Verdant logo](docs/assets/verdant-readme-header-2.png)
 
 > *[Vermilion](https://github.com/vergelli/Vermilion)'s good brother.*
 
