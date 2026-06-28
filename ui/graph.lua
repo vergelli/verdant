@@ -201,7 +201,7 @@ local function hide_grid(grid)
   grid.time_r:SetHidden(true)
 end
 
-local function draw_grid(grid, canvas, max_val, span_ms)
+local function draw_grid(grid, canvas, max_val, span_ms, flip)
   local cw = canvas:GetWidth()
   local ch = canvas:GetHeight()
   if cw <= 0 or ch <= 0 then
@@ -222,7 +222,8 @@ local function draw_grid(grid, canvas, max_val, span_ms)
   if has_y then
     for i = 1, N_HGRID do
       local frac = i / (N_HGRID + 1)
-      local y    = y_base + math_floor(ch_plot * frac)
+      local pos  = flip and (1 - frac) or frac   -- flip: 0 at top, max at bottom (hang-down)
+      local y    = y_base + math_floor(ch_plot * pos)
 
       local gl = grid.hlines[i]
       gl:ClearAnchors()
@@ -313,13 +314,26 @@ local function layout_skill_area()
   controls.ehps_canvas:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, LABEL_H)
   controls.ehps_canvas:SetDimensions(sw, top_h)
 
-  controls.mps_label:ClearAnchors()
-  controls.mps_label:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, mid_y)
-  controls.mps_label:SetDimensions(sw, LABEL_H)
+  if shield_down then
+    -- Diverging: shield canvas butts directly under the healing floor (no mid-label
+    -- gap), so the hanging bars mirror the healing bars. The "Shields" title drops to
+    -- the very bottom — top region reads as healing, bottom region as shields.
+    controls.mps_canvas:ClearAnchors()
+    controls.mps_canvas:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, LABEL_H + top_h)
+    controls.mps_canvas:SetDimensions(sw, bot_h)
 
-  controls.mps_canvas:ClearAnchors()
-  controls.mps_canvas:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, mid_y + LABEL_H)
-  controls.mps_canvas:SetDimensions(sw, bot_h)
+    controls.mps_label:ClearAnchors()
+    controls.mps_label:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, LABEL_H + top_h + bot_h + 2)
+    controls.mps_label:SetDimensions(sw, LABEL_H)
+  else
+    controls.mps_label:ClearAnchors()
+    controls.mps_label:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, mid_y)
+    controls.mps_label:SetDimensions(sw, LABEL_H)
+
+    controls.mps_canvas:ClearAnchors()
+    controls.mps_canvas:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, mid_y + LABEL_H)
+    controls.mps_canvas:SetDimensions(sw, bot_h)
+  end
 end
 
 local r1_xs, r1_ehps_hs, r1_ems_hs = {}, {}, {}
@@ -862,7 +876,7 @@ local function render_view2()
   -- Independent per-subplot scales: shields (MPS, bottom) no longer ride the
   -- healing (eHPS, top) peak. Each canvas fills on its own terms.
   draw_grid(controls.grid_top, ec, max_ehps, 0)
-  draw_grid(controls.grid_bot, mc, max_mps, span_ms)
+  draw_grid(controls.grid_bot, mc, max_mps, span_ms, shield_down)
 
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local capture = not Verdant.TemporalBuffer.is_recording()
