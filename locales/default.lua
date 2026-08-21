@@ -53,6 +53,12 @@ ZO_CreateStringId("VERDANT_PROFILE_DUNGEONS",        "Group Dungeons")
 ZO_CreateStringId("VERDANT_PROFILE_TRIALS",          "Trials")
 ZO_CreateStringId("VERDANT_PROFILE_PVP",             "PvP")
 ZO_CreateStringId("VERDANT_PROFILE_CUSTOM",          "Custom")
+ZO_CreateStringId("VERDANT_SETTINGS_SAVE_PROFILE",   "Save")
+ZO_CreateStringId("VERDANT_SETTINGS_DELETE_PROFILE", "Delete")
+ZO_CreateStringId("VERDANT_PROFILE_NAME_HINT",       "Type a name for the profile first.")
+ZO_CreateStringId("VERDANT_PROFILE_DELETE_HINT",     "Select one of your saved profiles first.")
+ZO_CreateStringId("VERDANT_PROFILE_SAVED",           "Profile '%s' saved.")
+ZO_CreateStringId("VERDANT_PROFILE_DELETED",         "Profile '%s' deleted.")
 
 ZO_CreateStringId("VERDANT_WARN_HEAVY_BUFFER", "%ds x %d Hz = %d samples may impact FPS. Consider lower sample rate for long windows.")
 

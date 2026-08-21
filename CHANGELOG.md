@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **User-savable profiles** — type a name in the settings panel and Save to
+  store the current configuration as your own profile (marked with * in the
+  dropdown). Load it any time from the dropdown, overwrite it by saving with
+  the name selected, or Delete it. The built-in presets stay as before.
 - **Group damage overlay** — the EMS view now draws incoming group damage as
   a faint red line behind the healing bars, so you can see whether your
   output lined up with when the group was actually taking damage. The hover
