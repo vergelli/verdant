@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+### Fixed
+- **Duplicate buff rows** — buffs whose single cast emits several ability ids
+  (Combat Prayer, Channeled Focus, Warding Contingency...) now merge into one
+  row by name; a unit holding two ids of the same buff counts as one holder.
+  The report lists the merged ids and the classified group per row.
+- **BUFFS rows vs window height** — the row cap is gone: resizing the window
+  vertically now reveals more rows (bars stop stretching past 26px), so the
+  "+N more" hint is finally honest. Tracker capacity raised 24 → 48.
+- **Buffs now have their own identity color** — unclassified buffs render in
+  a dedicated berry tone (computed as the most perceptually distant hue from
+  the existing 22-color palette) instead of grey.
+- **Session summary placement** — the AVG/PEAK/CRIT chip moved out of the
+  viewport into its own strip in the window header, under the button row.
+- **Profile save UX** — the name field sits right under the profile dropdown
+  with a "save profile as..." hint instead of hiding at the bottom.
+- **Bogus peak timestamp** — sessions with zero healing no longer report a
+  negative `peak_at` in the summary.
+
 ### Changed
 - **UI consolidation pass** — title-bar buttons of the graph window now share
   one vertical center line; the summary chip uses the chart's own encoding
