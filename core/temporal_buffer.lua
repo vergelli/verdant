@@ -95,6 +95,49 @@ function M.stop_recording()
   log:info("stop_recording: count=", state.count, "/", state.capacity)
 end
 
+local summary_scratch = {
+  count = 0, dur_ms = 0, avg_ems = 0, peak_ems = 0, peak_t_off = 0,
+  crit_pct = 0, active_pct = 0, total_heal = 0, total_shield = 0,
+}
+
+function M.summary()
+  local s = summary_scratch
+  s.count = state.count
+  s.dur_ms = 0; s.avg_ems = 0; s.peak_ems = 0; s.peak_t_off = 0
+  s.crit_pct = 0; s.active_pct = 0; s.total_heal = 0; s.total_shield = 0
+  if state.count == 0 then return s end
+
+  local t0, t_prev = 0, 0
+  local sum_ems, peak_ems, peak_t = 0, 0, 0
+  local sum_crit, sum_noncrit = 0, 0
+  local active_n = 0
+
+  M.iterate(function(i, sample)
+    local ems = sample.eHPS + sample.MPS
+    sum_ems = sum_ems + ems
+    if ems > peak_ems then peak_ems = ems; peak_t = sample.t end
+    sum_crit    = sum_crit    + sample.crit
+    sum_noncrit = sum_noncrit + sample.noncrit
+    if ems > 0 then active_n = active_n + 1 end
+    if i == 1 then t0 = sample.t end
+    if i > 1 then
+      local dt = (sample.t - t_prev) / 1000
+      s.total_heal   = s.total_heal   + sample.eHPS * dt
+      s.total_shield = s.total_shield + sample.MPS  * dt
+    end
+    t_prev = sample.t
+  end)
+
+  s.dur_ms     = t_prev - t0
+  s.avg_ems    = sum_ems / state.count
+  s.peak_ems   = peak_ems
+  s.peak_t_off = peak_t - t0
+  s.active_pct = active_n / state.count
+  local heal_total = sum_crit + sum_noncrit
+  if heal_total > 0 then s.crit_pct = sum_crit / heal_total end
+  return s
+end
+
 function M.clear()
   log:info("clear: discarding", state.count, "samples")
   state.write = 1

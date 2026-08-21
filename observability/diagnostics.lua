@@ -197,6 +197,21 @@ function M.full_report(include_gc)
   if Verdant.Settings and Verdant.Settings.report_lines then
     section("config", Verdant.Settings.report_lines())
   end
+  if Verdant.TemporalBuffer and Verdant.TemporalBuffer.summary then
+    local s = Verdant.TemporalBuffer.summary()
+    if s.count > 0 then
+      section("session summary", {
+        string.format("samples=%d  duration=%.1fs  recording=%s",
+          s.count, s.dur_ms / 1000, tostring(Verdant.TemporalBuffer.is_recording())),
+        string.format("avg_ems=%.0f  peak_ems=%.0f  peak_at=%.1fs",
+          s.avg_ems, s.peak_ems, s.peak_t_off / 1000),
+        string.format("crit=%.0f%%  active=%.0f%%",
+          s.crit_pct * 100, s.active_pct * 100),
+        string.format("total_heal=%.0f  total_shield=%.0f",
+          s.total_heal, s.total_shield),
+      })
+    end
+  end
   section("diagnostics", build_diag_lines())
   if Verdant.Profiler and Verdant.Profiler.report_lines then
     section("profiler",   Verdant.Profiler.report_lines())

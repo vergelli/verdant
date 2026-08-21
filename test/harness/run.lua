@@ -11,6 +11,7 @@ local CASES = {
   "heal_flow",
   "shield_filter",
   "record_flow",
+  "header_metrics",
   "slash_report",
 }
 

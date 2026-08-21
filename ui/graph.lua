@@ -1100,11 +1100,48 @@ function render_current_view()
   end
 end
 
+local summary_text = nil
+
+local C_SUM_AVG  = { r = 0.65, g = 0.91, b = 0.69 }
+local C_SUM_PEAK = { r = 0.95, g = 0.80, b = 0.40 }
+local C_SUM_CRIT = { r = 1.00, g = 0.85, b = 0.40 }
+local C_SUM_VAL  = { r = 0.92, g = 0.95, b = 0.93 }
+
+local function build_summary_text()
+  local s = Verdant.TemporalBuffer.summary()
+  if s.count == 0 then return nil end
+  local vc = hexc(C_SUM_VAL)
+  local crit_pct = math_floor(s.crit_pct * 100 + 0.5)
+  return string_format(
+    "|c%s%s|r |c%s%s|r   |c%s%s|r |c%s%s|r   |c%s%s|r |c%s%d%%|r",
+    hexc(C_SUM_AVG),  GetString(VERDANT_SUMMARY_AVG),  vc, fmt_val(s.avg_ems),
+    hexc(C_SUM_PEAK), GetString(VERDANT_SUMMARY_PEAK), vc, fmt_val(s.peak_ems),
+    hexc(C_SUM_CRIT), GetString(VERDANT_SUMMARY_CRIT), vc, crit_pct)
+end
+
+local function update_summary_chip()
+  local chip = controls.summary
+  if not chip then return end
+  local show = summary_text ~= nil
+            and not Verdant.TemporalBuffer.is_recording()
+            and Verdant.TemporalBuffer.count() > 0
+  if show then
+    chip.label:SetText(summary_text)
+    chip.bg:SetWidth(chip.label:GetTextWidth() + 16)
+    chip.bg:SetHidden(false)
+    chip.label:SetHidden(false)
+  else
+    chip.bg:SetHidden(true)
+    chip.label:SetHidden(true)
+  end
+end
+
 local function refresh_button_colors()
   local recording = Verdant.TemporalBuffer.is_recording()
   controls.btn_record:SetEnabled(not recording)
   controls.btn_stop:SetEnabled(recording)
   update_hover_gate()
+  update_summary_chip()
 end
 
 local function set_view(v)
@@ -1161,6 +1198,7 @@ end
 function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
   log:info("record click")
+  summary_text = nil
   Verdant.TemporalBuffer.clear()
   release_all_pools()
   hide_all_grids()
@@ -1180,6 +1218,12 @@ function M.on_stop_click()
   log:info("stop click")
   Verdant.TemporalBuffer.stop_recording()
   zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
+  summary_text = build_summary_text()
+  local s = Verdant.TemporalBuffer.summary()
+  Verdant.Diagnostics.bump("graph.summary.computed")
+  log:info("session summary: samples=", s.count, "dur_ms=", s.dur_ms,
+           "avg_ems=", math_floor(s.avg_ems), "peak_ems=", math_floor(s.peak_ems),
+           "crit_pct=", math_floor(s.crit_pct * 100 + 0.5))
   refresh_button_colors()
   render_current_view()
 end
@@ -1189,6 +1233,7 @@ function M.on_flush_click()
     zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
     Verdant.TemporalBuffer.stop_recording()
   end
+  summary_text = nil
   Verdant.TemporalBuffer.clear()
   release_all_pools()
   hide_all_grids()
@@ -1359,6 +1404,26 @@ function M.init()
   controls.ehps_label:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, 0.80)
   controls.mps_label:SetText("MPS")
   controls.mps_label:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, 0.80)
+
+  local sum_bg = WM:CreateControl("VerdantGraphSummaryBg", controls.viewport, CT_TEXTURE)
+  sum_bg:SetTexture(FILL_TEXTURE)
+  sum_bg:SetTextureCoords(0, 1, 0, 0.05)
+  sum_bg:SetColor(0.04, 0.09, 0.06, 0.72)
+  sum_bg:SetAnchor(TOPRIGHT, controls.viewport, TOPRIGHT, -10, 8)
+  sum_bg:SetHeight(20)
+  sum_bg:SetDrawLevel(11)
+  sum_bg:SetHidden(true)
+
+  local sum_label = WM:CreateControl("VerdantGraphSummaryLabel", controls.viewport, CT_LABEL)
+  sum_label:SetFont("ZoFontGameSmall")
+  sum_label:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
+  sum_label:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+  sum_label:SetAnchor(TOPRIGHT, controls.viewport, TOPRIGHT, -18, 8)
+  sum_label:SetHeight(20)
+  sum_label:SetDrawLevel(12)
+  sum_label:SetHidden(true)
+
+  controls.summary = { bg = sum_bg, label = sum_label }
 
   build_hover_card()
   card_fader = make_fader(controls.card.root)
