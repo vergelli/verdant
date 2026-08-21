@@ -1421,7 +1421,8 @@ local function on_sample_update()
   Verdant.BuffTracker.expire_stale(now)
 
   local elapsed = math_floor((now - recording_start_ms) / 1000)
-  controls.status:SetText(string_format("%d:%02d", math_floor(elapsed / 60), elapsed % 60))
+  local prefix  = Verdant.AutoRecord.is_auto_session() and "AUTO " or ""
+  controls.status:SetText(string_format("%s%d:%02d", prefix, math_floor(elapsed / 60), elapsed % 60))
 
   if not controls.window:IsHidden() then
     render_current_view()
@@ -1432,6 +1433,9 @@ end
 function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
   log:info("record click")
+  if not Verdant.AutoRecord.is_auto_active() then
+    Verdant.AutoRecord.notify_manual_record()
+  end
   summary_text = nil
   Verdant.TemporalBuffer.clear()
   release_all_pools()
@@ -1451,6 +1455,7 @@ end
 function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
   log:info("stop click")
+  Verdant.AutoRecord.notify_manual_stop()
   Verdant.TemporalBuffer.stop_recording()
   zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
   Verdant.BuffTracker.finalize(GetGameTimeMilliseconds())

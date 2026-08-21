@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- **Automatic recording** — new setting with three modes: Off (default),
+  Boss fights, Any combat. In boss mode the recording starts when a boss is
+  up and you enter combat, and stops a few seconds after combat ends (the
+  grace window survives wipe-checks: re-entering combat cancels the stop).
+  Zone changes stop the recording. Auto sessions show an AUTO marker in the
+  graph header and never overwrite a session you recorded manually. All
+  transitions land in `/verdant report` under "auto record".
 - **BUFFS hover card** — hovering a row in the frozen BUFFS view shows the
   buff's uptime %, total uptime, players reached, max/avg holders, casts and
   longest gap, plus the holder count at the exact time under the cursor.

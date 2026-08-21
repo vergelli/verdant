@@ -7,7 +7,7 @@
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="280" y="494"/>
+      <Dimensions x="280" y="526"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -246,6 +246,16 @@
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-44"/>
           <Dimensions y="22"/>
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
+        </Button>
+
+        <Button name="$(parent)AutoRecBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMLEFT"  offsetX="14"  offsetY="-174"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-174"/>
+          <Dimensions y="22"/>
+          <OnClicked>Verdant.Settings.on_autorec_click()</OnClicked>
         </Button>
 
         <!-- ── SKILL-view shield orientation toggle (up from floor / hang down) ── -->

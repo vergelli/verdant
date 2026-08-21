@@ -287,6 +287,25 @@ end
 
 local SHIELDDIR_LABEL = { [true] = "Shields: hang down", [false] = "Shields: grow up" }
 
+local function autorec_label(m)
+  if m == "boss"   then return GetString(VERDANT_SETTINGS_AUTOREC_BOSS)   end
+  if m == "combat" then return GetString(VERDANT_SETTINGS_AUTOREC_COMBAT) end
+  return GetString(VERDANT_SETTINGS_AUTOREC_OFF)
+end
+
+function M.on_autorec_click()
+  local AR    = Verdant.AutoRecord
+  local modes = AR.modes()
+  local cur   = AR.get_mode()
+  local idx   = 1
+  for i = 1, #modes do
+    if modes[i] == cur then idx = i break end
+  end
+  local nxt = modes[(idx % #modes) + 1]
+  AR.set_mode(nxt)
+  controls.autorec_btn:SetText(autorec_label(nxt))
+end
+
 function M.on_shielddir_click()
   local sv = Verdant.SavedVars
   sv.settings = sv.settings or {}
@@ -486,6 +505,7 @@ function M.init()
   controls.logo_btn       = VerdantSettingsPanelLogoBtn
   controls.bars_btn       = VerdantSettingsPanelBarsBtn
   controls.shielddir_btn  = VerdantSettingsPanelShieldDirBtn
+  controls.autorec_btn    = VerdantSettingsPanelAutoRecBtn
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
@@ -504,6 +524,7 @@ function M.init()
 
   local shield_down = (sv.settings.shield_down == true)
   controls.shielddir_btn:SetText(SHIELDDIR_LABEL[shield_down])
+  controls.autorec_btn:SetText(autorec_label(sv.settings.auto_record or "off"))
   Verdant.Graph.set_shield_down(shield_down)
 
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)

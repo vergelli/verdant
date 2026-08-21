@@ -178,6 +178,7 @@ local function on_addon_loaded()
   Verdant.Logo.init()
   Verdant.Settings.init()
   Verdant.Graph.init()
+  Verdant.AutoRecord.init()
   Verdant.Assign.init()
   Verdant.Visibility.init()
 
