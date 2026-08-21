@@ -57,7 +57,8 @@ local recording_start_ms = 0
 local VIEW_EMS    = 1
 local VIEW_SKILL  = 2
 local VIEW_CRIT   = 3
-local VIEW_LABELS = { "EMS", "SKILL", "CRIT" }
+local VIEW_BUFFS  = 4
+local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "BUFFS" }
 local current_view = VIEW_EMS
 
 -- SKILL view shield orientation: false = shields grow UP from the subplot floor
@@ -278,6 +279,11 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip)
 end
 
 local function release_all_pools()
+  if controls.pool_buff_seg then
+    controls.pool_buff_seg:ReleaseAllObjects()
+    controls.pool_buff_icon:ReleaseAllObjects()
+    controls.pool_buff_lbl:ReleaseAllObjects()
+  end
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
   controls.pool_line_ehps:ReleaseAllObjects()
@@ -697,9 +703,10 @@ end
 local function update_hover_gate()
   local on    = hover_allowed()
   local skill = (current_view == VIEW_SKILL)
+  local main  = (current_view == VIEW_EMS or current_view == VIEW_CRIT)
   if controls.hit_main then
-    controls.hit_main:SetMouseEnabled(on and not skill)
-    controls.hit_main:SetHidden(not (on and not skill))
+    controls.hit_main:SetMouseEnabled(on and main)
+    controls.hit_main:SetHidden(not (on and main))
   end
   if controls.hit_top then
     controls.hit_top:SetMouseEnabled(on and skill)
@@ -1089,11 +1096,125 @@ local function render_view3()
   end
 end
 
+local BUFF_ROW_MAX  = 12
+local BUFF_GUTTER_W = 140
+local BUFF_ROW_GAP  = 3
+local BUFF_MIN_ROW  = 10
+local C_BUFF_NAME   = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
+local C_BUFF_MORE   = { r = 0.60, g = 0.66, b = 0.62, a = 0.90 }
+
+local function seg_alpha(conc, max_conc)
+  if max_conc <= 1 then return 0.90 end
+  return 0.40 + 0.55 * (conc / max_conc)
+end
+
+local function render_view4()
+  controls.pool_buff_seg:ReleaseAllObjects()
+  controls.pool_buff_icon:ReleaseAllObjects()
+  controls.pool_buff_lbl:ReleaseAllObjects()
+
+  local BT = Verdant.BuffTracker
+  local n  = BT.count()
+
+  if n == 0 then
+    controls.no_data:SetHidden(false)
+    hide_grid(controls.grid_ems)
+    return
+  end
+  controls.no_data:SetHidden(true)
+
+  local canvas = controls.canvas
+  local cw, ch = canvas:GetWidth(), canvas:GetHeight()
+  if cw <= BUFF_GUTTER_W + 40 or ch <= 4 then return end
+
+  local recording = Verdant.TemporalBuffer.is_recording()
+  local t0   = BT.session_start()
+  local t_hi = recording and GetGameTimeMilliseconds() or BT.session_end()
+  local span = t_hi - t0
+  if span <= 0 then return end
+
+  Verdant.Diagnostics.bump("graph.view_buffs.renders")
+  draw_grid(controls.grid_ems, canvas, 0, span)
+
+  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+  local rows    = (n < BUFF_ROW_MAX) and n or BUFF_ROW_MAX
+  local extra   = (n > rows) and 1 or 0
+  local row_h   = math_floor(ch_plot / (rows + extra)) - BUFF_ROW_GAP
+  if row_h < BUFF_MIN_ROW then
+    rows  = math_max(1, math_floor(ch_plot / (BUFF_MIN_ROW + BUFF_ROW_GAP)) - 1)
+    if rows > n then rows = n end
+    extra = (n > rows) and 1 or 0
+    row_h = math_floor(ch_plot / (rows + extra)) - BUFF_ROW_GAP
+    if row_h < 6 then return end
+  end
+  if n > rows then Verdant.Diagnostics.bump("graph.view_buffs.overflow") end
+
+  local SC     = Verdant.SkillColors
+  local lane_x = BUFF_GUTTER_W
+  local lane_w = cw - BUFF_GUTTER_W
+  local isz    = (row_h < 20) and row_h or 20
+
+  for i = 1, rows do
+    local rec = BT.get(i)
+    local y   = (i - 1) * (row_h + BUFF_ROW_GAP)
+    local c   = SC.get_color(rec.id)
+
+    local icon = controls.pool_buff_icon:AcquireObject()
+    icon:ClearAnchors()
+    icon:SetTexture(SC.ability_icon(rec.id))
+    icon:SetDimensions(isz, isz)
+    icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + math_floor((row_h - isz) / 2))
+    icon:SetHidden(false)
+
+    local lbl = controls.pool_buff_lbl:AcquireObject()
+    lbl:ClearAnchors()
+    lbl:SetText(SC.ability_name(rec.id))
+    lbl:SetColor(C_BUFF_NAME.r, C_BUFF_NAME.g, C_BUFF_NAME.b, C_BUFF_NAME.a)
+    lbl:SetDimensions(BUFF_GUTTER_W - isz - 10, row_h)
+    lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 4, y)
+    lbl:SetHidden(false)
+
+    local n_steps = rec.n_steps
+    for k = 1, n_steps do
+      local conc = rec.step_c[k]
+      if conc > 0 then
+        local st = rec.step_t[k]
+        local en = (k < n_steps) and rec.step_t[k + 1] or t_hi
+        if en > t_hi then en = t_hi end
+        if en > st then
+          local x0 = lane_x + math_floor((st - t0) / span * lane_w + 0.5)
+          local x1 = lane_x + math_floor((en - t0) / span * lane_w + 0.5)
+          local bw = math_max(1, x1 - x0)
+          local seg = controls.pool_buff_seg:AcquireObject()
+          seg:ClearAnchors()
+          seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y)
+          seg:SetWidth(bw)
+          seg:SetHeight(row_h)
+          seg:SetColor(c.r, c.g, c.b, seg_alpha(conc, rec.max_conc))
+          seg:SetHidden(false)
+        end
+      end
+    end
+  end
+
+  if n > rows then
+    local more = controls.pool_buff_lbl:AcquireObject()
+    more:ClearAnchors()
+    more:SetText(string_format(GetString(VERDANT_BUFFS_MORE), n - rows))
+    more:SetColor(C_BUFF_MORE.r, C_BUFF_MORE.g, C_BUFF_MORE.b, C_BUFF_MORE.a)
+    more:SetDimensions(cw, row_h)
+    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, rows * (row_h + BUFF_ROW_GAP))
+    more:SetHidden(false)
+  end
+end
+
 function render_current_view()
   if current_view == VIEW_EMS then
     render_view1()
   elseif current_view == VIEW_CRIT then
     render_view3()
+  elseif current_view == VIEW_BUFFS then
+    render_view4()
   else
     layout_skill_area()
     render_view2()
@@ -1148,8 +1269,13 @@ local function set_view(v)
   current_view = v
   controls.view_label:SetText(VIEW_LABELS[v])
   hover_key = nil
+  if v == VIEW_BUFFS then
+    controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_BUFFS))
+  else
+    controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_DATA))
+  end
 
-  local use_main_canvas = (v == VIEW_EMS or v == VIEW_CRIT)
+  local use_main_canvas = (v ~= VIEW_SKILL)
   controls.canvas:SetHidden(not use_main_canvas)
   controls.skill_area:SetHidden(use_main_canvas)
 
@@ -1276,14 +1402,14 @@ end
 
 function M.prev_view()
   local v = current_view - 1
-  if v < VIEW_EMS then v = VIEW_CRIT end
+  if v < VIEW_EMS then v = VIEW_BUFFS end
   release_all_pools()
   set_view(v)
 end
 
 function M.next_view()
   local v = current_view + 1
-  if v > VIEW_CRIT then v = VIEW_EMS end
+  if v > VIEW_BUFFS then v = VIEW_EMS end
   release_all_pools()
   set_view(v)
 end
@@ -1306,7 +1432,7 @@ function M.toggle()
   log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
   if now_visible then
-    local use_main_canvas = (current_view == VIEW_EMS or current_view == VIEW_CRIT)
+    local use_main_canvas = (current_view ~= VIEW_SKILL)
     controls.canvas:SetHidden(not use_main_canvas)
     controls.skill_area:SetHidden(use_main_canvas)
     render_current_view()
@@ -1376,6 +1502,18 @@ function M.init()
   controls.pool_skill_bot      = make_skill_fill_pool("VerdantSkillFillBot", "mps_canvas")
   controls.pool_line_skill_top = make_skill_line_pool("VerdantSkillLineTop", "ehps_canvas")
   controls.pool_line_skill_bot = make_skill_line_pool("VerdantSkillLineBot", "mps_canvas")
+
+  controls.pool_buff_seg = make_fill_pool("VerdantBuffSeg")
+  controls.pool_buff_icon = Pool.new("VerdantBuffIcon", controls.canvas, CT_TEXTURE,
+    function(c) c:SetPixelRoundingEnabled(false) end,
+    function(c) c:SetHidden(true) end)
+  controls.pool_buff_lbl = Pool.new("VerdantBuffLbl", controls.canvas, CT_LABEL,
+    function(c)
+      c:SetFont("ZoFontGameSmall")
+      c:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+      c:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+    end,
+    function(c) c:SetHidden(true) end)
 
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
