@@ -254,6 +254,10 @@ end
 
 local FALLBACK = GROUP_COLORS.other
 
+function M.has_explicit_override(abilityId)
+  return USER_OVERRIDES[abilityId] ~= nil or ABILITY_OVERRIDES[abilityId] ~= nil
+end
+
 function M.get_color(abilityId)
   return GROUP_COLORS[lookup_group(abilityId)] or FALLBACK
 end

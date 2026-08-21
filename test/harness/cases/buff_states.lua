@@ -123,6 +123,19 @@ return function(H)
     if l:find("skill aura") then aura_line = true end
   end
   ok(aura_line, "report must show the skill-aura exclusion")
+
+  H.skill_keys = { [217608] = {9, 1, 2} }
+  H.ability_names[217608] = "Veto Buff"
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 217608, 600, 0)
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+  local vetoed
+  BT.iterate(function(_, r) if r.name == "Veto Buff" then vetoed = r end end)
+  ok(vetoed, "explicitly overridden ids must veto the skill-aura exclusion")
+  if Verdant.Constants.DEBUG then
+    ok(Verdant.Diagnostics.get("buffs.aura_vetoed_by_override") >= 1, "veto counter missing")
+  end
   H.skill_keys = nil
   H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = {} }
   Verdant.Graph.on_record_click()

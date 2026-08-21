@@ -48,6 +48,7 @@ local function rec_reset(rec, id)
   rec.desc         = ""
   rec.desc_tries   = 0
   rec.only_self    = true
+  rec.vetoed       = false
   rec.applications = 0
   rec.unique_units = 0
   rec.max_conc     = 0
@@ -177,9 +178,13 @@ local function get_rec(id, tag)
     return nil
   end
   if skey then
-    bump("buffs.skipped_skill_aura")
-    note_excluded(id, nil, nil, "skill aura")
-    return nil
+    if Verdant.SkillColors.has_explicit_override(id) then
+      bump("buffs.aura_vetoed_by_override")
+    else
+      bump("buffs.skipped_skill_aura")
+      note_excluded(id, nil, nil, "skill aura")
+      return nil
+    end
   end
   if Verdant.zenimax.api.IsAbilityPassive(id) then
     bump("buffs.skipped_passive")
@@ -197,6 +202,7 @@ local function get_rec(id, tag)
   rec.ids[1]  = id
   rec.desc    = resolve_desc(id, tag)
   rec.desc_tries = (tag and tag ~= "") and 1 or 0
+  rec.vetoed  = Verdant.SkillColors.has_explicit_override(id)
   n_tracked   = n_tracked + 1
   by_id[id]   = rec
   by_name[name] = rec
@@ -402,7 +408,7 @@ function M.finalize(now_ms)
   end
   for i = n_tracked, 1, -1 do
     local rec = order[i]
-    if rec.only_self and rec.desc == "" and rec.group ~= "item" then
+    if rec.only_self and rec.desc == "" and rec.group ~= "item" and not rec.vetoed then
       bump("buffs.excluded_self_state")
       note_excluded(rec.id, nil, nil, "self-only state")
       for k = 1, rec.n_ids do by_id[rec.ids[k]] = nil end

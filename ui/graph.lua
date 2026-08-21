@@ -1359,7 +1359,7 @@ local function render_view4()
   local n     = 0
   for i = 1, n_all do
     local rec = BT.get(i)
-    if not (rec.only_self and rec.desc == "" and rec.group ~= "item") then
+    if not (rec.only_self and rec.desc == "" and rec.group ~= "item" and not rec.vetoed) then
       n = n + 1
       vis[n] = rec
     end

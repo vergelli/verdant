@@ -8,6 +8,14 @@
   moment you are resurrected shows in green with a resurrect icon. Captured
   while recording via the player death-state event, cleared on Flush.
 
+### Fixed (round 11, Hel Ra trial evidence)
+- **Curated overrides veto the filters** — Warding Contingency fell to the
+  new skill-aura rule because scribing grimoires do have skill keys. Ability
+  ids you have explicitly classified (ABILITY_OVERRIDES or in-game
+  assignments) now bypass the skill-aura and self-state exclusions: your
+  curation is the human veto over the heuristics. Removing the override
+  removes the veto.
+
 ### Fixed (round 10, trial evidence)
 - **Self states leaking back in groups** — in a group you also carry a
   group tag, so your own buffs fire the effect event twice (player + groupN)
