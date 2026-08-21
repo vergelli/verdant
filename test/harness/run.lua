@@ -16,6 +16,7 @@ local CASES = {
   "buffs_view",
   "buffs_hover",
   "auto_record",
+  "dmg_overlay",
   "slash_report",
 }
 

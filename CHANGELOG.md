@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **Group damage overlay** — the EMS view now draws incoming group damage as
+  a faint red line behind the healing bars, so you can see whether your
+  output lined up with when the group was actually taking damage. The hover
+  card on a frozen session includes the damage rate at that moment.
 - **Automatic recording** — new setting with three modes: Off (default),
   Boss fights, Any combat. In boss mode the recording starts when a boss is
   up and you enter combat, and stops a few seconds after combat ends (the
