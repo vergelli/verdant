@@ -185,6 +185,7 @@ end
 function M.dispatch_effect_player_src(changeType, _slot, _name, _tag, _bt, endTime,
                                        _stack, _icon, _depBuff, _et, _at,
                                        _stat, _uname, unitId, abilityId, sourceType)
+  prof_enter("pipeline.effect")
   bump("engine.effect.in_player_src")
   if changeType == EFFECT_RESULT_GAINED then
     bump("engine.effect.gained")
@@ -192,6 +193,8 @@ function M.dispatch_effect_player_src(changeType, _slot, _name, _tag, _bt, endTi
     bump("engine.effect.faded")
   end
   Verdant.ShieldRegistry.on_effect(changeType, abilityId, unitId, sourceType, endTime)
+  Verdant.BuffTracker.on_effect(changeType, abilityId, unitId, endTime, now())
+  prof_exit("pipeline.effect")
 end
 
 function M.dispatch_group_change()

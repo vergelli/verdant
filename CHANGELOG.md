@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Added
+- **Buff tracker (engine)** — while recording, Verdant now tracks every buff
+  you apply: union uptime intervals (a bar stays open while at least one
+  group member still holds the buff), concurrency curve, applications,
+  unique targets and longest gap. Watchdog expiry covers targets that never
+  send a FADED event. Full session detail lands in `/verdant report` under
+  "buff tracker". Feeds the upcoming BUFFS view.
 - **Session summary chip** — after Stop, the graph shows AVG / PEAK / CRIT for
   the frozen session in the top-right corner of the viewport. Computed once on
   Stop, cleared on Record/Flush. The same numbers appear in
