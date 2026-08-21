@@ -111,7 +111,7 @@ local C_CARD_TIME   = { r = 0.64, g = 0.72, b = 0.66, a = 1.0 }
 local C_CROSSHAIR   = { r = 0.50, g = 1.00, b = 0.62, a = 0.50 }
 
 local function fmt_val(v)
-  return ZO_AbbreviateAndLocalizeNumber(math_floor(v), 0, false)
+  return ZO_AbbreviateAndLocalizeNumber(math_floor(v), NUMBER_ABBREVIATION_PRECISION_TENTHS, false)
 end
 
 local function fmt_secs(ms)
@@ -190,6 +190,15 @@ local function create_grid(prefix, parent_ctrl)
     obj.vlines[i] = vl
   end
 
+  local ymax = WM:CreateControl(prefix .. "YMax", parent_ctrl, CT_LABEL)
+  ymax:SetFont("ZoFontGameSmall")
+  ymax:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  ymax:SetVerticalAlignment(TEXT_ALIGN_BOTTOM)
+  ymax:SetColor(C_GRID_LBL.r, C_GRID_LBL.g, C_GRID_LBL.b, C_GRID_LBL.a)
+  ymax:SetDimensions(54, 10)
+  ymax:SetHidden(true)
+  obj.ymax = ymax
+
   local function make_time_lbl(name, align)
     local t = WM:CreateControl(name, parent_ctrl, CT_LABEL)
     t:SetFont("ZoFontGameSmall")
@@ -218,6 +227,7 @@ local function hide_grid(grid)
   grid.time_l:SetHidden(true)
   grid.time_m:SetHidden(true)
   grid.time_r:SetHidden(true)
+  grid.ymax:SetHidden(true)
 end
 
 local function draw_grid(grid, canvas, max_val, span_ms, flip)
@@ -256,11 +266,17 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip)
       lbl:SetText(fmt_val(max_val * frac))
       lbl:SetHidden(false)
     end
+    local ymax_y = flip and (y_base + 2) or (y_base + ch_plot - 12)
+    grid.ymax:ClearAnchors()
+    grid.ymax:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, -ymax_y)
+    grid.ymax:SetText(fmt_val(max_val))
+    grid.ymax:SetHidden(false)
   else
     for i = 1, N_HGRID do
       grid.hlines[i]:SetHidden(true)
       grid.ylabels[i]:SetHidden(true)
     end
+    grid.ymax:SetHidden(true)
   end
 
   for i = 1, N_VGRID do

@@ -29,6 +29,18 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Fixed (round 8, in-game evidence)
+- **Blockade of Frost coming back** — the slot's display name depends on
+  which bar is active when Record is pressed ("Elemental Blockade" vs
+  "Blockade of Frost"), so a single scan could miss the elemental name. The
+  tracker now rescans both bars on every weapon swap, accumulates the names,
+  and retroactively purges rows that turn out to match a slotted skill.
+- **Axis vs hover rounding** — values were abbreviated to whole units
+  ("3K" for 3.2K), so bars could visually exceed a gridline their hover
+  seemed to contradict. All chart numbers (axis, hover, summary chip) now
+  show one decimal, and the Y axis gained a top label with the true chart
+  maximum, so the scale is explicit.
+
 ### Fixed (round 7, regression)
 - **Everything excluded as "renamed aura"** — the skill-keys API returns a
   0,0,0 sentinel for abilities that belong to no skill, and one slotted

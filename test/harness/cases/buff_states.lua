@@ -100,6 +100,33 @@ return function(H)
   H.passive_ids = nil
   H.ability_names = nil
   H.ability_descs = nil
+  H.ability_names = { [830] = "Swappy", [40097] = "Swappy" }
+  H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = {} }
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 830, 500, 0)
+  H.advance(1000)
+  local found = false
+  BT.iterate(function(_, r) if r.name == "Swappy" then found = true end end)
+  ok(found, "buff must track before the bar swap")
+
+  H.slotted[HOTBAR_CATEGORY_PRIMARY][5] = 40097
+  H.fire(EVENT_ACTIVE_WEAPON_PAIR_CHANGED, 1, true)
+  found = false
+  BT.iterate(function(_, r) if r.name == "Swappy" then found = true end end)
+  ok(not found, "bar-swap rescan must purge matching rows retroactively")
+
+  H.effect(EFFECT_RESULT_GAINED, 830, 500, 0)
+  found = false
+  BT.iterate(function(_, r) if r.name == "Swappy" then found = true end end)
+  ok(not found, "re-gained aura must stay excluded after the purge")
+
+  local purge_line = false
+  for _, l in ipairs(BT.report_lines()) do
+    if l:find("bar swap rescan") then purge_line = true end
+  end
+  ok(purge_line, "report must show the bar-swap purge")
+  Verdant.Graph.on_stop_click()
+
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
   Verdant.Visibility.set("graph", false)
   Verdant.Graph.on_flush_click()

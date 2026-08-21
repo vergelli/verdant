@@ -255,6 +255,10 @@ function M.init()
   E.add_filter("Verdant_E_EffectPlayer", EVENT_EFFECT_CHANGED,
     REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE, COMBAT_UNIT_TYPE_PLAYER)
 
+  E.register("Verdant_E_WeaponPair", C.EVENT_ACTIVE_WEAPON_PAIR_CHANGED, function()
+    Verdant.BuffTracker.on_bars_changed()
+  end)
+
   E.register("Verdant_E_GroupJ", EVENT_GROUP_MEMBER_JOINED, M.dispatch_group_change)
   E.register("Verdant_E_GroupL", EVENT_GROUP_MEMBER_LEFT,   M.dispatch_group_left)
   E.register("Verdant_E_GroupU", EVENT_GROUP_UPDATE,        M.dispatch_group_change)

@@ -88,15 +88,13 @@ end
 
 local function skill_key_of(id)
   local st, li, si = Verdant.zenimax.api.GetSpecificSkillAbilityKeysByAbilityId(id)
-  if st and st > 0 and li and li > 0 and si and si > 0 then
+  if st and st > 0 and li and si then
     return st * 100000 + li * 1000 + si
   end
   return nil
 end
 
 local function scan_slotted()
-  wipe(slotted_names)
-  wipe(slotted_keys)
   local api = Verdant.zenimax.api
   local zc  = Verdant.zenimax.constants
   local n   = 0
@@ -305,6 +303,29 @@ function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag, ef
   end
 end
 
+local function purge_slotted_matches()
+  for i = n_tracked, 1, -1 do
+    local rec = order[i]
+    if slotted_names[rec.name] then
+      bump("buffs.purged_rescan")
+      note_excluded(rec.ids[1], nil, nil, "slotted ability (bar swap rescan)")
+      for k = 1, rec.n_ids do by_id[rec.ids[k]] = nil end
+      by_name[rec.name] = nil
+      table.remove(order, i)
+      n_tracked = n_tracked - 1
+      n_free = n_free + 1
+      free_recs[n_free] = rec
+    end
+  end
+end
+
+function M.on_bars_changed()
+  if not recording then return end
+  bump("buffs.bars_rescan")
+  scan_slotted()
+  purge_slotted_matches()
+end
+
 function M.expire_stale(now_ms)
   local now_s = now_ms / 1000
   for i = 1, n_tracked do
@@ -328,6 +349,8 @@ function M.start_session(now_ms)
   wipe(by_name)
   wipe(excluded)
   n_excluded = 0
+  wipe(slotted_names)
+  wipe(slotted_keys)
   scan_slotted()
   for i = 1, n_tracked do
     local rec = order[i]
@@ -373,6 +396,8 @@ function M.finalize(now_ms)
     if rec.only_self and rec.desc == "" and rec.group ~= "item" then
       bump("buffs.excluded_self_state")
       note_excluded(rec.id, nil, nil, "self-only state")
+      for k = 1, rec.n_ids do by_id[rec.ids[k]] = nil end
+      by_name[rec.name] = nil
       table.remove(order, i)
       n_tracked = n_tracked - 1
       n_free = n_free + 1
