@@ -53,6 +53,10 @@ EFFECT_RESULT_TRANSFER     = 35
 BOSS_RANK_ITERATION_BEGIN = 1
 BOSS_RANK_ITERATION_END   = 7
 
+BUFF_EFFECT_TYPE_BUFF   = 1
+BUFF_EFFECT_TYPE_DEBUFF = 2
+ABILITY_TYPE_HEAL       = 28
+
 TOPLEFT = 41 TOP = 42 TOPRIGHT = 43 LEFT = 44 CENTER = 45 RIGHT = 46
 BOTTOMLEFT = 47 BOTTOM = 48 BOTTOMRIGHT = 49
 CT_CONTROL = 51 CT_LABEL = 52 CT_TEXTURE = 53 CT_BACKDROP = 54
@@ -446,11 +450,12 @@ function H.damage(opts)
     opts.ability_id or 0, 0)
 end
 
-function H.effect(change_type, ability_id, unit_id, end_time_s, source_type, unit_tag)
+function H.effect(change_type, ability_id, unit_id, end_time_s, source_type, unit_tag, effect_type, ability_type)
   if unit_tag == nil then unit_tag = "group1" end
+  if effect_type == nil then effect_type = BUFF_EFFECT_TYPE_BUFF end
   return H.fire(EVENT_EFFECT_CHANGED,
     change_type, 1, "MockEffect", unit_tag, 0, end_time_s or 0,
-    1, "icon.dds", 0, 0, 0, 0,
+    1, "icon.dds", 0, effect_type, ability_type or 0, 0,
     "Ally", unit_id, ability_id,
     source_type or COMBAT_UNIT_TYPE_PLAYER)
 end

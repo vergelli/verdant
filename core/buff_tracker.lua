@@ -14,11 +14,16 @@ local EFFECT_RESULT_UPDATED      = C.EFFECT_RESULT_UPDATED
 local EFFECT_RESULT_FULL_REFRESH = C.EFFECT_RESULT_FULL_REFRESH
 local EFFECT_RESULT_TRANSFER     = C.EFFECT_RESULT_TRANSFER
 local EFFECT_RESULT_FADED        = C.EFFECT_RESULT_FADED
+local BUFF_EFFECT_TYPE_BUFF      = C.BUFF_EFFECT_TYPE_BUFF
+local ABILITY_TYPE_HEAL          = C.ABILITY_TYPE_HEAL
 
 local MAX_TRACKED = 48
 
 local by_id      = {}
 local by_name    = {}
+local excluded   = {}
+local n_excluded = 0
+local EXCLUDED_CAP = 20
 local order      = {}
 local n_tracked  = 0
 local free_recs  = {}
@@ -67,6 +72,14 @@ local function rec_acquire(id)
   end
   rec_reset(rec, id)
   return rec
+end
+
+local function note_excluded(id, effectType, abilityType)
+  if n_excluded >= EXCLUDED_CAP then return end
+  local name = Verdant.SkillColors.ability_name(id)
+  if excluded[name] then return end
+  n_excluded = n_excluded + 1
+  excluded[name] = { id = id, et = effectType or -1, at = abilityType or -1 }
 end
 
 local function resolve_desc(id, tag)
@@ -194,7 +207,7 @@ local function holder_remove(rec, unitId, t, force)
   if rec.conc == 0 then close_interval(rec, t) end
 end
 
-function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag)
+function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag, effectType, abilityType)
   if not recording then return end
   if not abilityId or abilityId == 0 then return end
   if not unitId or unitId == 0 then
@@ -206,6 +219,18 @@ function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag)
      or changeType == EFFECT_RESULT_UPDATED
      or changeType == EFFECT_RESULT_FULL_REFRESH
      or changeType == EFFECT_RESULT_TRANSFER then
+    if by_id[abilityId] == nil then
+      if effectType ~= BUFF_EFFECT_TYPE_BUFF then
+        bump("buffs.skipped_not_buff")
+        note_excluded(abilityId, effectType, abilityType)
+        return
+      end
+      if abilityType == ABILITY_TYPE_HEAL then
+        bump("buffs.skipped_heal_effect")
+        note_excluded(abilityId, effectType, abilityType)
+        return
+      end
+    end
     local rec = get_rec(abilityId, unitTag)
     if not rec then return end
     if changeType == EFFECT_RESULT_GAINED then
@@ -244,6 +269,8 @@ end
 function M.start_session(now_ms)
   wipe(by_id)
   wipe(by_name)
+  wipe(excluded)
+  n_excluded = 0
   for i = 1, n_tracked do
     local rec = order[i]
     n_free = n_free + 1
@@ -352,6 +379,13 @@ function M.report_lines()
       table.concat(rec.ids, "/", 1, rec.n_ids))
   end
   if n_tracked == 0 then lines[#lines + 1] = "(no buffs tracked this session)" end
+  if n_excluded > 0 then
+    lines[#lines + 1] = string.format("excluded as non-buffs (%d):", n_excluded)
+    for name, e in pairs(excluded) do
+      lines[#lines + 1] = string.format("  %s  id=%d effectType=%d abilityType=%d",
+        name, e.id, e.et, e.at)
+    end
+  end
   return lines
 end
 

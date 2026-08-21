@@ -80,6 +80,30 @@ return function(H)
   Verdant.BuffTracker.iterate(function(_, r) if r.id == 555 then rec555 = r end end)
   eq(rec555.desc, "Late but resolved.", "tagless gains must not burn description retries")
 
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 601, 900, 0, nil, nil, BUFF_EFFECT_TYPE_DEBUFF)
+  H.effect(EFFECT_RESULT_GAINED, 602, 900, 0, nil, nil, BUFF_EFFECT_TYPE_BUFF, ABILITY_TYPE_HEAL)
+  H.effect(EFFECT_RESULT_GAINED, 603, 900, 0)
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+
+  local seen = {}
+  Verdant.BuffTracker.iterate(function(_, r) seen[r.id] = true end)
+  ok(not seen[601], "debuffs must not be tracked as buffs")
+  ok(not seen[602], "heal effects must not be tracked as buffs")
+  ok(seen[603], "plain buffs must still be tracked")
+
+  local excluded_line = false
+  for _, l in ipairs(Verdant.BuffTracker.report_lines()) do
+    if l:find("excluded as non") then excluded_line = true end
+  end
+  ok(excluded_line, "report must list excluded non-buffs")
+
+  if Verdant.Constants.DEBUG then
+    ok(Verdant.Diagnostics.get("buffs.skipped_not_buff") >= 1, "skipped_not_buff counter missing")
+    ok(Verdant.Diagnostics.get("buffs.skipped_heal_effect") >= 1, "skipped_heal_effect counter missing")
+  end
+
   H.unit_buffs = nil
   H.slot_descs = nil
   H.ability_descs_caster = nil

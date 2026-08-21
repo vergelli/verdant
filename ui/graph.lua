@@ -508,6 +508,7 @@ local function build_hover_card()
   desc:SetFont("ZoFontGameSmall")
   desc:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
   desc:SetVerticalAlignment(TEXT_ALIGN_TOP)
+  desc:SetMaxLineCount(0)
   desc:SetColor(C_CARD_STAT.r, C_CARD_STAT.g, C_CARD_STAT.b, 0.92)
   desc:SetHidden(true)
 

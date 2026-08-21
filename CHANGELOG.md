@@ -29,6 +29,17 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Fixed (round 3, in-game evidence)
+- **Cast abilities no longer pollute the BUFFS view** — the tracker was
+  ingesting every player-sourced effect, so the casting ability (Combat
+  Prayer, Radiating Regeneration...) showed its own short bar next to the
+  buffs it grants. Effects are now gated by the event's own typing: only
+  `BUFF_EFFECT_TYPE_BUFF` and never `ABILITY_TYPE_HEAL`. Whatever gets
+  filtered is listed in the report ("excluded as non-buffs") with its raw
+  types, so misfires are visible instead of silent.
+- **Buff description cut off with "..."** — the hover description now allows
+  unlimited wrapped lines (`SetMaxLineCount(0)`).
+
 ### Fixed (round 2, in-game evidence)
 - **Combat Prayer classified as Sorcerer** — the engine's skill-key API
   mistags its new effect ids (218784/218786/218787); pinned to Restoration
