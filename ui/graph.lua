@@ -1185,6 +1185,7 @@ local function on_sample_update()
   Verdant.TemporalBuffer.push(now, ehps, mps, crit, noncrit,
                               sample_ehps_groups, sample_mps_groups,
                               sample_ehps_abilities, sample_mps_abilities)
+  Verdant.BuffTracker.expire_stale(now)
 
   local elapsed = math_floor((now - recording_start_ms) / 1000)
   controls.status:SetText(string_format("%d:%02d", math_floor(elapsed / 60), elapsed % 60))
@@ -1205,6 +1206,7 @@ function M.on_record_click()
   controls.no_data:SetHidden(false)
   Verdant.TemporalBuffer.start_recording()
   recording_start_ms = GetGameTimeMilliseconds()
+  Verdant.BuffTracker.start_session(recording_start_ms)
   local sv       = Verdant.SavedVars
   local interval = (sv and sv.temporal and sv.temporal.sample_rate_ms)
                    or Verdant.Constants.TEMPORAL.SAMPLE_RATE_DEFAULT
@@ -1218,6 +1220,7 @@ function M.on_stop_click()
   log:info("stop click")
   Verdant.TemporalBuffer.stop_recording()
   zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
+  Verdant.BuffTracker.finalize(GetGameTimeMilliseconds())
   summary_text = build_summary_text()
   local s = Verdant.TemporalBuffer.summary()
   Verdant.Diagnostics.bump("graph.summary.computed")
@@ -1233,6 +1236,7 @@ function M.on_flush_click()
     zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
     Verdant.TemporalBuffer.stop_recording()
   end
+  Verdant.BuffTracker.reset()
   summary_text = nil
   Verdant.TemporalBuffer.clear()
   release_all_pools()

@@ -12,6 +12,7 @@ local CASES = {
   "shield_filter",
   "record_flow",
   "header_metrics",
+  "buff_tracker",
   "slash_report",
 }
 
