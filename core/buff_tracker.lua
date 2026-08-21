@@ -176,6 +176,11 @@ local function get_rec(id, tag)
     note_excluded(id, nil, nil, "slotted ability (renamed aura)")
     return nil
   end
+  if skey then
+    bump("buffs.skipped_skill_aura")
+    note_excluded(id, nil, nil, "skill aura")
+    return nil
+  end
   if Verdant.zenimax.api.IsAbilityPassive(id) then
     bump("buffs.skipped_passive")
     note_excluded(id, nil, nil, "passive skill")
@@ -292,7 +297,11 @@ function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag, ef
     else
       bump("buffs.refreshed")
     end
-    if unitTag ~= "player" then rec.only_self = false end
+    if unitTag == "player" then
+      Verdant.GroupSet.set_player(unitId)
+    elseif unitId ~= Verdant.GroupSet.player_id() then
+      rec.only_self = false
+    end
     holder_add(rec, unitId, endTime, now_ms)
   elseif changeType == EFFECT_RESULT_FADED then
     local rec = by_id[abilityId]

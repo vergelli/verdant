@@ -67,8 +67,8 @@ return function(H)
   H.slot_descs = { [11] = "Tick resolved." }
 
   Verdant.Graph.on_record_click()
-  H.effect(EFFECT_RESULT_GAINED, 810, 500, 0)
-  H.effect(EFFECT_RESULT_GAINED, 811, 500, 0)
+  H.effect(EFFECT_RESULT_GAINED, 810, 901, 0)
+  H.effect(EFFECT_RESULT_GAINED, 811, 901, 0)
   H.effect(EFFECT_RESULT_GAINED, 820, 600, 0)
   H.advance(3000)
   Verdant.Graph.on_stop_click()
@@ -100,7 +100,30 @@ return function(H)
   H.passive_ids = nil
   H.ability_names = nil
   H.ability_descs = nil
-  H.ability_names = { [830] = "Swappy", [40097] = "Swappy" }
+  H.ability_names = { [830] = "Swappy", [40097] = "Swappy",
+                      [840] = "Crux Trial", [850] = "Passive Aura Mock" }
+  H.skill_keys = { [850] = {4, 2, 7} }
+
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 840, 500, 0, nil, "player")
+  H.effect(EFFECT_RESULT_GAINED, 840, 500, 0, nil, "group1")
+  H.effect(EFFECT_RESULT_GAINED, 850, 500, 0, nil, "player")
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+
+  local trial_names = {}
+  BT.iterate(function(_, r) trial_names[r.name] = true end)
+  ok(not trial_names["Crux Trial"],
+     "duplicate group-tag event for the SAME unit must not break only_self")
+  ok(not trial_names["Passive Aura Mock"],
+     "auras with valid skill keys must be excluded as skill auras")
+
+  local aura_line = false
+  for _, l in ipairs(BT.report_lines()) do
+    if l:find("skill aura") then aura_line = true end
+  end
+  ok(aura_line, "report must show the skill-aura exclusion")
+  H.skill_keys = nil
   H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = {} }
   Verdant.Graph.on_record_click()
   H.effect(EFFECT_RESULT_GAINED, 830, 500, 0)

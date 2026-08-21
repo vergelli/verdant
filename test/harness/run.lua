@@ -19,6 +19,7 @@ local CASES = {
   "buffs_hover",
   "auto_record",
   "dmg_overlay",
+  "death_markers",
   "user_profiles",
   "slash_report",
 }

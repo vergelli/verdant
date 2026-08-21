@@ -351,6 +351,9 @@ local FILTER_POS = {
     [REGISTER_FILTER_UNIT_TAG]                = 4,
     [REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE] = 16,
   },
+  [EVENT_UNIT_DEATH_STATE_CHANGED] = {
+    [REGISTER_FILTER_UNIT_TAG] = 1,
+  },
 }
 
 EVENT_MANAGER = {
@@ -470,6 +473,10 @@ function H.effect(change_type, ability_id, unit_id, end_time_s, source_type, uni
     1, "icon.dds", 0, effect_type, ability_type or 0, 0,
     "Ally", unit_id, ability_id,
     source_type or COMBAT_UNIT_TYPE_PLAYER)
+end
+
+function H.death(is_dead, tag)
+  return H.fire(EVENT_UNIT_DEATH_STATE_CHANGED, tag or "player", is_dead and true or false)
 end
 
 function H.combat_state(in_combat)

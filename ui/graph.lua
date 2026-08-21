@@ -38,6 +38,11 @@ local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green b
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
 local C_LINE_DMG  = { r = 0.93, g = 0.44, b = 0.38, a = 0.60 }
 local C_FILL_DMG  = { r = 0.90, g = 0.38, b = 0.32, a = 0.10 }
+local C_MARK_DEATH = { r = 0.92, g = 0.88, b = 0.84, a = 0.55 }
+local C_MARK_RES   = { r = 0.45, g = 1.00, b = 0.62, a = 0.55 }
+local TEX_SKULL    = "EsoUI/Art/TargetMarkers/Target_White_Skull_64.dds"
+local TEX_RES      = "EsoUI/Art/Notifications/notificationIcon_resurrect.dds"
+local MARK_ICON_SZ = 16
 
 local C_VIEWPORT  = { r = 0.78, g = 1.00, b = 0.86 }
 
@@ -324,6 +329,12 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip)
 end
 
 local function release_all_pools()
+  if controls.pool_marker_line then
+    controls.pool_marker_line:ReleaseAllObjects()
+    controls.pool_marker_icon:ReleaseAllObjects()
+    controls.pool_marker_line_top:ReleaseAllObjects()
+    controls.pool_marker_icon_top:ReleaseAllObjects()
+  end
   if controls.pool_buff_seg then
     controls.pool_buff_seg:ReleaseAllObjects()
     controls.pool_buff_icon:ReleaseAllObjects()
@@ -889,6 +900,34 @@ local function update_hover_gate()
   end
 end
 
+local function draw_markers(pool_line, pool_icon, canvas, t0, span, lane_x, lane_w)
+  if span <= 0 then return end
+  local ms, n = Verdant.TemporalBuffer.markers()
+  for i = 1, n do
+    local m = ms[i]
+    if m.t >= t0 and m.t <= t0 + span then
+      local x = lane_x + math_floor((m.t - t0) / span * lane_w + 0.5)
+      local c = m.death and C_MARK_DEATH or C_MARK_RES
+
+      local ln = pool_line:AcquireObject()
+      ln:ClearAnchors()
+      ln:SetAnchor(TOPLEFT,    canvas, TOPLEFT,    x, 0)
+      ln:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
+      ln:SetWidth(1)
+      ln:SetColor(c.r, c.g, c.b, c.a)
+      ln:SetHidden(false)
+
+      local ic = pool_icon:AcquireObject()
+      ic:ClearAnchors()
+      ic:SetTexture(m.death and TEX_SKULL or TEX_RES)
+      ic:SetDimensions(MARK_ICON_SZ, MARK_ICON_SZ)
+      ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - math_floor(MARK_ICON_SZ / 2), 1)
+      ic:SetColor(c.r, c.g, c.b, 0.95)
+      ic:SetHidden(false)
+    end
+  end
+end
+
 local function render_view1()
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -1014,6 +1053,9 @@ local function render_view1()
       lm:SetHidden(false)
     end
   end
+
+  draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
+               canvas, t_first, t_last - t_first, 0, cw)
 end
 
 local function render_view2()
@@ -1196,6 +1238,8 @@ local function render_view2()
       end
     end
   end
+  draw_markers(controls.pool_marker_line_top, controls.pool_marker_icon_top,
+               ec, t_first, span_ms, 0, cw)
 end
 
 local function render_view3()
@@ -1284,6 +1328,8 @@ local function render_view3()
       lt:SetHidden(false)
     end
   end
+  draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
+               canvas, t_first, t_last - t_first, 0, cw)
 end
 
 local BUFF_MAX_ROW_H = 26
@@ -1452,6 +1498,9 @@ local function render_view4()
     end
   end
 
+  draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
+               canvas, t0, span, lane_x, lane_w)
+
   if n > rows then
     local more = controls.pool_buff_lbl:AcquireObject()
     more:ClearAnchors()
@@ -1465,6 +1514,12 @@ local function render_view4()
 end
 
 function render_current_view()
+  if controls.pool_marker_line then
+    controls.pool_marker_line:ReleaseAllObjects()
+    controls.pool_marker_icon:ReleaseAllObjects()
+    controls.pool_marker_line_top:ReleaseAllObjects()
+    controls.pool_marker_icon_top:ReleaseAllObjects()
+  end
   if current_view == VIEW_EMS then
     render_view1()
   elseif current_view == VIEW_CRIT then
@@ -1762,6 +1817,28 @@ function M.init()
   controls.pool_line_ems       = make_line_pool("VerdantGraphLineEms")
   controls.pool_line_dmg       = make_line_pool("VerdantGraphLineDmg")
   controls.pool_dmg_fill       = make_fill_pool("VerdantGraphDmgFill", 1)
+  controls.pool_marker_line = Pool.new("VerdantMarkerLine", controls.canvas, CT_TEXTURE,
+    function(c)
+      fill_factory(c)
+      c:SetDrawLevel(4)
+    end, fill_reset)
+  controls.pool_marker_icon = Pool.new("VerdantMarkerIcon", controls.canvas, CT_TEXTURE,
+    function(c)
+      c:SetPixelRoundingEnabled(false)
+      c:SetDrawLevel(5)
+    end,
+    function(c) c:SetHidden(true) end)
+  controls.pool_marker_line_top = Pool.new("VerdantMarkerLineTop", controls.ehps_canvas, CT_TEXTURE,
+    function(c)
+      fill_factory(c)
+      c:SetDrawLevel(4)
+    end, fill_reset)
+  controls.pool_marker_icon_top = Pool.new("VerdantMarkerIconTop", controls.ehps_canvas, CT_TEXTURE,
+    function(c)
+      c:SetPixelRoundingEnabled(false)
+      c:SetDrawLevel(5)
+    end,
+    function(c) c:SetHidden(true) end)
   controls.pool_skill_top      = make_skill_fill_pool("VerdantSkillFillTop", "ehps_canvas")
   controls.pool_skill_bot      = make_skill_fill_pool("VerdantSkillFillBot", "mps_canvas")
   controls.pool_line_skill_top = make_skill_line_pool("VerdantSkillLineTop", "ehps_canvas")

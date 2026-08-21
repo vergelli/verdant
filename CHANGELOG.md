@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Added
+- **Death and resurrection markers** — your deaths show as a vertical line
+  with a skull on every graph view (EMS, SKILL, CRIT, BUFFS), and the
+  moment you are resurrected shows in green with a resurrect icon. Captured
+  while recording via the player death-state event, cleared on Flush.
+
+### Fixed (round 10, trial evidence)
+- **Self states leaking back in groups** — in a group you also carry a
+  group tag, so your own buffs fire the effect event twice (player + groupN)
+  and the duplicate broke the self-only detection: Crux, Sacred Ground and
+  externally-granted synergy buffs (Feeding Frenzy) reappeared in trials.
+  Self-detection now compares unit ids (the player id is learned from the
+  player-tagged event), immune to the duplicate.
+- **Skill auras (Tri Focus, Sacred Ground) excluded structurally** — any
+  aura whose id resolves to valid skill-tree keys is the aura OF a skill
+  (active or passive), not a granted buff, and is excluded with reason
+  "skill aura". Granted Major/Minor buffs have no skill keys, so they are
+  untouched.
+
 ### Fixed
 - **Duplicate buff rows** — buffs whose single cast emits several ability ids
   (Combat Prayer, Channeled Focus, Warding Contingency...) now merge into one
