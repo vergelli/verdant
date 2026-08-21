@@ -7,7 +7,7 @@
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="280" y="526"/>
+      <Dimensions x="280" y="566"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -246,6 +246,32 @@
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-44"/>
           <Dimensions y="22"/>
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
+        </Button>
+
+        <Backdrop name="$(parent)PNameBox" inherits="ZO_EditBackdrop">
+          <Anchor point="BOTTOMLEFT" offsetX="14" offsetY="-206"/>
+          <Dimensions x="128" y="24"/>
+          <Controls>
+            <EditBox name="$(parent)Edit" inherits="ZO_DefaultEditForBackdrop" maxInputCharacters="20"/>
+          </Controls>
+        </Backdrop>
+
+        <Button name="$(parent)PSaveBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMLEFT" offsetX="146" offsetY="-207"/>
+          <Dimensions x="56" y="22"/>
+          <OnClicked>Verdant.Settings.on_profile_save_click()</OnClicked>
+        </Button>
+
+        <Button name="$(parent)PDeleteBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-207"/>
+          <Dimensions x="56" y="22"/>
+          <OnClicked>Verdant.Settings.on_profile_delete_click()</OnClicked>
         </Button>
 
         <Button name="$(parent)AutoRecBtn"

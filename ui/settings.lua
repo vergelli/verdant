@@ -81,7 +81,18 @@ for pct = 0, 100, 5 do
 end
 local VPALPHA_DEFAULT = 30
 
+local USER_PREFIX = "user:"
+
+local function is_user_profile(id)
+  return type(id) == "string" and id:sub(1, #USER_PREFIX) == USER_PREFIX
+end
+
+local function user_profile_name(id)
+  return id:sub(#USER_PREFIX + 1)
+end
+
 local function profile_label_for(id)
+  if is_user_profile(id) then return "* " .. user_profile_name(id) end
   if id == "solo"     then return GetString(VERDANT_PROFILE_SOLO)     end
   if id == "dungeons" then return GetString(VERDANT_PROFILE_DUNGEONS) end
   if id == "trials"   then return GetString(VERDANT_PROFILE_TRIALS)   end
@@ -99,7 +110,34 @@ local PROFILES = {
 }
 local PROFILE_DEFAULT = "solo"
 
+local function user_profiles()
+  local sv = Verdant.SavedVars
+  if not sv then return nil end
+  sv.settings = sv.settings or {}
+  sv.settings.user_profiles = sv.settings.user_profiles or {}
+  return sv.settings.user_profiles
+end
+
+local function user_profile_names_sorted()
+  local out = {}
+  local up = user_profiles()
+  if up then
+    for name in pairs(up) do out[#out + 1] = name end
+    table.sort(out)
+  end
+  return out
+end
+
 local function profile_by_id(id)
+  if is_user_profile(id) then
+    local up = user_profiles()
+    local vals = up and up[user_profile_name(id)]
+    if vals then
+      return { id = id, rate = vals.rate, heal = vals.heal, shield = vals.shield,
+               sample = vals.sample, twindow = vals.twindow }
+    end
+    return nil
+  end
   for _, p in ipairs(PROFILES) do
     if p.id == id then return p end
   end
@@ -324,6 +362,69 @@ function M.on_profile_selected(id)
   if apply_profile(id) then refresh_all_sliders() end
 end
 
+local function rebuild_profile_combo()
+  if not profile_combo then return end
+  profile_combo:ClearItems()
+  for _, p in ipairs(PROFILES) do
+    local id = p.id
+    local entry = profile_combo:CreateItemEntry(profile_label_for(id),
+      function() M.on_profile_selected(id) end)
+    profile_combo:AddItem(entry, ZO_COMBOBOX_SUPPRESS_UPDATE)
+  end
+  for _, name in ipairs(user_profile_names_sorted()) do
+    local id = USER_PREFIX .. name
+    local entry = profile_combo:CreateItemEntry(profile_label_for(id),
+      function() M.on_profile_selected(id) end)
+    profile_combo:AddItem(entry, ZO_COMBOBOX_SUPPRESS_UPDATE)
+  end
+  profile_combo:UpdateItems()
+  profile_combo:SetSelectedItemText(profile_label_for(current_profile))
+end
+
+function M.on_profile_save_click()
+  local up = user_profiles()
+  if not up then return end
+  local name = controls.pname_edit:GetText() or ""
+  name = name:match("^%s*(.-)%s*$")
+  if name == "" and is_user_profile(current_profile) then
+    name = user_profile_name(current_profile)
+  end
+  if name == "" then
+    d("[V] " .. GetString(VERDANT_PROFILE_NAME_HINT))
+    return
+  end
+  name = name:sub(1, 20)
+  up[name] = {
+    rate    = current_rate,
+    heal    = current_heal,
+    shield  = current_shield,
+    sample  = current_sample,
+    twindow = current_twindow,
+  }
+  current_profile = USER_PREFIX .. name
+  persist_profile(current_profile)
+  controls.pname_edit:SetText("")
+  rebuild_profile_combo()
+  log:info("user profile saved:", name)
+  d("[V] " .. string.format(GetString(VERDANT_PROFILE_SAVED), name))
+end
+
+function M.on_profile_delete_click()
+  if not is_user_profile(current_profile) then
+    d("[V] " .. GetString(VERDANT_PROFILE_DELETE_HINT))
+    return
+  end
+  local up = user_profiles()
+  if not up then return end
+  local name = user_profile_name(current_profile)
+  up[name] = nil
+  current_profile = "custom"
+  persist_profile("custom")
+  rebuild_profile_combo()
+  log:info("user profile deleted:", name)
+  d("[V] " .. string.format(GetString(VERDANT_PROFILE_DELETED), name))
+end
+
 function M.on_rate_track_click(control)
   local cx      = GetUIMousePosition()
   local track_w = control:GetWidth()
@@ -506,6 +607,11 @@ function M.init()
   controls.bars_btn       = VerdantSettingsPanelBarsBtn
   controls.shielddir_btn  = VerdantSettingsPanelShieldDirBtn
   controls.autorec_btn    = VerdantSettingsPanelAutoRecBtn
+  controls.pname_edit     = VerdantSettingsPanelPNameBoxEdit
+  controls.psave_btn      = VerdantSettingsPanelPSaveBtn
+  controls.pdelete_btn    = VerdantSettingsPanelPDeleteBtn
+  controls.psave_btn:SetText(GetString(VERDANT_SETTINGS_SAVE_PROFILE))
+  controls.pdelete_btn:SetText(GetString(VERDANT_SETTINGS_DELETE_PROFILE))
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
@@ -529,15 +635,7 @@ function M.init()
 
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)
   profile_combo:SetSortsItems(false)
-  profile_combo:ClearItems()
-  for _, p in ipairs(PROFILES) do
-    local id = p.id
-    local entry = profile_combo:CreateItemEntry(profile_label_for(id),
-      function() M.on_profile_selected(id) end)
-    profile_combo:AddItem(entry, ZO_COMBOBOX_SUPPRESS_UPDATE)
-  end
-  profile_combo:UpdateItems()
-  profile_combo:SetSelectedItemText(profile_label_for(current_profile))
+  rebuild_profile_combo()
 
   controls.title_rate:SetText(GetString(VERDANT_SETTING_REFRESH_RATE))
   controls.title_rate:SetColor(0.75, 0.75, 0.75, 1)
