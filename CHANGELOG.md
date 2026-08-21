@@ -29,6 +29,20 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Fixed (round 6, in-game evidence)
+- **Renamed morph auras filtered** — "Blockade of Frost" escaped the slotted
+  filter because the aura renames per staff element while the slot says
+  "Elemental Blockade". Slotted skills are now also matched by skill keys
+  (the same family identity SkillColors uses), which is invariant to morph
+  and elemental renames.
+- **Set procs get an honest tooltip line** — item-proc rows without an
+  engine description (Ozezan's Plating, Pillager's Profit — now classified
+  as Item Set) show "Item set effect - the game exposes no tooltip for this
+  proc." instead of a silently missing line.
+- **Description race fixed** — some buffs (Minor Vitality) raced the buff
+  list at GAINED time and stayed descriptionless; the 1 Hz session tick now
+  retries unresolved descriptions against your own buff bar.
+
 ### Fixed (round 5, in-game evidence)
 - **Mechanic states filtered from the BUFFS view** — class resources and
   passive proc-states (Crux, Sacred Ground) are not buffs you maintain on

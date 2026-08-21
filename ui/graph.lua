@@ -712,6 +712,9 @@ local function show_buff_card(rec, t_at, conc_at, mx, my)
   end
   local h = CARD_ROWS_Y0 + #rows * CARD_ROW_H + 4
   local d = buff_description(rec)
+  if not d and rec.group == "item" then
+    d = GetString(VERDANT_BUFFH_SET_NO_TOOLTIP)
+  end
   if d then
     local desc = card.desc
     desc:ClearAnchors()

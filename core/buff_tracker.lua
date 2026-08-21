@@ -25,6 +25,7 @@ local excluded   = {}
 local n_excluded = 0
 local EXCLUDED_CAP = 20
 local slotted_names = {}
+local slotted_keys  = {}
 local order      = {}
 local n_tracked  = 0
 local free_recs  = {}
@@ -85,8 +86,17 @@ local function note_excluded(id, effectType, abilityType, reason)
                      why = reason or "type" }
 end
 
+local function skill_key_of(id)
+  local st, li, si = Verdant.zenimax.api.GetSpecificSkillAbilityKeysByAbilityId(id)
+  if st and li and si then
+    return st * 100000 + li * 1000 + si
+  end
+  return nil
+end
+
 local function scan_slotted()
   wipe(slotted_names)
+  wipe(slotted_keys)
   local api = Verdant.zenimax.api
   local zc  = Verdant.zenimax.constants
   local n   = 0
@@ -99,6 +109,8 @@ local function scan_slotted()
           slotted_names[name] = true
           n = n + 1
         end
+        local key = skill_key_of(id)
+        if key then slotted_keys[key] = true end
       end
     end
   end
@@ -158,6 +170,12 @@ local function get_rec(id, tag)
   if slotted_names[name] then
     bump("buffs.skipped_ability")
     note_excluded(id, nil, nil, "slotted ability")
+    return nil
+  end
+  local skey = skill_key_of(id)
+  if skey and slotted_keys[skey] then
+    bump("buffs.skipped_ability_morph")
+    note_excluded(id, nil, nil, "slotted ability (renamed aura)")
     return nil
   end
   if Verdant.zenimax.api.IsAbilityPassive(id) then
@@ -296,6 +314,11 @@ function M.expire_stale(now_ms)
         bump("buffs.expired_watchdog")
         holder_remove(rec, unitId, now_ms, true)
       end
+    end
+    if rec.desc == "" and rec.desc_tries < 8 then
+      rec.desc_tries = rec.desc_tries + 1
+      rec.desc = resolve_desc(rec.id, "player")
+      if rec.desc ~= "" then bump("buffs.desc_resolved_tick") end
     end
   end
 end

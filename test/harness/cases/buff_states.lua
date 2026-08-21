@@ -42,8 +42,43 @@ return function(H)
     ok(Verdant.Diagnostics.get("buffs.excluded_self_state") >= 1, "excluded_self_state counter missing")
   end
 
+  H.skill_keys = { [810] = {1, 2, 3}, [40095] = {1, 2, 3} }
+  H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [3] = 40095 } }
+  H.ability_names[810]   = "Blockade of Mock"
+  H.ability_names[40095] = "Elemental Mock"
+  H.ability_names[820]   = "Racy Buff"
+  H.unit_buffs = { player = { { id = 820, slot = 11 } } }
+  H.slot_descs = { [11] = "Tick resolved." }
+
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 810, 500, 0)
+  H.effect(EFFECT_RESULT_GAINED, 820, 600, 0)
+  H.advance(3000)
+  Verdant.Graph.on_stop_click()
+
+  local by_name = {}
+  BT.iterate(function(_, r) by_name[r.name] = r end)
+  ok(by_name["Blockade of Mock"] == nil, "renamed aura of a slotted skill must be excluded via skill keys")
+  ok(by_name["Racy Buff"], "normal buff must remain")
+  eq(by_name["Racy Buff"].desc, "Tick resolved.", "tick pass must resolve descriptions that raced the buff list")
+
+  local morph_line = false
+  for _, l in ipairs(BT.report_lines()) do
+    if l:find("renamed aura") then morph_line = true end
+  end
+  ok(morph_line, "report must show the renamed-aura exclusion")
+
+  if Verdant.Constants.DEBUG then
+    ok(Verdant.Diagnostics.get("buffs.skipped_ability_morph") >= 1, "morph counter missing")
+    ok(Verdant.Diagnostics.get("buffs.desc_resolved_tick") >= 1, "tick-resolve counter missing")
+  end
+
   Verdant.Graph.on_record_click()
   Verdant.Graph.on_stop_click()
+  H.skill_keys = nil
+  H.slotted = nil
+  H.unit_buffs = nil
+  H.slot_descs = nil
   H.passive_ids = nil
   H.ability_names = nil
   H.ability_descs = nil
