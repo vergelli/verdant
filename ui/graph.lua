@@ -717,10 +717,12 @@ local function show_buff_card(rec, t_at, conc_at, mx, my)
     desc:ClearAnchors()
     desc:SetAnchor(TOPLEFT, card.root, TOPLEFT, 12, h + 2)
     desc:SetWidth(CARD_W - 20)
+    desc:SetHeight(400)
     desc:SetText(d)
-    local dh = desc:GetTextHeight()
-    desc:SetHeight(dh)
     desc:SetHidden(false)
+    local dh = desc:GetTextHeight()
+    if dh < 12 then dh = 12 end
+    desc:SetHeight(dh)
     h = h + dh + 10
   end
   card.root:SetHeight(h)

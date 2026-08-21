@@ -104,6 +104,35 @@ return function(H)
     ok(Verdant.Diagnostics.get("buffs.skipped_heal_effect") >= 1, "skipped_heal_effect counter missing")
   end
 
+  H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [3] = 40094 } }
+  H.ability_names[40094] = "Combat Prayer"
+  H.ability_names[610]   = "Combat Prayer"
+  H.ability_names[611]   = "Minor Berserk"
+
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 610, 950, 0)
+  H.effect(EFFECT_RESULT_GAINED, 611, 950, 0)
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+
+  local names = {}
+  Verdant.BuffTracker.iterate(function(_, r) names[r.name] = true end)
+  ok(not names["Combat Prayer"], "buffs named like a slotted ability must be excluded")
+  ok(names["Minor Berserk"], "granted buffs must survive the slotted filter")
+
+  local slotted_line, ability_line = false, false
+  for _, l in ipairs(Verdant.BuffTracker.report_lines()) do
+    if l:find("slotted filter:") then slotted_line = true end
+    if l:find("slotted ability") then ability_line = true end
+  end
+  ok(slotted_line, "report must print the slotted filter set")
+  ok(ability_line, "report must show the slotted-ability exclusion")
+
+  if Verdant.Constants.DEBUG then
+    ok(Verdant.Diagnostics.get("buffs.skipped_ability") >= 1, "skipped_ability counter missing")
+  end
+
+  H.slotted = nil
   H.unit_buffs = nil
   H.slot_descs = nil
   H.ability_descs_caster = nil

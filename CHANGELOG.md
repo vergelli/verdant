@@ -29,6 +29,20 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Fixed (round 4, in-game evidence)
+- **Ability auras filtered by your own action bars** — the engine types the
+  short "Combat Prayer" aura as a legitimate buff, so type-based filtering
+  could not catch it. The tracker now scans both hotbars at Record time and
+  excludes any buff whose name matches a slotted ability: what remains is
+  exactly what your skills grant (Minor Berserk, Major Courage...), not the
+  skills themselves. The report prints the scanned slot names and every
+  exclusion with its reason.
+- **Description still ellipsized** — the label height was clamping the text
+  measurement in a feedback loop; the card now measures against an
+  unclamped height before sizing.
+- **Build fingerprint** — the report header and the DEBUG load message now
+  print the build tag, so evidence is unambiguous about which code ran.
+
 ### Fixed (round 3, in-game evidence)
 - **Cast abilities no longer pollute the BUFFS view** — the tracker was
   ingesting every player-sourced effect, so the casting ability (Combat

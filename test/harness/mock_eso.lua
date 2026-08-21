@@ -53,6 +53,9 @@ EFFECT_RESULT_TRANSFER     = 35
 BOSS_RANK_ITERATION_BEGIN = 1
 BOSS_RANK_ITERATION_END   = 7
 
+HOTBAR_CATEGORY_PRIMARY = 0
+HOTBAR_CATEGORY_BACKUP  = 1
+
 BUFF_EFFECT_TYPE_BUFF   = 1
 BUFF_EFFECT_TYPE_DEBUFF = 2
 ABILITY_TYPE_HEAL       = 28
@@ -287,7 +290,11 @@ function GetUnitAlliance() return 1 end
 function GetCurrentMapZoneIndex() return 1 end
 function GetZoneNameByIndex() return "Mock Zone" end
 function GetSlotName() return "" end
-function GetSlotBoundId() return 0 end
+function GetSlotBoundId(slot, cat)
+  local bars = H.slotted
+  local bar = bars and bars[cat]
+  return (bar and bar[slot]) or 0
+end
 function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
 function GetAbilityIcon() return "EsoUI/Art/Icons/ability_mock.dds" end
 function GetAbilityDescription(id, rank, caster)

@@ -24,6 +24,7 @@ local by_name    = {}
 local excluded   = {}
 local n_excluded = 0
 local EXCLUDED_CAP = 20
+local slotted_names = {}
 local order      = {}
 local n_tracked  = 0
 local free_recs  = {}
@@ -74,12 +75,33 @@ local function rec_acquire(id)
   return rec
 end
 
-local function note_excluded(id, effectType, abilityType)
+local function note_excluded(id, effectType, abilityType, reason)
   if n_excluded >= EXCLUDED_CAP then return end
   local name = Verdant.SkillColors.ability_name(id)
   if excluded[name] then return end
   n_excluded = n_excluded + 1
-  excluded[name] = { id = id, et = effectType or -1, at = abilityType or -1 }
+  excluded[name] = { id = id, et = effectType or -1, at = abilityType or -1,
+                     why = reason or "type" }
+end
+
+local function scan_slotted()
+  wipe(slotted_names)
+  local api = Verdant.zenimax.api
+  local zc  = Verdant.zenimax.constants
+  local n   = 0
+  for _, cat in ipairs({ zc.HOTBAR_CATEGORY_PRIMARY, zc.HOTBAR_CATEGORY_BACKUP }) do
+    for slot = 3, 8 do
+      local id = api.GetSlotBoundId(slot, cat)
+      if id and id > 0 then
+        local name = api.GetAbilityName(id)
+        if name and name ~= "" and not slotted_names[name] then
+          slotted_names[name] = true
+          n = n + 1
+        end
+      end
+    end
+  end
+  log:info("slotted scan:", n, "ability names")
 end
 
 local function resolve_desc(id, tag)
@@ -131,6 +153,11 @@ local function get_rec(id, tag)
     end
     bump("buffs.alias_merged")
     return rec
+  end
+  if slotted_names[name] then
+    bump("buffs.skipped_ability")
+    note_excluded(id, nil, nil, "slotted ability")
+    return nil
   end
   if n_tracked >= MAX_TRACKED then
     bump("buffs.dropped_capacity")
@@ -222,12 +249,12 @@ function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag, ef
     if by_id[abilityId] == nil then
       if effectType ~= BUFF_EFFECT_TYPE_BUFF then
         bump("buffs.skipped_not_buff")
-        note_excluded(abilityId, effectType, abilityType)
+        note_excluded(abilityId, effectType, abilityType, "not a buff")
         return
       end
       if abilityType == ABILITY_TYPE_HEAL then
         bump("buffs.skipped_heal_effect")
-        note_excluded(abilityId, effectType, abilityType)
+        note_excluded(abilityId, effectType, abilityType, "heal effect")
         return
       end
     end
@@ -271,6 +298,7 @@ function M.start_session(now_ms)
   wipe(by_name)
   wipe(excluded)
   n_excluded = 0
+  scan_slotted()
   for i = 1, n_tracked do
     local rec = order[i]
     n_free = n_free + 1
@@ -382,10 +410,14 @@ function M.report_lines()
   if n_excluded > 0 then
     lines[#lines + 1] = string.format("excluded as non-buffs (%d):", n_excluded)
     for name, e in pairs(excluded) do
-      lines[#lines + 1] = string.format("  %s  id=%d effectType=%d abilityType=%d",
-        name, e.id, e.et, e.at)
+      lines[#lines + 1] = string.format("  %-28s %s  (id=%d effectType=%d abilityType=%d)",
+        name, e.why, e.id, e.et, e.at)
     end
   end
+  local sn = {}
+  for name in pairs(slotted_names) do sn[#sn + 1] = name end
+  table_sort(sn)
+  lines[#lines + 1] = "slotted filter: " .. ((#sn > 0) and table.concat(sn, ", ") or "(empty scan)")
   return lines
 end
 
