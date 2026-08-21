@@ -46,6 +46,7 @@ local function rec_reset(rec, id)
   rec.n_ids        = 0
   rec.desc         = ""
   rec.desc_tries   = 0
+  rec.only_self    = true
   rec.applications = 0
   rec.unique_units = 0
   rec.max_conc     = 0
@@ -159,6 +160,11 @@ local function get_rec(id, tag)
     note_excluded(id, nil, nil, "slotted ability")
     return nil
   end
+  if Verdant.zenimax.api.IsAbilityPassive(id) then
+    bump("buffs.skipped_passive")
+    note_excluded(id, nil, nil, "passive skill")
+    return nil
+  end
   if n_tracked >= MAX_TRACKED then
     bump("buffs.dropped_capacity")
     return nil
@@ -270,6 +276,7 @@ function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag, ef
     else
       bump("buffs.refreshed")
     end
+    if unitTag ~= "player" then rec.only_self = false end
     holder_add(rec, unitId, endTime, now_ms)
   elseif changeType == EFFECT_RESULT_FADED then
     local rec = by_id[abilityId]
@@ -338,6 +345,17 @@ function M.finalize(now_ms)
   for i = 1, n_tracked do
     finalize_rec(order[i], now_ms)
   end
+  for i = n_tracked, 1, -1 do
+    local rec = order[i]
+    if rec.only_self and rec.desc == "" and rec.group ~= "item" then
+      bump("buffs.excluded_self_state")
+      note_excluded(rec.id, nil, nil, "self-only state")
+      table.remove(order, i)
+      n_tracked = n_tracked - 1
+      n_free = n_free + 1
+      free_recs[n_free] = rec
+    end
+  end
   table_sort(order, function(a, b) return a.uptime_ms > b.uptime_ms end)
   log:info("session finalize: tracked=", n_tracked, "dur_ms=", now_ms - t_start)
 end
@@ -400,10 +418,11 @@ function M.report_lines()
     local rec = order[i]
     local pct = (dur > 0) and (rec.uptime_ms / dur * 100) or 0
     lines[#lines + 1] = string.format(
-      "%-28s up=%5.1f%%  apps=%d  units=%d  conc_max=%d  conc_avg=%.1f  ivs=%d  gap=%.1fs  grp=%s  desc=%s  ids=%s",
+      "%-28s up=%5.1f%%  apps=%d  units=%d  conc_max=%d  conc_avg=%.1f  ivs=%d  gap=%.1fs  grp=%s  desc=%s  self=%s  ids=%s",
       rec.name or tostring(rec.id), pct, rec.applications, rec.unique_units,
       rec.max_conc, M.avg_concurrency(rec), rec.n_iv, rec.longest_gap_ms / 1000,
       rec.group, (rec.desc ~= "") and "y" or "n",
+      rec.only_self and "y" or "n",
       table.concat(rec.ids, "/", 1, rec.n_ids))
   end
   if n_tracked == 0 then lines[#lines + 1] = "(no buffs tracked this session)" end

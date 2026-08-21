@@ -29,6 +29,16 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Fixed (round 5, in-game evidence)
+- **Mechanic states filtered from the BUFFS view** — class resources and
+  passive proc-states (Crux, Sacred Ground) are not buffs you maintain on
+  the group, so they no longer occupy rows. Two layers: abilities flagged
+  passive by the engine are rejected on sight, and rows that only ever
+  touched yourself AND have no tooltip are dropped when the session freezes
+  (item procs like Ozezan's Plating are exempt so they survive solo
+  parses). Every exclusion is listed in the report with its reason, and
+  tracked rows now show a `self=y/n` marker.
+
 ### Fixed (round 4, in-game evidence)
 - **Ability auras filtered by your own action bars** — the engine types the
   short "Combat Prayer" aura as a legitimate buff, so type-based filtering

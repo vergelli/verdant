@@ -14,6 +14,7 @@ local CASES = {
   "header_metrics",
   "buff_tracker",
   "buff_merge",
+  "buff_states",
   "buffs_view",
   "buffs_hover",
   "auto_record",

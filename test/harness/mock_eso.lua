@@ -297,6 +297,9 @@ function GetSlotBoundId(slot, cat)
 end
 function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
 function GetAbilityIcon() return "EsoUI/Art/Icons/ability_mock.dds" end
+function IsAbilityPassive(id)
+  return (H.passive_ids and H.passive_ids[id]) == true
+end
 function GetAbilityDescription(id, rank, caster)
   if caster == "player" then
     local dc = H.ability_descs_caster and H.ability_descs_caster[id]
