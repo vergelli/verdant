@@ -446,9 +446,10 @@ function H.damage(opts)
     opts.ability_id or 0, 0)
 end
 
-function H.effect(change_type, ability_id, unit_id, end_time_s, source_type)
+function H.effect(change_type, ability_id, unit_id, end_time_s, source_type, unit_tag)
+  if unit_tag == nil then unit_tag = "group1" end
   return H.fire(EVENT_EFFECT_CHANGED,
-    change_type, 1, "MockEffect", "group1", 0, end_time_s or 0,
+    change_type, 1, "MockEffect", unit_tag, 0, end_time_s or 0,
     1, "icon.dds", 0, 0, 0, 0,
     "Ally", unit_id, ability_id,
     source_type or COMBAT_UNIT_TYPE_PLAYER)

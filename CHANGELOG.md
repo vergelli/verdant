@@ -29,6 +29,15 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Fixed (round 2, in-game evidence)
+- **Combat Prayer classified as Sorcerer** — the engine's skill-key API
+  mistags its new effect ids (218784/218786/218787); pinned to Restoration
+  Staff via ABILITY_OVERRIDES. This was the mysterious blue row.
+- **Buff descriptions burning retries on tagless units** — description
+  capture now only spends attempts on events that carry a unit tag, and
+  retries up to 5 times, so short AoE buffs get more chances to resolve via
+  the live buff-slot tooltip.
+
 ### Changed
 - **UI consolidation pass** — title-bar buttons of the graph window now share
   one vertical center line; the summary chip uses the chart's own encoding

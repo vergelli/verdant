@@ -66,6 +66,20 @@ return function(H)
     ok(Verdant.Diagnostics.get("buffs.desc_from_caster") >= 1, "desc_from_caster counter missing")
   end
 
+  Verdant.Graph.on_record_click()
+  for _ = 1, 4 do
+    H.effect(EFFECT_RESULT_GAINED, 555, 800, 0, nil, "")
+    H.effect(EFFECT_RESULT_FADED, 555, 800, 0, nil, "")
+  end
+  H.unit_buffs.group1[2] = { id = 555, slot = 9 }
+  H.slot_descs[9] = "Late but resolved."
+  H.effect(EFFECT_RESULT_GAINED, 555, 800, 0)
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+  local rec555
+  Verdant.BuffTracker.iterate(function(_, r) if r.id == 555 then rec555 = r end end)
+  eq(rec555.desc, "Late but resolved.", "tagless gains must not burn description retries")
+
   H.unit_buffs = nil
   H.slot_descs = nil
   H.ability_descs_caster = nil

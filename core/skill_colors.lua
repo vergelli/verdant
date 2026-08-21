@@ -141,6 +141,9 @@ local ABILITY_OVERRIDES = {
   [55677] =  "undaunted",
   [63511] =  "undaunted",
   [184634] =  "item",
+  [218784] =  "resto",
+  [218786] =  "resto",
+  [218787] =  "resto",
 
 }
 

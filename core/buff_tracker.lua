@@ -129,7 +129,7 @@ local function get_rec(id, tag)
   rec.n_ids   = 1
   rec.ids[1]  = id
   rec.desc    = resolve_desc(id, tag)
-  rec.desc_tries = 1
+  rec.desc_tries = (tag and tag ~= "") and 1 or 0
   n_tracked   = n_tracked + 1
   by_id[id]   = rec
   by_name[name] = rec
@@ -211,7 +211,7 @@ function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag)
     if changeType == EFFECT_RESULT_GAINED then
       rec.applications = rec.applications + 1
       bump("buffs.gained")
-      if rec.desc == "" and rec.desc_tries < 3 then
+      if rec.desc == "" and unitTag and unitTag ~= "" and rec.desc_tries < 5 then
         rec.desc_tries = rec.desc_tries + 1
         rec.desc = resolve_desc(abilityId, unitTag)
       end
