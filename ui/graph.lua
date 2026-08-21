@@ -77,6 +77,7 @@ local hit_main = { cols = {}, n = 0 }
 local hit_top  = { cols = {}, n = 0 }
 local hit_bot  = { cols = {}, n = 0 }
 local buff_hit = { n = 0, y0 = {}, y1 = {}, rec = {}, lane_x = 0, lane_w = 0, t0 = 0, span = 0 }
+local buff_vis = {}
 local C_BUFF_FALLBACK = { r = 0.55, g = 0.92, b = 0.62, a = 0.95 }
 
 local function buff_color(rec)
@@ -1267,8 +1268,17 @@ local function render_view4()
   controls.pool_buff_icon:ReleaseAllObjects()
   controls.pool_buff_lbl:ReleaseAllObjects()
 
-  local BT = Verdant.BuffTracker
-  local n  = BT.count()
+  local BT    = Verdant.BuffTracker
+  local n_all = BT.count()
+  local vis   = buff_vis
+  local n     = 0
+  for i = 1, n_all do
+    local rec = BT.get(i)
+    if not (rec.only_self and rec.desc == "" and rec.group ~= "item") then
+      n = n + 1
+      vis[n] = rec
+    end
+  end
 
   if n == 0 then
     controls.no_data:SetHidden(false)
@@ -1320,7 +1330,7 @@ local function render_view4()
   local dur = capture and (BT.session_end() - BT.session_start()) or 0
 
   for i = 1, rows do
-    local rec = BT.get(i)
+    local rec = vis[i]
     local y   = (i - 1) * (row_h + BUFF_ROW_GAP)
     local c   = buff_color(rec)
     if capture then

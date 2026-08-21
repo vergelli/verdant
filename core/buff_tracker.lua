@@ -88,7 +88,7 @@ end
 
 local function skill_key_of(id)
   local st, li, si = Verdant.zenimax.api.GetSpecificSkillAbilityKeysByAbilityId(id)
-  if st and li and si then
+  if st and st > 0 and li and li > 0 and si and si > 0 then
     return st * 100000 + li * 1000 + si
   end
   return nil

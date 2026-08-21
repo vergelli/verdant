@@ -29,6 +29,17 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Fixed (round 7, regression)
+- **Everything excluded as "renamed aura"** — the skill-keys API returns a
+  0,0,0 sentinel for abilities that belong to no skill, and one slotted
+  entry returned the same sentinel, so every generic buff matched it and
+  the tracker went empty. Keys are now validated the same way SkillColors
+  does (> 0), with a harness case pinning the sentinel behavior.
+- **Rows vanishing at Stop** — self-only mechanic states were rendered
+  during live recording and removed on finalize, which read as rows
+  disappearing. The live view now applies the same visibility rule, so
+  what you see while recording is what survives the Stop.
+
 ### Fixed (round 6, in-game evidence)
 - **Renamed morph auras filtered** — "Blockade of Frost" escaped the slotted
   filter because the aura renames per staff element while the slot says

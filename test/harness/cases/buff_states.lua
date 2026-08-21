@@ -7,6 +7,13 @@ return function(H)
   local BT = Verdant.BuffTracker
   Verdant.Metrics.reset()
   Verdant.Graph.on_flush_click()
+  Verdant.Visibility.set("graph", true)
+  local view_label = VerdantGraphWindowViewLabel
+  local guard = 0
+  while view_label._text ~= "BUFFS" and guard < 6 do
+    Verdant.Graph.next_view()
+    guard = guard + 1
+  end
 
   H.passive_ids = { [700] = true }
   H.ability_names = { [700] = "Sacred Mock", [701] = "Crux Mock", [702] = "Item Proc Mock", [703] = "Group Buff Mock" }
@@ -18,7 +25,13 @@ return function(H)
   H.effect(EFFECT_RESULT_GAINED, 176922, 500, 0, nil, "player")
   H.effect(EFFECT_RESULT_GAINED, 703, 600, 0, nil, "group1")
   H.advance(2000)
-  ok(BT.count() == 3, "live view keeps self-state until stop (got " .. BT.count() .. ")")
+  ok(BT.count() == 3, "tracker keeps self-state data live (got " .. BT.count() .. ")")
+  local crux_visible = false
+  for i = 1, 24 do
+    local lbl = rawget(_G, "VerdantBuffLbl" .. i)
+    if lbl and lbl._hidden == false and lbl._text == "Crux Mock" then crux_visible = true end
+  end
+  ok(not crux_visible, "self-only state must not render even while recording")
   Verdant.Graph.on_stop_click()
 
   local names = {}
@@ -42,16 +55,20 @@ return function(H)
     ok(Verdant.Diagnostics.get("buffs.excluded_self_state") >= 1, "excluded_self_state counter missing")
   end
 
-  H.skill_keys = { [810] = {1, 2, 3}, [40095] = {1, 2, 3} }
-  H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [3] = 40095 } }
+  H.skill_keys = { [810] = {1, 2, 3}, [40095] = {1, 2, 3},
+                   [811] = {0, 0, 0}, [40096] = {0, 0, 0} }
+  H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [3] = 40095, [4] = 40096 } }
   H.ability_names[810]   = "Blockade of Mock"
   H.ability_names[40095] = "Elemental Mock"
   H.ability_names[820]   = "Racy Buff"
+  H.ability_names[811]   = "Sentinel Buff"
+  H.ability_names[40096] = "Scribed Thing"
   H.unit_buffs = { player = { { id = 820, slot = 11 } } }
   H.slot_descs = { [11] = "Tick resolved." }
 
   Verdant.Graph.on_record_click()
   H.effect(EFFECT_RESULT_GAINED, 810, 500, 0)
+  H.effect(EFFECT_RESULT_GAINED, 811, 500, 0)
   H.effect(EFFECT_RESULT_GAINED, 820, 600, 0)
   H.advance(3000)
   Verdant.Graph.on_stop_click()
@@ -59,6 +76,7 @@ return function(H)
   local by_name = {}
   BT.iterate(function(_, r) by_name[r.name] = r end)
   ok(by_name["Blockade of Mock"] == nil, "renamed aura of a slotted skill must be excluded via skill keys")
+  ok(by_name["Sentinel Buff"], "zero-key sentinel ids must NEVER match slotted keys")
   ok(by_name["Racy Buff"], "normal buff must remain")
   eq(by_name["Racy Buff"].desc, "Tick resolved.", "tick pass must resolve descriptions that raced the buff list")
 
@@ -82,6 +100,8 @@ return function(H)
   H.passive_ids = nil
   H.ability_names = nil
   H.ability_descs = nil
+  while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
+  Verdant.Visibility.set("graph", false)
   Verdant.Graph.on_flush_click()
   Verdant.Metrics.reset()
 end

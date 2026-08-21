@@ -321,7 +321,7 @@ end
 function GetSpecificSkillAbilityKeysByAbilityId(id)
   local k = H.skill_keys and H.skill_keys[id]
   if k then return k[1], k[2], k[3] end
-  return nil
+  return 0, 0, 0
 end
 function GetSkillLineId() return 0 end
 function DoesUnitExist(tag) return H.state.bosses[tag] ~= nil end
