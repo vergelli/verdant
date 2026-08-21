@@ -1,5 +1,10 @@
 # Verdant — Backlog
 
+> Status 2026-08-21: items 1–3 landed on develop (PRs #20–#26, issues
+> #9–#16 and #18 closed). Pending in-game validation — see
+> VerdantWorkingdir/tasks/TEST_PLAN_2026-08-21.md. Session history (#17)
+> stays open until auto-record is validated.
+
 Engineering backlog for Verdant. Items here are committed intent, not
 speculation; ideas that have not earned a slot yet live in
 `development/projects.md`.
