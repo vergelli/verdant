@@ -117,7 +117,7 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="4"/>
+          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="9"/>
           <Dimensions x="18" y="18"/>
           <Textures normal="EsoUI/Art/Buttons/pointsplus_up.dds"
                     pressed="EsoUI/Art/Buttons/pointsplus_down.dds"
@@ -129,7 +129,7 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="4"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="9"/>
           <Dimensions x="18" y="18"/>
           <Textures normal="EsoUI/Art/Buttons/decline_up.dds"
                     pressed="EsoUI/Art/Buttons/decline_down.dds"
@@ -183,7 +183,7 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-72" offsetY="34"/>
+          <Anchor point="TOPRIGHT" offsetX="-72" offsetY="33"/>
           <Dimensions x="24" y="24"/>
           <Textures normal="EsoUI/Art/Buttons/large_leftdoublearrow_up.dds"
                     pressed="EsoUI/Art/Buttons/large_leftdoublearrow_down.dds"
@@ -203,7 +203,7 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="34"/>
+          <Anchor point="TOPRIGHT" offsetX="-8" offsetY="33"/>
           <Dimensions x="24" y="24"/>
           <Textures normal="EsoUI/Art/Buttons/large_rightarrow_up.dds"
                     pressed="EsoUI/Art/Buttons/large_rightarrow_down.dds"

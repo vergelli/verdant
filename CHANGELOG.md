@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+- **UI consolidation pass** — title-bar buttons of the graph window now share
+  one vertical center line; the summary chip uses the chart's own encoding
+  (green = healing, pink = EMS peak, gold = crit) instead of two
+  near-identical golds; the BUFFS view gained faint row lanes so bars read
+  as a timeline, and each row shows its uptime % at rest once the session
+  is frozen.
+
 ### Added
 - **User-savable profiles** — type a name in the settings panel and Save to
   store the current configuration as your own profile (marked with * in the
