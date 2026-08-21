@@ -77,13 +77,30 @@ local hit_main = { cols = {}, n = 0 }
 local hit_top  = { cols = {}, n = 0 }
 local hit_bot  = { cols = {}, n = 0 }
 local buff_hit = { n = 0, y0 = {}, y1 = {}, rec = {}, lane_x = 0, lane_w = 0, t0 = 0, span = 0 }
-local C_BUFF_FALLBACK = { r = 0.72, g = 0.14, b = 0.49, a = 0.95 }
+local C_BUFF_FALLBACK = { r = 0.55, g = 0.92, b = 0.62, a = 0.95 }
 
 local function buff_color(rec)
   if rec.group and rec.group ~= "other" then
     return Verdant.SkillColors.group_color(rec.group)
   end
   return C_BUFF_FALLBACK
+end
+
+local buff_desc_cache = {}
+
+local function buff_description(rec)
+  local GetAbilityDescription = api.GetAbilityDescription
+  for k = 1, rec.n_ids or 0 do
+    local id = rec.ids[k]
+    local d = buff_desc_cache[id]
+    if d == nil then
+      d = GetAbilityDescription(id) or ""
+      buff_desc_cache[id] = d
+    end
+    if d ~= "" then return d end
+  end
+  Verdant.Diagnostics.bump("buffs.desc_miss")
+  return nil
 end
 local C_DIM_BIAS = 0.05
 local render_current_view
@@ -497,6 +514,13 @@ local function build_hover_card()
   time:SetAnchor(TOPLEFT, root, TOPLEFT, 12, 40)
   time:SetDimensions(CARD_W - 20, 12)
 
+  local desc = WM:CreateControl("VerdantHoverCardDesc", root, CT_LABEL)
+  desc:SetFont("ZoFontGameSmall")
+  desc:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  desc:SetVerticalAlignment(TEXT_ALIGN_TOP)
+  desc:SetColor(C_CARD_STAT.r, C_CARD_STAT.g, C_CARD_STAT.b, 0.92)
+  desc:SetHidden(true)
+
   local rows = {}
   for i = 1, CARD_MAX_ROWS do
     local y = CARD_ROWS_Y0 + (i - 1) * CARD_ROW_H
@@ -527,7 +551,7 @@ local function build_hover_card()
     rows[i] = { icon = icon, name = rn, val = rv }
   end
 
-  controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time, rows = rows }
+  controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time, desc = desc, rows = rows }
 end
 
 local function clear_card_rows(card)
@@ -537,6 +561,7 @@ local function clear_card_rows(card)
     local r = rows[i]
     r.icon:SetHidden(true); r.name:SetHidden(true); r.val:SetHidden(true)
   end
+  if card.desc then card.desc:SetHidden(true) end
 end
 
 local function position_card(mx, my)
@@ -694,7 +719,20 @@ local function show_buff_card(rec, t_at, conc_at, mx, my)
     row.val:SetText(rows[i][2])
     row.val:SetHidden(false)
   end
-  card.root:SetHeight(CARD_ROWS_Y0 + #rows * CARD_ROW_H + 4)
+  local h = CARD_ROWS_Y0 + #rows * CARD_ROW_H + 4
+  local d = buff_description(rec)
+  if d then
+    local desc = card.desc
+    desc:ClearAnchors()
+    desc:SetAnchor(TOPLEFT, card.root, TOPLEFT, 12, h + 2)
+    desc:SetWidth(CARD_W - 20)
+    desc:SetText(d)
+    local dh = desc:GetTextHeight()
+    desc:SetHeight(dh)
+    desc:SetHidden(false)
+    h = h + dh + 10
+  end
+  card.root:SetHeight(h)
   position_card(mx, my)
 end
 

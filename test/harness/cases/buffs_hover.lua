@@ -4,6 +4,7 @@ return function(H)
   Verdant.Metrics.reset()
   Verdant.TemporalBuffer.clear()
   Verdant.Visibility.set("graph", true)
+  H.ability_descs = { [111] = "Increases your healing done by 10%." }
 
   Verdant.Graph.on_record_click()
   H.heal({ hit = 500 })
@@ -53,6 +54,17 @@ return function(H)
   ok(found_players, "card missing Players reached row")
   ok(found_gap, "card missing Longest gap row")
 
+  ok(VerdantHoverCardDesc._hidden == false, "buff description must show when the API returns one")
+  ok(VerdantHoverCardDesc._text == "Increases your healing done by 10%.",
+     "desc text wrong: " .. tostring(VerdantHoverCardDesc._text))
+
+  H.state.mouse_y = canvas:GetTop() + 35
+  H.advance(200)
+  ok(VerdantHoverCardName._text == "Ability222", "row 2 hover expected: " .. tostring(VerdantHoverCardName._text))
+  ok(VerdantHoverCardDesc._hidden == true, "desc must hide when no id has a description")
+  H.state.mouse_y = canvas:GetTop() + 5
+  H.advance(200)
+
   local dimmed = false
   for i = 1, 12 do
     local seg = rawget(_G, "VerdantBuffSeg" .. i)
@@ -65,6 +77,7 @@ return function(H)
   ok(VerdantHoverCard._alpha == 0, "card must fade out when leaving canvas")
 
   hit._onOnMouseExit(hit)
+  H.ability_descs = nil
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
   Verdant.Graph.on_flush_click()
   Verdant.Visibility.set("graph", false)

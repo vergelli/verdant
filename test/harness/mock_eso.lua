@@ -286,6 +286,7 @@ function GetSlotName() return "" end
 function GetSlotBoundId() return 0 end
 function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
 function GetAbilityIcon() return "EsoUI/Art/Icons/ability_mock.dds" end
+function GetAbilityDescription(id) return (H.ability_descs and H.ability_descs[id]) or "" end
 function GetSpecificSkillAbilityKeysByAbilityId(id)
   local k = H.skill_keys and H.skill_keys[id]
   if k then return k[1], k[2], k[3] end

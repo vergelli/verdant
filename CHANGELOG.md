@@ -11,8 +11,14 @@
   vertically now reveals more rows (bars stop stretching past 26px), so the
   "+N more" hint is finally honest. Tracker capacity raised 24 → 48.
 - **Buffs now have their own identity color** — unclassified buffs render in
-  a dedicated berry tone (computed as the most perceptually distant hue from
-  the existing 22-color palette) instead of grey.
+  Verdant's healing green (the same tone as the EMS chart) instead of grey.
+
+### Added (BUFFS view)
+- **Buff descriptions on hover** — the hover card now tells you what the buff
+  actually does ("Increases your damage done by 5%"), pulled live from the
+  game's own `GetAbilityDescription` API — nothing hardcoded, localized for
+  free, cached per session. When the game has no text for an effect the line
+  is simply omitted (counted as `buffs.desc_miss` in the report).
 - **Session summary placement** — the AVG/PEAK/CRIT chip moved out of the
   viewport into its own strip in the window header, under the button row.
 - **Profile save UX** — the name field sits right under the profile dropdown
