@@ -46,6 +46,29 @@ return function(H)
   eq(s.peak_ems, 0, "no healing this session")
   eq(s.peak_t_off, 0, "peak_t_off must be 0 when there is no peak")
 
+  H.unit_buffs = { group1 = { { id = 333, slot = 7 } } }
+  H.slot_descs = { [7] = "Grants you a mock shield." }
+  H.ability_descs_caster = { [444] = "Caster-scaled description." }
+
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 333, 700, 0)
+  H.effect(EFFECT_RESULT_GAINED, 444, 700, 0)
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+
+  local by = {}
+  Verdant.BuffTracker.iterate(function(_, r) by[r.id] = r end)
+  eq(by[333].desc, "Grants you a mock shield.", "slot-scan fallback must capture the description")
+  eq(by[444].desc, "Caster-scaled description.", "caster-tag description must win first")
+
+  if Verdant.Constants.DEBUG then
+    ok(Verdant.Diagnostics.get("buffs.desc_from_slot") >= 1, "desc_from_slot counter missing")
+    ok(Verdant.Diagnostics.get("buffs.desc_from_caster") >= 1, "desc_from_caster counter missing")
+  end
+
+  H.unit_buffs = nil
+  H.slot_descs = nil
+  H.ability_descs_caster = nil
   H.ability_names = nil
   Verdant.Graph.on_flush_click()
   Verdant.Metrics.reset()

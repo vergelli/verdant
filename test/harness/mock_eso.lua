@@ -286,7 +286,24 @@ function GetSlotName() return "" end
 function GetSlotBoundId() return 0 end
 function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
 function GetAbilityIcon() return "EsoUI/Art/Icons/ability_mock.dds" end
-function GetAbilityDescription(id) return (H.ability_descs and H.ability_descs[id]) or "" end
+function GetAbilityDescription(id, rank, caster)
+  if caster == "player" then
+    local dc = H.ability_descs_caster and H.ability_descs_caster[id]
+    if dc then return dc end
+  end
+  return (H.ability_descs and H.ability_descs[id]) or ""
+end
+function GetNumBuffs(tag)
+  local l = H.unit_buffs and H.unit_buffs[tag]
+  return l and #l or 0
+end
+function GetUnitBuffInfo(tag, i)
+  local b = H.unit_buffs[tag][i]
+  return "MockBuff", 0, 0, b.slot, 1, "icon.dds", 0, 0, 0, 0, b.id, false, true
+end
+function GetAbilityEffectDescription(slot)
+  return (H.slot_descs and H.slot_descs[slot]) or ""
+end
 function GetSpecificSkillAbilityKeysByAbilityId(id)
   local k = H.skill_keys and H.skill_keys[id]
   if k then return k[1], k[2], k[3] end

@@ -86,19 +86,9 @@ local function buff_color(rec)
   return C_BUFF_FALLBACK
 end
 
-local buff_desc_cache = {}
-
 local function buff_description(rec)
-  local GetAbilityDescription = api.GetAbilityDescription
-  for k = 1, rec.n_ids or 0 do
-    local id = rec.ids[k]
-    local d = buff_desc_cache[id]
-    if d == nil then
-      d = GetAbilityDescription(id) or ""
-      buff_desc_cache[id] = d
-    end
-    if d ~= "" then return d end
-  end
+  local d = rec.desc
+  if d and d ~= "" then return d end
   Verdant.Diagnostics.bump("buffs.desc_miss")
   return nil
 end

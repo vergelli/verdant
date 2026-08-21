@@ -182,7 +182,7 @@ function M.dispatch_group_damage(_result, isError, _name, _g, _slot,
   prof_exit("pipeline.combat_event")
 end
 
-function M.dispatch_effect_player_src(changeType, _slot, _name, _tag, _bt, endTime,
+function M.dispatch_effect_player_src(changeType, _slot, _name, unitTag, _bt, endTime,
                                        _stack, _icon, _depBuff, _et, _at,
                                        _stat, _uname, unitId, abilityId, sourceType)
   prof_enter("pipeline.effect")
@@ -193,7 +193,7 @@ function M.dispatch_effect_player_src(changeType, _slot, _name, _tag, _bt, endTi
     bump("engine.effect.faded")
   end
   Verdant.ShieldRegistry.on_effect(changeType, abilityId, unitId, sourceType, endTime)
-  Verdant.BuffTracker.on_effect(changeType, abilityId, unitId, endTime, now())
+  Verdant.BuffTracker.on_effect(changeType, abilityId, unitId, endTime, now(), unitTag)
   prof_exit("pipeline.effect")
 end
 

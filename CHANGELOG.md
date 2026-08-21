@@ -15,10 +15,13 @@
 
 ### Added (BUFFS view)
 - **Buff descriptions on hover** — the hover card now tells you what the buff
-  actually does ("Increases your damage done by 5%"), pulled live from the
-  game's own `GetAbilityDescription` API — nothing hardcoded, localized for
-  free, cached per session. When the game has no text for an effect the line
-  is simply omitted (counted as `buffs.desc_miss` in the report).
+  actually does ("Increases your damage done by 5%"). Nothing hardcoded and
+  localized for free: descriptions resolve through a three-step chain at the
+  moment the buff lands — `GetAbilityDescription(id, nil, "player")` (caster
+  context), then the plain id lookup, then the live buff-slot tooltip
+  (`GetUnitBuffInfo` + `GetAbilityEffectDescription`, the same text the
+  game's buff bar shows), which only exists while the buff is active. The
+  report counts which source resolved each one (`buffs.desc_from_*`).
 - **Session summary placement** — the AVG/PEAK/CRIT chip moved out of the
   viewport into its own strip in the window header, under the button row.
 - **Profile save UX** — the name field sits right under the profile dropdown

@@ -38,6 +38,8 @@ local function rec_reset(rec, id)
   rec.name         = nil
   rec.group        = "other"
   rec.n_ids        = 0
+  rec.desc         = ""
+  rec.desc_tries   = 0
   rec.applications = 0
   rec.unique_units = 0
   rec.max_conc     = 0
@@ -67,7 +69,37 @@ local function rec_acquire(id)
   return rec
 end
 
-local function get_rec(id)
+local function resolve_desc(id, tag)
+  local api = Verdant.zenimax.api
+  local d = api.GetAbilityDescription(id, nil, "player")
+  if d and d ~= "" then
+    bump("buffs.desc_from_caster")
+    return d
+  end
+  d = api.GetAbilityDescription(id)
+  if d and d ~= "" then
+    bump("buffs.desc_plain")
+    return d
+  end
+  if tag and tag ~= "" then
+    local n = api.GetNumBuffs(tag) or 0
+    for i = 1, n do
+      local _, _, _, buffSlot, _, _, _, _, _, _, buffAbilityId = api.GetUnitBuffInfo(tag, i)
+      if buffAbilityId == id then
+        d = api.GetAbilityEffectDescription(buffSlot)
+        if d and d ~= "" then
+          bump("buffs.desc_from_slot")
+          return d
+        end
+        break
+      end
+    end
+  end
+  bump("buffs.desc_unresolved")
+  return ""
+end
+
+local function get_rec(id, tag)
   local rec = by_id[id]
   if rec then return rec end
   local SC   = Verdant.SkillColors
@@ -81,6 +113,9 @@ local function get_rec(id)
       local g = SC.group_of(id)
       if g and g ~= "other" then rec.group = g end
     end
+    if rec.desc == "" then
+      rec.desc = resolve_desc(id, tag)
+    end
     bump("buffs.alias_merged")
     return rec
   end
@@ -93,6 +128,8 @@ local function get_rec(id)
   rec.group   = SC.group_of(id) or "other"
   rec.n_ids   = 1
   rec.ids[1]  = id
+  rec.desc    = resolve_desc(id, tag)
+  rec.desc_tries = 1
   n_tracked   = n_tracked + 1
   by_id[id]   = rec
   by_name[name] = rec
@@ -157,7 +194,7 @@ local function holder_remove(rec, unitId, t, force)
   if rec.conc == 0 then close_interval(rec, t) end
 end
 
-function M.on_effect(changeType, abilityId, unitId, endTime, now_ms)
+function M.on_effect(changeType, abilityId, unitId, endTime, now_ms, unitTag)
   if not recording then return end
   if not abilityId or abilityId == 0 then return end
   if not unitId or unitId == 0 then
@@ -169,11 +206,15 @@ function M.on_effect(changeType, abilityId, unitId, endTime, now_ms)
      or changeType == EFFECT_RESULT_UPDATED
      or changeType == EFFECT_RESULT_FULL_REFRESH
      or changeType == EFFECT_RESULT_TRANSFER then
-    local rec = get_rec(abilityId)
+    local rec = get_rec(abilityId, unitTag)
     if not rec then return end
     if changeType == EFFECT_RESULT_GAINED then
       rec.applications = rec.applications + 1
       bump("buffs.gained")
+      if rec.desc == "" and rec.desc_tries < 3 then
+        rec.desc_tries = rec.desc_tries + 1
+        rec.desc = resolve_desc(abilityId, unitTag)
+      end
     else
       bump("buffs.refreshed")
     end
@@ -304,10 +345,11 @@ function M.report_lines()
     local rec = order[i]
     local pct = (dur > 0) and (rec.uptime_ms / dur * 100) or 0
     lines[#lines + 1] = string.format(
-      "%-28s up=%5.1f%%  apps=%d  units=%d  conc_max=%d  conc_avg=%.1f  ivs=%d  gap=%.1fs  grp=%s  ids=%s",
+      "%-28s up=%5.1f%%  apps=%d  units=%d  conc_max=%d  conc_avg=%.1f  ivs=%d  gap=%.1fs  grp=%s  desc=%s  ids=%s",
       rec.name or tostring(rec.id), pct, rec.applications, rec.unique_units,
       rec.max_conc, M.avg_concurrency(rec), rec.n_iv, rec.longest_gap_ms / 1000,
-      rec.group, table.concat(rec.ids, "/", 1, rec.n_ids))
+      rec.group, (rec.desc ~= "") and "y" or "n",
+      table.concat(rec.ids, "/", 1, rec.n_ids))
   end
   if n_tracked == 0 then lines[#lines + 1] = "(no buffs tracked this session)" end
   return lines
