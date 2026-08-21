@@ -36,6 +36,7 @@ local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink
 
 local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green base
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
+local C_LINE_DMG  = { r = 0.93, g = 0.44, b = 0.38, a = 0.38 }
 
 local C_VIEWPORT  = { r = 0.78, g = 1.00, b = 0.86 }
 
@@ -289,6 +290,7 @@ local function release_all_pools()
   controls.pool_mps:ReleaseAllObjects()
   controls.pool_line_ehps:ReleaseAllObjects()
   controls.pool_line_ems:ReleaseAllObjects()
+  controls.pool_line_dmg:ReleaseAllObjects()
   controls.pool_skill_top:ReleaseAllObjects()
   controls.pool_skill_bot:ReleaseAllObjects()
   controls.pool_line_skill_top:ReleaseAllObjects()
@@ -341,6 +343,7 @@ local function layout_skill_area()
 end
 
 local r1_xs, r1_ehps_hs, r1_ems_hs = {}, {}, {}
+local r1_d_hs = {}
 local r2_xs_top, r2_colh_top       = {}, {}
 local r2_xs_bot, r2_colh_bot       = {}, {}
 local r3_xs, r3_top_hs             = {}, {}
@@ -370,6 +373,7 @@ local function decimate(cw)
       col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.ehps_abilities = s.ehps_abilities
       col.noncrit = s.noncrit; col.crit = s.crit
       col.MPS = s.MPS; col.mps_groups = s.mps_groups; col.mps_abilities = s.mps_abilities
+      col.d = s.d or 0
       cur_c = c
     else
       if ems > col.ems_peak then col.ems_peak = ems; col.e1 = s.eHPS; col.m1 = s.MPS end
@@ -378,6 +382,7 @@ local function decimate(cw)
         col.noncrit = s.noncrit; col.crit = s.crit
       end
       if s.MPS > col.MPS then col.MPS = s.MPS; col.mps_groups = s.mps_groups; col.mps_abilities = s.mps_abilities end  -- MPS-peak
+      if (s.d or 0) > col.d then col.d = s.d end
       col.t = s.t
     end
   end)
@@ -620,6 +625,7 @@ local function hit_col(H, i, x, bw, s)
   if not col then col = { bands = {} }; H.cols[i] = col end
   col.x0 = x; col.x1 = x + bw; col.nb = 0; col.t = s.t
   col.ehps = s.e1; col.mps = s.m1; col.crit = s.crit; col.noncrit = s.noncrit
+  col.d = s.d or 0
   col.ehps_abilities = s.ehps_abilities; col.mps_abilities = s.mps_abilities
   return col
 end
@@ -768,9 +774,13 @@ local function hover_poll()
   if band then
     show_card(band, col, unit or "HPS", mx, my, elapsed)
   elseif current_view == VIEW_EMS then
+    local dmg_part = ""
+    if (col.d or 0) > 0 then
+      dmg_part = string_format("  ·  |c%s%s dmg|r", hexc(C_LINE_DMG), fmt_val(col.d))
+    end
     show_moment_card(C_EHPS, "Healing",
-      string_format("|c%s%s HPS|r  ·  |c%s%s MPS|r",
-        hexc(C_EHPS), fmt_val(col.ehps or 0), hexc(C_MPS), fmt_val(col.mps or 0)),
+      string_format("|c%s%s HPS|r  ·  |c%s%s MPS|r%s",
+        hexc(C_EHPS), fmt_val(col.ehps or 0), hexc(C_MPS), fmt_val(col.mps or 0), dmg_part),
       elapsed, mx, my)
   elseif current_view == VIEW_CRIT then
     local tot = (col.crit or 0) + (col.noncrit or 0)
@@ -814,6 +824,7 @@ local function render_view1()
   controls.pool_mps:ReleaseAllObjects()
   controls.pool_line_ehps:ReleaseAllObjects()
   controls.pool_line_ems:ReleaseAllObjects()
+  controls.pool_line_dmg:ReleaseAllObjects()
 
   local n = Verdant.TemporalBuffer.count()
   if n == 0 then
@@ -831,10 +842,12 @@ local function render_view1()
   local ch_plot = math_max(4, ch - TIME_STRIP_H)
 
   local max_ems = 0
+  local max_d   = 0
   local t_first, t_last = 0, 0
   Verdant.TemporalBuffer.iterate(function(i, s)
     local ems = s.eHPS + s.MPS
     if ems > max_ems then max_ems = ems end
+    if (s.d or 0) > max_d then max_d = s.d end
     if i == 1 then t_first = s.t end
     t_last = s.t
   end)
@@ -864,6 +877,7 @@ local function render_view1()
     xs[i]      = xc
     ehps_hs[i] = ehps_h
     ems_hs[i]  = ehps_h + mps_h
+    r1_d_hs[i] = (max_d > 0) and math_floor(ch_plot * 0.92 * (s.d / max_d) + 0.5) or 0
 
     if ehps_h > 0 then
       local te = controls.pool_ehps:AcquireObject()
@@ -883,6 +897,18 @@ local function render_view1()
       tm:SetHeight(mps_h)
       tm:SetColor(C_MPS.r, C_MPS.g, C_MPS.b, C_MPS.a)
       tm:SetHidden(false)
+    end
+  end
+
+  if col_w >= 3 and max_d > 0 then
+    for i = 2, m do
+      local ld = controls.pool_line_dmg:AcquireObject()
+      ld:ClearAnchors()
+      ld:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, xs[i-1], -(r1_d_hs[i-1] + TIME_STRIP_H))
+      ld:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, xs[i],   -(r1_d_hs[i]   + TIME_STRIP_H))
+      ld:SetColor(C_LINE_DMG.r, C_LINE_DMG.g, C_LINE_DMG.b, C_LINE_DMG.a)
+      ld:SetThickness(1)
+      ld:SetHidden(false)
     end
   end
 
@@ -1415,9 +1441,10 @@ local function on_sample_update()
   Verdant.Metrics.MPS_by_group_into(sample_mps_groups, now)
   Verdant.Metrics.eHPS_by_ability_into(sample_ehps_abilities, now)
   Verdant.Metrics.MPS_by_ability_into(sample_mps_abilities, now)
+  local d_group = Verdant.Metrics.D_group(now)
   Verdant.TemporalBuffer.push(now, ehps, mps, crit, noncrit,
                               sample_ehps_groups, sample_mps_groups,
-                              sample_ehps_abilities, sample_mps_abilities)
+                              sample_ehps_abilities, sample_mps_abilities, d_group)
   Verdant.BuffTracker.expire_stale(now)
 
   local elapsed = math_floor((now - recording_start_ms) / 1000)
@@ -1610,6 +1637,7 @@ function M.init()
   controls.pool_mps            = make_fill_pool("VerdantGraphFillMps")
   controls.pool_line_ehps      = make_line_pool("VerdantGraphLineEhps")
   controls.pool_line_ems       = make_line_pool("VerdantGraphLineEms")
+  controls.pool_line_dmg       = make_line_pool("VerdantGraphLineDmg")
   controls.pool_skill_top      = make_skill_fill_pool("VerdantSkillFillTop", "ehps_canvas")
   controls.pool_skill_bot      = make_skill_fill_pool("VerdantSkillFillBot", "mps_canvas")
   controls.pool_line_skill_top = make_skill_line_pool("VerdantSkillLineTop", "ehps_canvas")

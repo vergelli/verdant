@@ -21,7 +21,7 @@ function M.init(capacity)
   state.count    = 0
   state.data     = {}
   for i = 1, capacity do
-    state.data[i] = { t = 0, eHPS = 0, MPS = 0, crit = 0, noncrit = 0,
+    state.data[i] = { t = 0, eHPS = 0, MPS = 0, crit = 0, noncrit = 0, d = 0,
                       ehps_groups = { count = 0 }, mps_groups = { count = 0 },
                       ehps_abilities = { count = 0 }, mps_abilities = { count = 0 } }
   end
@@ -53,13 +53,14 @@ local function copy_abilities(dst, src)
 end
 
 
-function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups, ehps_abilities, mps_abilities)
+function M.push(timestamp, eHPS, MPS, crit, noncrit, ehps_groups, mps_groups, ehps_abilities, mps_abilities, d_group)
   local slot   = state.data[state.write]
   slot.t       = timestamp
   slot.eHPS    = eHPS
   slot.MPS     = MPS
   slot.crit    = crit or 0
   slot.noncrit = noncrit or 0
+  slot.d       = d_group or 0
   copy_groups(slot.ehps_groups, ehps_groups)
   copy_groups(slot.mps_groups,  mps_groups)
   copy_abilities(slot.ehps_abilities, ehps_abilities)
