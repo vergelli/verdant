@@ -15,9 +15,10 @@ local EFFECT_RESULT_FULL_REFRESH = C.EFFECT_RESULT_FULL_REFRESH
 local EFFECT_RESULT_TRANSFER     = C.EFFECT_RESULT_TRANSFER
 local EFFECT_RESULT_FADED        = C.EFFECT_RESULT_FADED
 
-local MAX_TRACKED = 24
+local MAX_TRACKED = 48
 
 local by_id      = {}
+local by_name    = {}
 local order      = {}
 local n_tracked  = 0
 local free_recs  = {}
@@ -34,6 +35,9 @@ end
 
 local function rec_reset(rec, id)
   rec.id           = id
+  rec.name         = nil
+  rec.group        = "other"
+  rec.n_ids        = 0
   rec.applications = 0
   rec.unique_units = 0
   rec.max_conc     = 0
@@ -44,7 +48,9 @@ local function rec_reset(rec, id)
   rec.n_steps      = 0
   rec.open_t0      = nil
   wipe(rec.holders)
+  wipe(rec.holders_n)
   wipe(rec.units_ever)
+  wipe(rec.ids)
 end
 
 local function rec_acquire(id)
@@ -54,7 +60,8 @@ local function rec_acquire(id)
     free_recs[n_free] = nil
     n_free = n_free - 1
   else
-    rec = { iv_t0 = {}, iv_t1 = {}, step_t = {}, step_c = {}, holders = {}, units_ever = {} }
+    rec = { iv_t0 = {}, iv_t1 = {}, step_t = {}, step_c = {}, holders = {},
+            holders_n = {}, units_ever = {}, ids = {} }
   end
   rec_reset(rec, id)
   return rec
@@ -63,13 +70,32 @@ end
 local function get_rec(id)
   local rec = by_id[id]
   if rec then return rec end
+  local SC   = Verdant.SkillColors
+  local name = SC.ability_name(id)
+  rec = by_name[name]
+  if rec then
+    by_id[id] = rec
+    rec.n_ids = rec.n_ids + 1
+    rec.ids[rec.n_ids] = id
+    if rec.group == "other" then
+      local g = SC.group_of(id)
+      if g and g ~= "other" then rec.group = g end
+    end
+    bump("buffs.alias_merged")
+    return rec
+  end
   if n_tracked >= MAX_TRACKED then
     bump("buffs.dropped_capacity")
     return nil
   end
   rec = rec_acquire(id)
-  n_tracked = n_tracked + 1
-  by_id[id] = rec
+  rec.name    = name
+  rec.group   = SC.group_of(id) or "other"
+  rec.n_ids   = 1
+  rec.ids[1]  = id
+  n_tracked   = n_tracked + 1
+  by_id[id]   = rec
+  by_name[name] = rec
   order[n_tracked] = rec
   bump("buffs.tracked")
   return rec
@@ -97,21 +123,34 @@ local function close_interval(rec, t)
 end
 
 local function holder_add(rec, unitId, endTime, t)
-  if rec.holders[unitId] == nil then
+  local n = rec.holders_n[unitId]
+  if n == nil or n == 0 then
+    rec.holders_n[unitId] = 1
     rec.conc = rec.conc + 1
     if rec.conc > rec.max_conc then rec.max_conc = rec.conc end
     if rec.conc == 1 then open_interval(rec, t) end
     push_step(rec, t)
+    rec.holders[unitId] = endTime or 0
+  else
+    rec.holders_n[unitId] = n + 1
+    local et = endTime or 0
+    if et > (rec.holders[unitId] or 0) then rec.holders[unitId] = et end
   end
-  rec.holders[unitId] = endTime or 0
   if not rec.units_ever[unitId] then
     rec.units_ever[unitId] = true
     rec.unique_units = rec.unique_units + 1
   end
 end
 
-local function holder_remove(rec, unitId, t)
-  if rec.holders[unitId] == nil then return end
+local function holder_remove(rec, unitId, t, force)
+  local n = rec.holders_n[unitId]
+  if n == nil or n == 0 then return end
+  if force then n = 1 end
+  if n > 1 then
+    rec.holders_n[unitId] = n - 1
+    return
+  end
+  rec.holders_n[unitId] = 0
   rec.holders[unitId] = nil
   rec.conc = rec.conc - 1
   push_step(rec, t)
@@ -155,16 +194,17 @@ function M.expire_stale(now_ms)
     for unitId, endTime in pairs(rec.holders) do
       if endTime and endTime > 0 and endTime < now_s then
         bump("buffs.expired_watchdog")
-        holder_remove(rec, unitId, now_ms)
+        holder_remove(rec, unitId, now_ms, true)
       end
     end
   end
 end
 
 function M.start_session(now_ms)
+  wipe(by_id)
+  wipe(by_name)
   for i = 1, n_tracked do
     local rec = order[i]
-    by_id[rec.id] = nil
     n_free = n_free + 1
     free_recs[n_free] = rec
     order[i] = nil
@@ -246,7 +286,7 @@ function M.snapshot()
   for i = 1, n_tracked do
     local rec = order[i]
     abilities[i] = {
-      id = rec.id, applications = rec.applications,
+      id = rec.id, name = rec.name, group = rec.group, applications = rec.applications,
       unique_units = rec.unique_units, max_conc = rec.max_conc,
       intervals = rec.n_iv, uptime_ms = rec.uptime_ms,
     }
@@ -260,14 +300,14 @@ function M.report_lines()
   local dur = (t_end > t_start) and (t_end - t_start) or 0
   lines[#lines + 1] = string.format("tracked=%d recording=%s session=%.1fs cap=%d",
     n_tracked, tostring(recording), dur / 1000, MAX_TRACKED)
-  local SC = Verdant.SkillColors
   for i = 1, n_tracked do
     local rec = order[i]
     local pct = (dur > 0) and (rec.uptime_ms / dur * 100) or 0
     lines[#lines + 1] = string.format(
-      "%-28s up=%5.1f%%  apps=%d  units=%d  conc_max=%d  conc_avg=%.1f  ivs=%d  gap=%.1fs",
-      SC.ability_name(rec.id), pct, rec.applications, rec.unique_units,
-      rec.max_conc, M.avg_concurrency(rec), rec.n_iv, rec.longest_gap_ms / 1000)
+      "%-28s up=%5.1f%%  apps=%d  units=%d  conc_max=%d  conc_avg=%.1f  ivs=%d  gap=%.1fs  grp=%s  ids=%s",
+      rec.name or tostring(rec.id), pct, rec.applications, rec.unique_units,
+      rec.max_conc, M.avg_concurrency(rec), rec.n_iv, rec.longest_gap_ms / 1000,
+      rec.group, table.concat(rec.ids, "/", 1, rec.n_ids))
   end
   if n_tracked == 0 then lines[#lines + 1] = "(no buffs tracked this session)" end
   return lines

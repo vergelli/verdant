@@ -284,7 +284,7 @@ function GetCurrentMapZoneIndex() return 1 end
 function GetZoneNameByIndex() return "Mock Zone" end
 function GetSlotName() return "" end
 function GetSlotBoundId() return 0 end
-function GetAbilityName(id) return "Ability" .. tostring(id) end
+function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
 function GetAbilityIcon() return "EsoUI/Art/Icons/ability_mock.dds" end
 function GetSpecificSkillAbilityKeysByAbilityId(id)
   local k = H.skill_keys and H.skill_keys[id]
