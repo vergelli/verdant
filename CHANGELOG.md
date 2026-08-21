@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Session summary chip** — after Stop, the graph shows AVG / PEAK / CRIT for
+  the frozen session in the top-right corner of the viewport. Computed once on
+  Stop, cleared on Record/Flush. The same numbers appear in
+  `/verdant report` under "session summary".
+
+---
+
 ## [2.2.0] - 2026-06-28
 
 The big visual + performance pass: pixel-perfect chart decimation (M4), a
