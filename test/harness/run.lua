@@ -13,6 +13,7 @@ local CASES = {
   "record_flow",
   "header_metrics",
   "buff_tracker",
+  "buffs_view",
   "slash_report",
 }
 

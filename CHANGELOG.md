@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- **BUFFS view** — fourth graph view: a Gantt timeline with one row per buff
+  you applied during the recording. Each bar spans the union interval (open
+  while at least one group member still holds the buff) and its intensity
+  encodes how many players hold it at that moment. Rows show the ability icon
+  and name, capped to what fits the window with a "+N more" hint.
 - **Buff tracker (engine)** — while recording, Verdant now tracks every buff
   you apply: union uptime intervals (a bar stays open while at least one
   group member still holds the buff), concurrency curve, applications,
