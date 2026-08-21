@@ -15,6 +15,7 @@ local CASES = {
   "buff_tracker",
   "buffs_view",
   "buffs_hover",
+  "auto_record",
   "slash_report",
 }
 

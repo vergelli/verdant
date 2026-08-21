@@ -215,6 +215,9 @@ function M.full_report(include_gc)
   if Verdant.BuffTracker and Verdant.BuffTracker.report_lines then
     section("buff tracker", Verdant.BuffTracker.report_lines())
   end
+  if Verdant.AutoRecord and Verdant.AutoRecord.report_lines then
+    section("auto record", Verdant.AutoRecord.report_lines())
+  end
   section("diagnostics", build_diag_lines())
   if Verdant.Profiler and Verdant.Profiler.report_lines then
     section("profiler",   Verdant.Profiler.report_lines())
