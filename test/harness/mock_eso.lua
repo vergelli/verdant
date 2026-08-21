@@ -204,8 +204,14 @@ ANIMATION_MANAGER = {
 ZO_AlphaAnimation = {
   New = function(_, control)
     return {
-      FadeIn = function() end,
-      FadeOut = function(_, _, _, _, cb) if cb then cb() end end,
+      FadeIn = function()
+        control:SetHidden(false)
+        control:SetAlpha(1)
+      end,
+      FadeOut = function(_, _, _, _, cb)
+        control:SetAlpha(0)
+        if cb then cb() end
+      end,
     }
   end,
 }

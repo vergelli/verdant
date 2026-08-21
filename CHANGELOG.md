@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **BUFFS hover card** — hovering a row in the frozen BUFFS view shows the
+  buff's uptime %, total uptime, players reached, max/avg holders, casts and
+  longest gap, plus the holder count at the exact time under the cursor.
+  Other rows dim while hovering, same crosshair language as the other views.
 - **BUFFS view** — fourth graph view: a Gantt timeline with one row per buff
   you applied during the recording. Each bar spans the union interval (open
   while at least one group member still holds the buff) and its intensity

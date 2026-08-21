@@ -75,6 +75,7 @@ local hover_key  = nil
 local hit_main = { cols = {}, n = 0 }
 local hit_top  = { cols = {}, n = 0 }
 local hit_bot  = { cols = {}, n = 0 }
+local buff_hit = { n = 0, y0 = {}, y1 = {}, rec = {}, lane_x = 0, lane_w = 0, t0 = 0, span = 0 }
 local C_DIM_BIAS = 0.05
 local render_current_view
 
@@ -648,6 +649,84 @@ local function probe(canvas, H, mx, my)
   return true, band, col
 end
 
+local function show_buff_card(rec, t_at, conc_at, mx, my)
+  local card = controls.card
+  if not card then return end
+  local BT  = Verdant.BuffTracker
+  local SC  = Verdant.SkillColors
+  local c   = SC.get_color(rec.id)
+  local dur = BT.session_end() - BT.session_start()
+  local pct = (dur > 0) and math_floor(rec.uptime_ms / dur * 100 + 0.5) or 0
+
+  card.swatch:SetColor(c.r, c.g, c.b, 1.0)
+  card.name:SetColor(c.r, c.g, c.b, 1.0)
+  card.name:SetText(SC.ability_name(rec.id))
+  card.stat:SetText(string_format("%s %d%%  ·  %s", GetString(VERDANT_BUFFH_UPTIME), pct, fmt_secs(rec.uptime_ms)))
+  card.time:SetText(string_format("t  %s  ·  %d %s", fmt_secs(t_at), conc_at, GetString(VERDANT_BUFFH_HOLDERS)))
+
+  clear_card_rows(card)
+  local rows = {
+    { GetString(VERDANT_BUFFH_PLAYERS), tostring(rec.unique_units) },
+    { GetString(VERDANT_BUFFH_MAXC),    tostring(rec.max_conc) },
+    { GetString(VERDANT_BUFFH_AVGC),    string_format("%.1f", BT.avg_concurrency(rec)) },
+    { GetString(VERDANT_BUFFH_APPS),    tostring(rec.applications) },
+    { GetString(VERDANT_BUFFH_GAP),     fmt_secs(rec.longest_gap_ms) },
+  }
+  for i = 1, #rows do
+    local row = card.rows[i]
+    row.icon:SetHidden(true)
+    row.name:SetText(rows[i][1])
+    row.name:SetColor(C_CARD_STAT.r, C_CARD_STAT.g, C_CARD_STAT.b, 1.0)
+    row.name:SetHidden(false)
+    row.val:SetText(rows[i][2])
+    row.val:SetHidden(false)
+  end
+  card.root:SetHeight(CARD_ROWS_Y0 + #rows * CARD_ROW_H + 4)
+  position_card(mx, my)
+end
+
+local function buff_hover_poll(mx, my)
+  local canvas = controls.canvas
+  local rel_x  = mx - canvas:GetLeft()
+  local rel_y  = my - canvas:GetTop()
+  local cw, ch = canvas:GetWidth(), canvas:GetHeight()
+  local inside = rel_x >= 0 and rel_x <= cw and rel_y >= 0 and rel_y <= ch
+
+  local rec = nil
+  if inside then
+    for i = 1, buff_hit.n do
+      if rel_y >= buff_hit.y0[i] and rel_y <= buff_hit.y1[i] then
+        rec = buff_hit.rec[i]
+        break
+      end
+    end
+  end
+
+  local new = rec and rec.id or nil
+  if new ~= hover_key then hover_key = new; render_current_view() end
+
+  if not rec or buff_hit.span <= 0 then
+    hide_hover_ui()
+    return
+  end
+
+  local frac = (rel_x - buff_hit.lane_x) / buff_hit.lane_w
+  if frac < 0 then frac = 0 end
+  if frac > 1 then frac = 1 end
+  local t_abs = buff_hit.t0 + frac * buff_hit.span
+  local conc  = Verdant.BuffTracker.concurrency_at(rec, t_abs)
+
+  if controls.crosshair then
+    local cx = math_floor(rel_x)
+    controls.crosshair:ClearAnchors()
+    controls.crosshair:SetAnchor(TOPLEFT,    canvas, TOPLEFT,    cx, 0)
+    controls.crosshair:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, cx, 0)
+    fade_in(crosshair_fader)
+  end
+
+  show_buff_card(rec, t_abs - buff_hit.t0, conc, mx, my)
+end
+
 local function hover_poll()
   if not hover_allowed() then
     if hover_key ~= nil then hover_key = nil; render_current_view() end
@@ -655,6 +734,10 @@ local function hover_poll()
     return
   end
   local mx, my = GetUIMousePosition()
+  if current_view == VIEW_BUFFS then
+    buff_hover_poll(mx, my)
+    return
+  end
   local band, col, canvas, H, unit
   if current_view == VIEW_SKILL then
     local inside, b, c = probe(controls.ehps_canvas, hit_top, mx, my)
@@ -703,7 +786,7 @@ end
 local function update_hover_gate()
   local on    = hover_allowed()
   local skill = (current_view == VIEW_SKILL)
-  local main  = (current_view == VIEW_EMS or current_view == VIEW_CRIT)
+  local main  = (current_view ~= VIEW_SKILL)
   if controls.hit_main then
     controls.hit_main:SetMouseEnabled(on and main)
     controls.hit_main:SetHidden(not (on and main))
@@ -1108,6 +1191,7 @@ local function seg_alpha(conc, max_conc)
   return 0.40 + 0.55 * (conc / max_conc)
 end
 
+
 local function render_view4()
   controls.pool_buff_seg:ReleaseAllObjects()
   controls.pool_buff_icon:ReleaseAllObjects()
@@ -1154,10 +1238,23 @@ local function render_view4()
   local lane_w = cw - BUFF_GUTTER_W
   local isz    = (row_h < 20) and row_h or 20
 
+  local capture = not recording
+  buff_hit.n = capture and rows or 0
+  buff_hit.lane_x = lane_x
+  buff_hit.lane_w = lane_w
+  buff_hit.t0     = t0
+  buff_hit.span   = span
+  local hk = hover_key
+
   for i = 1, rows do
     local rec = BT.get(i)
     local y   = (i - 1) * (row_h + BUFF_ROW_GAP)
     local c   = SC.get_color(rec.id)
+    if capture then
+      buff_hit.y0[i]  = y
+      buff_hit.y1[i]  = y + row_h
+      buff_hit.rec[i] = rec
+    end
 
     local icon = controls.pool_buff_icon:AcquireObject()
     icon:ClearAnchors()
@@ -1169,7 +1266,11 @@ local function render_view4()
     local lbl = controls.pool_buff_lbl:AcquireObject()
     lbl:ClearAnchors()
     lbl:SetText(SC.ability_name(rec.id))
-    lbl:SetColor(C_BUFF_NAME.r, C_BUFF_NAME.g, C_BUFF_NAME.b, C_BUFF_NAME.a)
+    if hk ~= nil and rec.id ~= hk then
+      lbl:SetColor(C_BUFF_NAME.r * 0.45, C_BUFF_NAME.g * 0.45, C_BUFF_NAME.b * 0.45, 0.6)
+    else
+      lbl:SetColor(C_BUFF_NAME.r, C_BUFF_NAME.g, C_BUFF_NAME.b, C_BUFF_NAME.a)
+    end
     lbl:SetDimensions(BUFF_GUTTER_W - isz - 10, row_h)
     lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 4, y)
     lbl:SetHidden(false)
@@ -1190,7 +1291,13 @@ local function render_view4()
           seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y)
           seg:SetWidth(bw)
           seg:SetHeight(row_h)
-          seg:SetColor(c.r, c.g, c.b, seg_alpha(conc, rec.max_conc))
+          local a = seg_alpha(conc, rec.max_conc)
+          if hk ~= nil and rec.id ~= hk then
+            seg:SetColor(c.r * 0.30 + C_DIM_BIAS, c.g * 0.30 + C_DIM_BIAS,
+                         c.b * 0.30 + C_DIM_BIAS, 0.25)
+          else
+            seg:SetColor(c.r, c.g, c.b, a)
+          end
           seg:SetHidden(false)
         end
       end
