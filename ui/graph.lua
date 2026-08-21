@@ -1209,8 +1209,11 @@ local BUFF_ROW_MAX  = 12
 local BUFF_GUTTER_W = 140
 local BUFF_ROW_GAP  = 3
 local BUFF_MIN_ROW  = 10
+local BUFF_PCT_W    = 34
 local C_BUFF_NAME   = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
 local C_BUFF_MORE   = { r = 0.60, g = 0.66, b = 0.62, a = 0.90 }
+local C_BUFF_PCT    = { r = 0.64, g = 0.72, b = 0.66, a = 1.0 }
+local C_BUFF_LANE   = { r = 0.62, g = 1.00, b = 0.74, a = 0.05 }
 
 local function seg_alpha(conc, max_conc)
   if max_conc <= 1 then return 0.90 end
@@ -1271,6 +1274,7 @@ local function render_view4()
   buff_hit.t0     = t0
   buff_hit.span   = span
   local hk = hover_key
+  local dur = capture and (BT.session_end() - BT.session_start()) or 0
 
   for i = 1, rows do
     local rec = BT.get(i)
@@ -1282,6 +1286,14 @@ local function render_view4()
       buff_hit.rec[i] = rec
     end
 
+    local lane = controls.pool_buff_seg:AcquireObject()
+    lane:ClearAnchors()
+    lane:SetAnchor(TOPLEFT, canvas, TOPLEFT, lane_x, y)
+    lane:SetWidth(lane_w)
+    lane:SetHeight(row_h)
+    lane:SetColor(C_BUFF_LANE.r, C_BUFF_LANE.g, C_BUFF_LANE.b, C_BUFF_LANE.a)
+    lane:SetHidden(false)
+
     local icon = controls.pool_buff_icon:AcquireObject()
     icon:ClearAnchors()
     icon:SetTexture(SC.ability_icon(rec.id))
@@ -1289,17 +1301,35 @@ local function render_view4()
     icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + math_floor((row_h - isz) / 2))
     icon:SetHidden(false)
 
+    local name_w = capture and (BUFF_GUTTER_W - isz - BUFF_PCT_W - 12)
+                            or (BUFF_GUTTER_W - isz - 10)
     local lbl = controls.pool_buff_lbl:AcquireObject()
     lbl:ClearAnchors()
     lbl:SetText(SC.ability_name(rec.id))
+    lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     if hk ~= nil and rec.id ~= hk then
       lbl:SetColor(C_BUFF_NAME.r * 0.45, C_BUFF_NAME.g * 0.45, C_BUFF_NAME.b * 0.45, 0.6)
     else
       lbl:SetColor(C_BUFF_NAME.r, C_BUFF_NAME.g, C_BUFF_NAME.b, C_BUFF_NAME.a)
     end
-    lbl:SetDimensions(BUFF_GUTTER_W - isz - 10, row_h)
+    lbl:SetDimensions(name_w, row_h)
     lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 4, y)
     lbl:SetHidden(false)
+
+    if capture and dur > 0 then
+      local pct = controls.pool_buff_lbl:AcquireObject()
+      pct:ClearAnchors()
+      pct:SetText(string_format("%d%%", math_floor(rec.uptime_ms / dur * 100 + 0.5)))
+      pct:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+      if hk ~= nil and rec.id ~= hk then
+        pct:SetColor(C_BUFF_PCT.r * 0.45, C_BUFF_PCT.g * 0.45, C_BUFF_PCT.b * 0.45, 0.6)
+      else
+        pct:SetColor(C_BUFF_PCT.r, C_BUFF_PCT.g, C_BUFF_PCT.b, C_BUFF_PCT.a)
+      end
+      pct:SetDimensions(BUFF_PCT_W, row_h)
+      pct:SetAnchor(TOPLEFT, canvas, TOPLEFT, BUFF_GUTTER_W - BUFF_PCT_W - 6, y)
+      pct:SetHidden(false)
+    end
 
     local n_steps = rec.n_steps
     for k = 1, n_steps do
@@ -1334,6 +1364,7 @@ local function render_view4()
     local more = controls.pool_buff_lbl:AcquireObject()
     more:ClearAnchors()
     more:SetText(string_format(GetString(VERDANT_BUFFS_MORE), n - rows))
+    more:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     more:SetColor(C_BUFF_MORE.r, C_BUFF_MORE.g, C_BUFF_MORE.b, C_BUFF_MORE.a)
     more:SetDimensions(cw, row_h)
     more:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, rows * (row_h + BUFF_ROW_GAP))
@@ -1356,9 +1387,9 @@ end
 
 local summary_text = nil
 
-local C_SUM_AVG  = { r = 0.65, g = 0.91, b = 0.69 }
-local C_SUM_PEAK = { r = 0.95, g = 0.80, b = 0.40 }
-local C_SUM_CRIT = { r = 1.00, g = 0.85, b = 0.40 }
+local C_SUM_AVG  = C_LINE_EHPS
+local C_SUM_PEAK = C_LINE_EMS
+local C_SUM_CRIT = C_CRIT
 local C_SUM_VAL  = { r = 0.92, g = 0.95, b = 0.93 }
 
 local function build_summary_text()

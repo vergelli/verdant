@@ -56,7 +56,7 @@ return function(H)
   local dimmed = false
   for i = 1, 12 do
     local seg = rawget(_G, "VerdantBuffSeg" .. i)
-    if seg and seg._hidden == false and seg._a and seg._a <= 0.30 then dimmed = true end
+    if seg and seg._hidden == false and seg._a and seg._a > 0.10 and seg._a <= 0.30 then dimmed = true end
   end
   ok(dimmed, "non-hovered rows must dim while hovering")
 
