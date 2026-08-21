@@ -132,7 +132,7 @@ function M.summary()
   s.dur_ms     = t_prev - t0
   s.avg_ems    = sum_ems / state.count
   s.peak_ems   = peak_ems
-  s.peak_t_off = peak_t - t0
+  s.peak_t_off = (peak_ems > 0) and (peak_t - t0) or 0
   s.active_pct = active_n / state.count
   local heal_total = sum_crit + sum_noncrit
   if heal_total > 0 then s.crit_pct = sum_crit / heal_total end

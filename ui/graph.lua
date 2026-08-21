@@ -77,6 +77,14 @@ local hit_main = { cols = {}, n = 0 }
 local hit_top  = { cols = {}, n = 0 }
 local hit_bot  = { cols = {}, n = 0 }
 local buff_hit = { n = 0, y0 = {}, y1 = {}, rec = {}, lane_x = 0, lane_w = 0, t0 = 0, span = 0 }
+local C_BUFF_FALLBACK = { r = 0.72, g = 0.14, b = 0.49, a = 0.95 }
+
+local function buff_color(rec)
+  if rec.group and rec.group ~= "other" then
+    return Verdant.SkillColors.group_color(rec.group)
+  end
+  return C_BUFF_FALLBACK
+end
 local C_DIM_BIAS = 0.05
 local render_current_view
 
@@ -659,14 +667,13 @@ local function show_buff_card(rec, t_at, conc_at, mx, my)
   local card = controls.card
   if not card then return end
   local BT  = Verdant.BuffTracker
-  local SC  = Verdant.SkillColors
-  local c   = SC.get_color(rec.id)
+  local c   = buff_color(rec)
   local dur = BT.session_end() - BT.session_start()
   local pct = (dur > 0) and math_floor(rec.uptime_ms / dur * 100 + 0.5) or 0
 
   card.swatch:SetColor(c.r, c.g, c.b, 1.0)
   card.name:SetColor(c.r, c.g, c.b, 1.0)
-  card.name:SetText(SC.ability_name(rec.id))
+  card.name:SetText(rec.name or tostring(rec.id))
   card.stat:SetText(string_format("%s %d%%  ·  %s", GetString(VERDANT_BUFFH_UPTIME), pct, fmt_secs(rec.uptime_ms)))
   card.time:SetText(string_format("t  %s  ·  %d %s", fmt_secs(t_at), conc_at, GetString(VERDANT_BUFFH_HOLDERS)))
 
@@ -1205,7 +1212,7 @@ local function render_view3()
   end
 end
 
-local BUFF_ROW_MAX  = 12
+local BUFF_MAX_ROW_H = 26
 local BUFF_GUTTER_W = 140
 local BUFF_ROW_GAP  = 3
 local BUFF_MIN_ROW  = 10
@@ -1250,15 +1257,17 @@ local function render_view4()
   draw_grid(controls.grid_ems, canvas, 0, span)
 
   local ch_plot = math_max(4, ch - TIME_STRIP_H)
-  local rows    = (n < BUFF_ROW_MAX) and n or BUFF_ROW_MAX
-  local extra   = (n > rows) and 1 or 0
-  local row_h   = math_floor(ch_plot / (rows + extra)) - BUFF_ROW_GAP
+  local rows    = n
+  local extra   = 0
+  local row_h   = math_floor(ch_plot / rows) - BUFF_ROW_GAP
   if row_h < BUFF_MIN_ROW then
     rows  = math_max(1, math_floor(ch_plot / (BUFF_MIN_ROW + BUFF_ROW_GAP)) - 1)
     if rows > n then rows = n end
     extra = (n > rows) and 1 or 0
     row_h = math_floor(ch_plot / (rows + extra)) - BUFF_ROW_GAP
     if row_h < 6 then return end
+  elseif row_h > BUFF_MAX_ROW_H then
+    row_h = BUFF_MAX_ROW_H
   end
   if n > rows then Verdant.Diagnostics.bump("graph.view_buffs.overflow") end
 
@@ -1279,7 +1288,7 @@ local function render_view4()
   for i = 1, rows do
     local rec = BT.get(i)
     local y   = (i - 1) * (row_h + BUFF_ROW_GAP)
-    local c   = SC.get_color(rec.id)
+    local c   = buff_color(rec)
     if capture then
       buff_hit.y0[i]  = y
       buff_hit.y1[i]  = y + row_h
@@ -1305,7 +1314,7 @@ local function render_view4()
                             or (BUFF_GUTTER_W - isz - 10)
     local lbl = controls.pool_buff_lbl:AcquireObject()
     lbl:ClearAnchors()
-    lbl:SetText(SC.ability_name(rec.id))
+    lbl:SetText(rec.name or tostring(rec.id))
     lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     if hk ~= nil and rec.id ~= hk then
       lbl:SetColor(C_BUFF_NAME.r * 0.45, C_BUFF_NAME.g * 0.45, C_BUFF_NAME.b * 0.45, 0.6)
@@ -1718,20 +1727,20 @@ function M.init()
   controls.mps_label:SetText("MPS")
   controls.mps_label:SetColor(C_LINE_EMS.r, C_LINE_EMS.g, C_LINE_EMS.b, 0.80)
 
-  local sum_bg = WM:CreateControl("VerdantGraphSummaryBg", controls.viewport, CT_TEXTURE)
+  local sum_bg = WM:CreateControl("VerdantGraphSummaryBg", controls.window, CT_TEXTURE)
   sum_bg:SetTexture(FILL_TEXTURE)
   sum_bg:SetTextureCoords(0, 1, 0, 0.05)
-  sum_bg:SetColor(0.04, 0.09, 0.06, 0.72)
-  sum_bg:SetAnchor(TOPRIGHT, controls.viewport, TOPRIGHT, -10, 8)
+  sum_bg:SetColor(0.04, 0.09, 0.06, 0.55)
+  sum_bg:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -14, 61)
   sum_bg:SetHeight(20)
   sum_bg:SetDrawLevel(11)
   sum_bg:SetHidden(true)
 
-  local sum_label = WM:CreateControl("VerdantGraphSummaryLabel", controls.viewport, CT_LABEL)
+  local sum_label = WM:CreateControl("VerdantGraphSummaryLabel", controls.window, CT_LABEL)
   sum_label:SetFont("ZoFontGameSmall")
   sum_label:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
   sum_label:SetVerticalAlignment(TEXT_ALIGN_CENTER)
-  sum_label:SetAnchor(TOPRIGHT, controls.viewport, TOPRIGHT, -18, 8)
+  sum_label:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -22, 61)
   sum_label:SetHeight(20)
   sum_label:SetDrawLevel(12)
   sum_label:SetHidden(true)
