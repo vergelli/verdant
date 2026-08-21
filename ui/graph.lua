@@ -36,7 +36,8 @@ local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink
 
 local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green base
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
-local C_LINE_DMG  = { r = 0.93, g = 0.44, b = 0.38, a = 0.38 }
+local C_LINE_DMG  = { r = 0.93, g = 0.44, b = 0.38, a = 0.60 }
+local C_FILL_DMG  = { r = 0.90, g = 0.38, b = 0.32, a = 0.10 }
 
 local C_VIEWPORT  = { r = 0.78, g = 1.00, b = 0.86 }
 
@@ -141,8 +142,13 @@ local function line_reset(line)
   line:ClearAnchors()
 end
 
-local function make_fill_pool(name_prefix)
-  return Pool.new(name_prefix, controls.canvas, CT_TEXTURE, fill_factory, fill_reset)
+local function make_fill_pool(name_prefix, draw_level)
+  return Pool.new(name_prefix, controls.canvas, CT_TEXTURE,
+    function(c)
+      fill_factory(c)
+      c:SetDrawLevel(draw_level or 2)
+    end,
+    fill_reset)
 end
 
 local function make_skill_fill_pool(name_prefix, canvas_key)
@@ -150,7 +156,12 @@ local function make_skill_fill_pool(name_prefix, canvas_key)
 end
 
 local function make_line_pool(name_prefix)
-  return Pool.new_virtual(name_prefix, controls.canvas, "VerdantGraphLineTemplate", line_factory, line_reset)
+  return Pool.new_virtual(name_prefix, controls.canvas, "VerdantGraphLineTemplate",
+    function(c)
+      line_factory(c)
+      c:SetDrawLevel(3)
+    end,
+    line_reset)
 end
 
 local function make_skill_line_pool(name_prefix, canvas_key)
@@ -323,6 +334,7 @@ local function release_all_pools()
   controls.pool_line_ehps:ReleaseAllObjects()
   controls.pool_line_ems:ReleaseAllObjects()
   controls.pool_line_dmg:ReleaseAllObjects()
+  controls.pool_dmg_fill:ReleaseAllObjects()
   controls.pool_skill_top:ReleaseAllObjects()
   controls.pool_skill_bot:ReleaseAllObjects()
   controls.pool_line_skill_top:ReleaseAllObjects()
@@ -883,6 +895,7 @@ local function render_view1()
   controls.pool_line_ehps:ReleaseAllObjects()
   controls.pool_line_ems:ReleaseAllObjects()
   controls.pool_line_dmg:ReleaseAllObjects()
+  controls.pool_dmg_fill:ReleaseAllObjects()
 
   local n = Verdant.TemporalBuffer.count()
   if n == 0 then
@@ -936,6 +949,16 @@ local function render_view1()
     ehps_hs[i] = ehps_h
     ems_hs[i]  = ehps_h + mps_h
     r1_d_hs[i] = (max_d > 0) and math_floor(ch_plot * 0.92 * (s.d / max_d) + 0.5) or 0
+
+    if r1_d_hs[i] > 0 then
+      local df = controls.pool_dmg_fill:AcquireObject()
+      df:ClearAnchors()
+      df:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -TIME_STRIP_H)
+      df:SetWidth(bw)
+      df:SetHeight(r1_d_hs[i])
+      df:SetColor(C_FILL_DMG.r, C_FILL_DMG.g, C_FILL_DMG.b, C_FILL_DMG.a)
+      df:SetHidden(false)
+    end
 
     if ehps_h > 0 then
       local te = controls.pool_ehps:AcquireObject()
@@ -1738,6 +1761,7 @@ function M.init()
   controls.pool_line_ehps      = make_line_pool("VerdantGraphLineEhps")
   controls.pool_line_ems       = make_line_pool("VerdantGraphLineEms")
   controls.pool_line_dmg       = make_line_pool("VerdantGraphLineDmg")
+  controls.pool_dmg_fill       = make_fill_pool("VerdantGraphDmgFill", 1)
   controls.pool_skill_top      = make_skill_fill_pool("VerdantSkillFillTop", "ehps_canvas")
   controls.pool_skill_bot      = make_skill_fill_pool("VerdantSkillFillBot", "mps_canvas")
   controls.pool_line_skill_top = make_skill_line_pool("VerdantSkillLineTop", "ehps_canvas")

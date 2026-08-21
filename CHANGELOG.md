@@ -29,6 +29,13 @@
 - **Bogus peak timestamp** — sessions with zero healing no longer report a
   negative `peak_at` in the summary.
 
+### Changed (round 9)
+- **Damage overlay presence** — the group-damage curve on the EMS view now
+  has a subtle red area fill under the line (alpha 0.10) and a stronger
+  line (alpha 0.60), sitting explicitly behind the healing bars via draw
+  levels (fill 1 < bars 2 < lines 3). Visible on dense charts too, where
+  the polyline alone used to vanish.
+
 ### Fixed (round 8, in-game evidence)
 - **Blockade of Frost coming back** — the slot's display name depends on
   which bar is active when Record is pressed ("Elemental Blockade" vs
