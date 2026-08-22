@@ -84,7 +84,6 @@
               <AnchorFill/>
               <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
                     edgeFileWidth="128" edgeFileHeight="16" edgeSize="6"/>
-              <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
               <Insets left="4" top="4" right="-4" bottom="-4"/>
             </Backdrop>
           </Controls>

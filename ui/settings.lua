@@ -284,10 +284,26 @@ local function refresh_all_sliders()
   update_slider(c.track_vpalpha, c.fill_vpalpha, c.thumb_vpalpha, c.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
 end
 
+local function dock_window()
+  local win = controls.window
+  local host = VerdantGraphWindow
+  if not host or host:IsHidden() then host = VerdantBarWindow end
+  if not host or host:IsHidden() then return end
+  local screen_w = GuiRoot:GetWidth()
+  local panel_w  = win:GetWidth()
+  win:ClearAnchors()
+  if host:GetRight() + panel_w + 16 <= screen_w then
+    win:SetAnchor(TOPLEFT, host, TOPRIGHT, 8, 0)
+  else
+    win:SetAnchor(TOPRIGHT, host, TOPLEFT, -8, 0)
+  end
+end
+
 function M.toggle()
   local win    = controls.window
   local hidden = win:IsHidden()
   if hidden then
+    dock_window()
     win:SetHidden(false)
     refresh_all_sliders()
   else
