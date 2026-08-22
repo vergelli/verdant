@@ -72,44 +72,134 @@ SOUNDS = setmetatable({}, { __index = function() return "sound" end })
 ZO_COMBOBOX_SUPPRESS_UPDATE = true
 SLASH_COMMANDS = {}
 
+H.controls = {}
+
+local FRACX = {
+  [TOPLEFT] = 0, [TOP] = 0.5, [TOPRIGHT] = 1,
+  [LEFT] = 0, [CENTER] = 0.5, [RIGHT] = 1,
+  [BOTTOMLEFT] = 0, [BOTTOM] = 0.5, [BOTTOMRIGHT] = 1,
+}
+local FRACY = {
+  [TOPLEFT] = 0, [TOP] = 0, [TOPRIGHT] = 0,
+  [LEFT] = 0.5, [CENTER] = 0.5, [RIGHT] = 0.5,
+  [BOTTOMLEFT] = 1, [BOTTOM] = 1, [BOTTOMRIGHT] = 1,
+}
+
+local resolving = {}
+local function layout(c)
+  if c == nil or c == true or c == GuiRoot then return 0, 0, 1920, 1080 end
+  if resolving[c] then return 100, 100, c._w or 600, c._h or 400 end
+  resolving[c] = true
+  local x, y, w, h
+  if c._fill then
+    local base = (c._fill == true) and (c._parent or GuiRoot) or c._fill
+    x, y, w, h = layout(base)
+  elseif c._anchor_list and #c._anchor_list > 0 then
+    local xs, ys = {}, {}
+    for _, a in ipairs(c._anchor_list) do
+      local rx, ry, rw, rh = layout(a.relTo or c._parent or GuiRoot)
+      xs[#xs + 1] = { f = FRACX[a.point] or 0, p = rx + (FRACX[a.relPoint] or 0) * rw + (a.ox or 0) }
+      ys[#ys + 1] = { f = FRACY[a.point] or 0, p = ry + (FRACY[a.relPoint] or 0) * rh + (a.oy or 0) }
+    end
+    local function solve(cons, dim, def)
+      if #cons >= 2 and cons[1].f ~= cons[2].f then
+        local d = (cons[2].p - cons[1].p) / (cons[2].f - cons[1].f)
+        if d < 0 then d = 0 end
+        return cons[1].p - cons[1].f * d, d
+      end
+      local d = dim or def
+      return cons[1].p - cons[1].f * d, d
+    end
+    x, w = solve(xs, c._w, 600)
+    y, h = solve(ys, c._h, 400)
+  else
+    if c._parent then
+      x, y = layout(c._parent)
+    else
+      x, y = 100, 100
+    end
+    w, h = c._w or 600, c._h or 400
+  end
+  resolving[c] = nil
+  return x, y, w, h
+end
+
+function H.layout(c)
+  local x, y, w, h = layout(c)
+  return { x = x, y = y, w = w, h = h }
+end
+
 local mock_control
 local MOCKC = {
   __index = function(self, k)
     if type(k) ~= "string" or k:find("^[A-Z]") ~= 1 then return nil end
     local fn
     if k == "SetAnchor" then
-      fn = function(s, ...)
+      fn = function(s, point, relTo, relPoint, ox, oy)
         s._anchors = (s._anchors or 0) + 1
         if s._anchors > 2 then error("too many anchors on a control (ESO max is 2)") end
+        s._anchor_list = s._anchor_list or {}
+        s._anchor_list[#s._anchor_list + 1] = {
+          point = point, relTo = relTo, relPoint = relPoint or point,
+          ox = ox or 0, oy = oy or 0,
+        }
       end
-    elseif k == "SetAnchorFill" then fn = function(s) s._anchors = 2 end
-    elseif k == "ClearAnchors" then fn = function(s) s._anchors = 0 end
+    elseif k == "SetAnchorFill" then
+      fn = function(s, target)
+        s._anchors = 2
+        s._fill = target or s._parent or true
+      end
+    elseif k == "ClearAnchors" then
+      fn = function(s)
+        s._anchors = 0
+        s._anchor_list = nil
+        s._fill = nil
+      end
     elseif k == "SetDimensions" then fn = function(s, w, h) s._w, s._h = w, h end
     elseif k == "SetWidth" then fn = function(s, w) s._w = w end
     elseif k == "SetHeight" then fn = function(s, h) s._h = h end
-    elseif k == "GetWidth" then fn = function(s) return s._w or 600 end
-    elseif k == "GetHeight" then fn = function(s) return s._h or 400 end
-    elseif k == "GetDimensions" then fn = function(s) return s._w or 600, s._h or 400 end
-    elseif k == "GetTop" then fn = function(s) return s._top or 100 end
-    elseif k == "GetBottom" then fn = function(s) return (s._top or 100) + (s._h or 400) end
-    elseif k == "GetLeft" then fn = function(s) return s._left or 100 end
-    elseif k == "GetRight" then fn = function(s) return (s._left or 100) + (s._w or 600) end
-    elseif k == "GetCenter" then fn = function(s) return 400, 300 end
+    elseif k == "GetWidth" then fn = function(s) if s._w then return s._w end local r = H.layout(s) return r.w end
+    elseif k == "GetHeight" then fn = function(s) if s._h then return s._h end local r = H.layout(s) return r.h end
+    elseif k == "GetDimensions" then fn = function(s) return s:GetWidth(), s:GetHeight() end
+    elseif k == "GetTop" then fn = function(s) local r = H.layout(s) return r.y end
+    elseif k == "GetBottom" then fn = function(s) local r = H.layout(s) return r.y + r.h end
+    elseif k == "GetLeft" then fn = function(s) local r = H.layout(s) return r.x end
+    elseif k == "GetRight" then fn = function(s) local r = H.layout(s) return r.x + r.w end
+    elseif k == "GetCenter" then fn = function(s) local r = H.layout(s) return r.x + r.w / 2, r.y + r.h / 2 end
     elseif k == "SetText" then fn = function(s, t) s._text = t end
     elseif k == "GetText" then fn = function(s) return s._text or "" end
-    elseif k == "GetTextWidth" then fn = function(s) return #tostring(s._text or "") * 7 end
+    elseif k == "GetTextWidth" then
+      fn = function(s)
+        local t = tostring(s._text or "")
+        t = t:gsub("|c%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|t.-|t", "")
+        return #t * 7
+      end
     elseif k == "GetTextHeight" then fn = function() return 14 end
     elseif k == "SetHidden" then fn = function(s, h) s._hidden = h and true or false end
     elseif k == "IsHidden" then fn = function(s) return s._hidden == true end
     elseif k == "SetColor" then fn = function(s, r, g, b, a) s._r, s._g, s._b, s._a = r, g, b, a end
     elseif k == "SetAlpha" then fn = function(s, a) s._alpha = a end
+    elseif k == "SetTexture" then fn = function(s, path) s._tex = path end
+    elseif k == "GetTextureFileName" then fn = function(s) return s._tex or "" end
+    elseif k == "SetDrawLevel" then fn = function(s, lv) s._draw_level = lv end
+    elseif k == "SetDrawLayer" then fn = function(s, ly) s._draw_layer = ly end
+    elseif k == "SetDrawTier" then fn = function(s, tr) s._draw_tier = tr end
+    elseif k == "SetFont" then fn = function(s, f) s._font = f end
+    elseif k == "SetCenterColor" then fn = function(s, r, g, b, a) s._cr, s._cg, s._cb, s._ca = r, g, b, a end
+    elseif k == "SetEdgeColor" then fn = function(s, r, g, b, a) s._er, s._eg, s._eb, s._ea = r, g, b, a end
+    elseif k == "SetHorizontalAlignment" then fn = function(s, a) s._halign = a end
+    elseif k == "SetVerticalAlignment" then fn = function(s, a) s._valign = a end
     elseif k == "GetAlpha" then fn = function(s) return s._alpha or 1 end
     elseif k == "SetHandler" then fn = function(s, ev, h) s["_on" .. tostring(ev)] = h end
     elseif k == "GetHandler" then fn = function(s, ev) return s["_on" .. tostring(ev)] end
     elseif k == "GetNamedChild" then
       fn = function(s, suffix)
         s._children = s._children or {}
-        if not s._children[suffix] then s._children[suffix] = mock_control() end
+        if not s._children[suffix] then
+          local child = mock_control((s._name or "MockControl") .. suffix)
+          child._parent = s
+          s._children[suffix] = child
+        end
         return s._children[suffix]
       end
     elseif k == "GetName" then fn = function(s) return s._name or "MockControl" end
@@ -126,6 +216,7 @@ local MOCKC = {
 mock_control = function(name)
   local c = setmetatable({}, MOCKC)
   c._name = name
+  H.controls[#H.controls + 1] = c
   return c
 end
 H.mock_control = mock_control
@@ -147,16 +238,22 @@ setmetatable(_G, {
 WINDOW_MANAGER = {
   CreateControl = function(_, name, parent, ctype)
     local c = mock_control(name)
+    c._parent = parent
+    c._ctype = ctype
     if name then rawset(_G, name, c) end
     return c
   end,
   CreateControlFromVirtual = function(_, name, parent, tpl)
     local c = mock_control(name)
+    c._parent = parent
+    c._tpl = tpl
     if name then rawset(_G, name, c) end
     return c
   end,
   CreateTopLevelWindow = function(_, name)
     local c = mock_control(name)
+    c._parent = GuiRoot
+    c._toplevel = true
     if name then rawset(_G, name, c) end
     return c
   end,

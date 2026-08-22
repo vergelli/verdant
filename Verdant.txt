@@ -41,6 +41,7 @@ core/skill_colors.lua
 core/metrics.lua
 core/buff_tracker.lua
 observability/diagnostics.lua
+observability/trace.lua
 pipeline/acquisition.lua
 pipeline/filter.lua
 pipeline/processing.lua
