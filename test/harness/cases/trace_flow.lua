@@ -20,14 +20,20 @@ return function(H)
   H.effect(EFFECT_RESULT_GAINED, 999, 700, 0)
   H.death(true)
   H.death(false)
+  for i = 1, 100 do
+    H.heal({ hit = 1000 + i, target_unit_id = 700 + i })
+  end
   H.combat_state(false)
 
   Verdant.Trace.stop()
   Verdant.Trace.save(sv)
 
   ok(sv.trace ~= nil, "trace not saved")
-  ok(sv.trace.count >= 6, "expected at least 6 events, got " .. tostring(sv.trace.count))
-  ok(#sv.trace.chunks >= 1, "no chunks written")
+  ok(sv.trace.count >= 106, "expected at least 106 events, got " .. tostring(sv.trace.count))
+  ok(#sv.trace.chunks >= 2, "big capture must split into several chunks")
+  for i, c in ipairs(sv.trace.chunks) do
+    ok(#c <= 2000, "chunk " .. i .. " exceeds the ZOS SavedVars 2000-char string limit: " .. #c)
+  end
 
   local codec = dofile(HARNESS_ROOT .. "/test/simlab/tracecodec.lua")
   local events = codec.decode_chunks(sv.trace.chunks)

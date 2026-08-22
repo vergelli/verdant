@@ -90,6 +90,18 @@ print(string.format(
   D.get("engine.damage.accepted"), D.get("engine.shield.foreign"),
   D.get("engine.damage.not_in_groupset"), D.get("engine.pool.exhausted")))
 
+if Verdant.Triage then
+  local ps = Verdant.Triage.power_stats()
+  local ts = Verdant.Triage.summary()
+  print(string.format(
+    "triage: power_updates=%d rate=%.1f/s heals matched=%d unmatched=%d",
+    ps.count, ps.rate, ps.matched, ps.unmatched))
+  print(string.format(
+    "triage: episodes=%d S=%d (S*=%d) O=%d L=%d M=%d X=%d oneshot=%d RT50=%dms RT95=%dms",
+    ts.episodes, ts.counts.s, ts.counts.s_star, ts.counts.o, ts.counts.l,
+    ts.counts.m, ts.counts.x, ts.counts.oneshot, ts.rt50, ts.rt95))
+end
+
 local s = Verdant.TemporalBuffer.summary()
 if s.count > 0 then
   print(string.format(

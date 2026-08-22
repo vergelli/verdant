@@ -7,7 +7,7 @@ local SIG = {
   DE = "sb",
   WP = "",
   BO = "s",
-  GR = "bn",
+  GR = "bnsn",
   PU = "snnnnn",
 }
 
@@ -65,6 +65,17 @@ function M.fire(H, e)
   elseif e.tag == "GR" then
     H.state.grouped = a[1] and (a[2] or 0) > 1 or false
     H.state.group_size = a[2] or 1
+    H.unit_names = H.unit_names or {}
+    local i = 0
+    for nm in tostring(a[3] or ""):gmatch("([^|]+)") do
+      i = i + 1
+      H.unit_names["group" .. i] = nm
+    end
+    if a[4] and a[4] > 0 then
+      H.state.player_group_tag = "group" .. a[4]
+    elseif not H.state.grouped then
+      H.state.player_group_tag = nil
+    end
     H.fire(EVENT_GROUP_UPDATE)
   end
 end
