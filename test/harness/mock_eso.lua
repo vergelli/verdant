@@ -72,18 +72,34 @@ SOUNDS = setmetatable({}, { __index = function() return "sound" end })
 ZO_COMBOBOX_SUPPRESS_UPDATE = true
 SLASH_COMMANDS = {}
 
+H.controls = {}
+
 local mock_control
 local MOCKC = {
   __index = function(self, k)
     if type(k) ~= "string" or k:find("^[A-Z]") ~= 1 then return nil end
     local fn
     if k == "SetAnchor" then
-      fn = function(s, ...)
+      fn = function(s, point, relTo, relPoint, ox, oy)
         s._anchors = (s._anchors or 0) + 1
         if s._anchors > 2 then error("too many anchors on a control (ESO max is 2)") end
+        s._anchor_list = s._anchor_list or {}
+        s._anchor_list[#s._anchor_list + 1] = {
+          point = point, relTo = relTo, relPoint = relPoint or point,
+          ox = ox or 0, oy = oy or 0,
+        }
       end
-    elseif k == "SetAnchorFill" then fn = function(s) s._anchors = 2 end
-    elseif k == "ClearAnchors" then fn = function(s) s._anchors = 0 end
+    elseif k == "SetAnchorFill" then
+      fn = function(s, target)
+        s._anchors = 2
+        s._fill = target or s._parent or true
+      end
+    elseif k == "ClearAnchors" then
+      fn = function(s)
+        s._anchors = 0
+        s._anchor_list = nil
+        s._fill = nil
+      end
     elseif k == "SetDimensions" then fn = function(s, w, h) s._w, s._h = w, h end
     elseif k == "SetWidth" then fn = function(s, w) s._w = w end
     elseif k == "SetHeight" then fn = function(s, h) s._h = h end
@@ -103,13 +119,27 @@ local MOCKC = {
     elseif k == "IsHidden" then fn = function(s) return s._hidden == true end
     elseif k == "SetColor" then fn = function(s, r, g, b, a) s._r, s._g, s._b, s._a = r, g, b, a end
     elseif k == "SetAlpha" then fn = function(s, a) s._alpha = a end
+    elseif k == "SetTexture" then fn = function(s, path) s._tex = path end
+    elseif k == "GetTextureFileName" then fn = function(s) return s._tex or "" end
+    elseif k == "SetDrawLevel" then fn = function(s, lv) s._draw_level = lv end
+    elseif k == "SetDrawLayer" then fn = function(s, ly) s._draw_layer = ly end
+    elseif k == "SetDrawTier" then fn = function(s, tr) s._draw_tier = tr end
+    elseif k == "SetFont" then fn = function(s, f) s._font = f end
+    elseif k == "SetCenterColor" then fn = function(s, r, g, b, a) s._cr, s._cg, s._cb, s._ca = r, g, b, a end
+    elseif k == "SetEdgeColor" then fn = function(s, r, g, b, a) s._er, s._eg, s._eb, s._ea = r, g, b, a end
+    elseif k == "SetHorizontalAlignment" then fn = function(s, a) s._halign = a end
+    elseif k == "SetVerticalAlignment" then fn = function(s, a) s._valign = a end
     elseif k == "GetAlpha" then fn = function(s) return s._alpha or 1 end
     elseif k == "SetHandler" then fn = function(s, ev, h) s["_on" .. tostring(ev)] = h end
     elseif k == "GetHandler" then fn = function(s, ev) return s["_on" .. tostring(ev)] end
     elseif k == "GetNamedChild" then
       fn = function(s, suffix)
         s._children = s._children or {}
-        if not s._children[suffix] then s._children[suffix] = mock_control() end
+        if not s._children[suffix] then
+          local child = mock_control((s._name or "MockControl") .. suffix)
+          child._parent = s
+          s._children[suffix] = child
+        end
         return s._children[suffix]
       end
     elseif k == "GetName" then fn = function(s) return s._name or "MockControl" end
@@ -126,6 +156,7 @@ local MOCKC = {
 mock_control = function(name)
   local c = setmetatable({}, MOCKC)
   c._name = name
+  H.controls[#H.controls + 1] = c
   return c
 end
 H.mock_control = mock_control
@@ -147,16 +178,22 @@ setmetatable(_G, {
 WINDOW_MANAGER = {
   CreateControl = function(_, name, parent, ctype)
     local c = mock_control(name)
+    c._parent = parent
+    c._ctype = ctype
     if name then rawset(_G, name, c) end
     return c
   end,
   CreateControlFromVirtual = function(_, name, parent, tpl)
     local c = mock_control(name)
+    c._parent = parent
+    c._tpl = tpl
     if name then rawset(_G, name, c) end
     return c
   end,
   CreateTopLevelWindow = function(_, name)
     local c = mock_control(name)
+    c._parent = GuiRoot
+    c._toplevel = true
     if name then rawset(_G, name, c) end
     return c
   end,

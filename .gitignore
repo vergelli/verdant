@@ -42,5 +42,7 @@ luac.out
 specs/
 test/*
 !test/harness/
+!test/simlab/
+test/simlab/out/
 
 ESOUI_GUIDELINES.md
