@@ -381,6 +381,47 @@ end
 function M.episodes() return ep_log, ep_log.n end
 function M.is_active() return session_active end
 
+function M.load_session(eps_list, roster, pslot)
+  session_active = false
+  Verdant.zenimax.events.unregister_update("Verdant_TriageCensor")
+  for i = 1, MAX_SLOTS do
+    local s = slots[i]
+    s.open = false
+    s.dead = false
+    s.p_active = false
+    slot_names[i] = nil
+    slot_icons[i] = nil
+  end
+  for k in pairs(name_slot) do name_slot[k] = nil end
+  name_count = 0
+  for i = 1, #(roster or {}) do
+    local r = roster[i]
+    if r.slot and r.name then
+      slot_names[r.slot] = r.name
+      slot_icons[r.slot] = r.icon
+      name_slot[r.name] = r.slot
+      name_count = name_count + 1
+    end
+  end
+  player_slot_i = pslot or 0
+  ep_log.n = 0
+  ep_dropped = 0
+  for i = 1, #eps_list do
+    local e = eps_list[i]
+    ep_log.n = i
+    local rec = ep_log[i]
+    if not rec then rec = {}; ep_log[i] = rec end
+    rec.slot      = e.slot
+    rec.t_start   = e.ts
+    rec.t_end     = e.ts + e.dur
+    rec.class     = e.cls
+    rec.star      = e.star == 1
+    rec.rt        = (e.rt1 and e.rt1 > 0) and (e.rt1 - 1) or -1
+    rec.min_rho   = e.rho
+    rec.responded = e.resp == 1
+  end
+end
+
 function M.power_stats()
   local dur = (pu_last_t > pu_first_t) and (pu_last_t - pu_first_t) or 0
   return {

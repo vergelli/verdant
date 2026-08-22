@@ -1496,6 +1496,7 @@ local function render_view4()
     icon:ClearAnchors()
     icon:SetTexture(SC.ability_icon(rec.id))
     icon:SetDimensions(isz, isz)
+    icon:SetColor(1, 1, 1, 1)
     icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + math_floor((row_h - isz) / 2))
     icon:SetHidden(false)
 
@@ -2010,6 +2011,51 @@ function M.on_stop_click()
   render_current_view()
 end
 
+function M.load_session(sess)
+  if Verdant.TemporalBuffer.is_recording() then
+    d("[V] " .. GetString(VERDANT_LIB_BUSY))
+    return false
+  end
+  if not (sess and sess.streams and sess.desc and sess.head) then
+    d("[V] " .. string_format(GetString(VERDANT_LIB_CORRUPT), "missing structure"))
+    return false
+  end
+  local vsf = Verdant.lib.vsf
+  local series, e1 = vsf.unpack(sess.streams.series,   sess.desc.series)
+  local steps,  e2 = vsf.unpack(sess.streams.steps,    sess.desc.steps)
+  local eps,    e3 = vsf.unpack(sess.streams.episodes, sess.desc.episodes)
+  local mks,    e4 = vsf.unpack(sess.streams.markers,  sess.desc.markers)
+  if not (series and steps and eps and mks) then
+    d("[V] " .. string_format(GetString(VERDANT_LIB_CORRUPT),
+      tostring(e1 or e2 or e3 or e4)))
+    return false
+  end
+
+  release_all_pools()
+  hide_all_grids()
+
+  local markers = {}
+  for i = 1, #mks do
+    local m = mks[i]
+    markers[i] = {
+      t = m.t, death = m.death == 1,
+      who = (m.who > 0) and ("group" .. m.who) or nil,
+    }
+  end
+  Verdant.TemporalBuffer.load_session(series, markers)
+  Verdant.BuffTracker.load_session(sess.buffs or {}, steps, 0, sess.head.dur_ms or 0)
+  Verdant.Triage.load_session(eps, sess.roster, sess.head.player_slot)
+
+  summary_text = build_summary_text()
+  controls.status:SetText(string_format(GetString(VERDANT_LIB_LOADED),
+    sess.head.zone or "?"))
+  Verdant.Visibility.set("graph", true)
+  refresh_button_colors()
+  render_current_view()
+  Verdant.Diagnostics.bump("library.session_loaded")
+  return true
+end
+
 function M.on_flush_click()
   if Verdant.TemporalBuffer.is_recording() then
     zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
@@ -2105,6 +2151,7 @@ function M.init()
   controls.btn_record    = VerdantGraphWindowRecordBtn
   controls.btn_stop      = VerdantGraphWindowStopBtn
   controls.btn_flush     = VerdantGraphWindowFlushBtn
+  controls.btn_lib       = VerdantGraphWindowLibBtn
   controls.status        = VerdantGraphWindowStatusLabel
   controls.btn_prev_view = VerdantGraphWindowPrevViewBtn
   controls.view_label    = VerdantGraphWindowViewLabel
@@ -2198,6 +2245,7 @@ function M.init()
   controls.btn_record:SetText(GetString(VERDANT_GRAPH_RECORD))
   controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
   controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
+  controls.btn_lib:SetText(GetString(VERDANT_GRAPH_LIB))
 
   local function tint_btn(btn, r, g, b)
     btn:SetNormalFontColor(r, g, b, 1)

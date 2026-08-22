@@ -153,10 +153,15 @@ local function on_slash(input)
     Verdant.Graph.toggle() ; return
   end
 
+  if cmd == "lib" then
+    Verdant.Library.toggle() ; return
+  end
+
   if cmd == "help" then
     d(GetString(VERDANT_HELP_HEADER))
     d(GetString(VERDANT_HELP_TOGGLE))
     d(GetString(VERDANT_HELP_GRAPH))
+    d(GetString(VERDANT_HELP_LIB))
     d(GetString(VERDANT_HELP_HELP))
     return
   end
@@ -192,6 +197,7 @@ local function on_addon_loaded()
   Verdant.Graph.init()
   Verdant.AutoRecord.init()
   Verdant.Assign.init()
+  Verdant.Library.init()
   Verdant.Visibility.init()
 
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash

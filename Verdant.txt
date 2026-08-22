@@ -60,6 +60,8 @@ ui/settings.xml
 ui/settings.lua
 ui/graph.xml
 ui/graph.lua
+ui/library.xml
+ui/library.lua
 ui/assign.xml
 ui/assign.lua
 ui/logo.xml

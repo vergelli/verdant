@@ -162,6 +162,23 @@ function M.summary()
   return s
 end
 
+local EMPTY_SHARES = { count = 0 }
+
+function M.load_session(samples, marker_list)
+  M.clear()
+  for i = 1, #samples do
+    local s = samples[i]
+    M.push(s.t, s.eHPS, s.MPS, s.crit, s.noncrit,
+           EMPTY_SHARES, EMPTY_SHARES, EMPTY_SHARES, EMPTY_SHARES, s.d)
+  end
+  for i = 1, #marker_list do
+    local m = marker_list[i]
+    M.add_marker(m.t, m.death, m.who)
+  end
+  state.recording = false
+  log:info("session loaded: samples=", #samples, "markers=", #marker_list)
+end
+
 function M.clear()
   log:info("clear: discarding", state.count, "samples")
   state.write = 1
