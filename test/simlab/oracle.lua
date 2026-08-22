@@ -200,30 +200,46 @@ return function(H)
       local open, dead = false, false
       local start, rt, responded, over, last_heal = 0, -1, false, false, -1
       local grace_until, last_pu = 0, 0
+      local pend = nil
+
+      local function record(cls, e_rt, e_resp)
+        counts[cls] = counts[cls] + 1
+        if e_resp then resp_n = resp_n + 1 end
+        if e_rt >= 0 then rts[#rts + 1] = e_rt end
+      end
+
+      local function flush_pending()
+        if not pend then return end
+        if pend.responded then
+          record("s", pend.rt, true)
+          if pend.over or (pend.last_heal >= 0 and (pend.t_end - pend.last_heal) <= DELTA) then
+            counts.s_star = counts.s_star + 1
+          end
+        else
+          record("o", pend.rt, false)
+        end
+        pend = nil
+      end
 
       local function close(t_close, kind)
-        if kind == "rec" then
-          if responded then
-            counts.s = counts.s + 1
-            if over or (last_heal >= 0 and (t_close - last_heal) <= DELTA) then
-              counts.s_star = counts.s_star + 1
-            end
-          else
-            counts.o = counts.o + 1
-          end
-        elseif kind == "die" then
-          if responded then counts.l = counts.l + 1
-          elseif (t_close - start) < MINEP then counts.oneshot = counts.oneshot + 1
-          else counts.m = counts.m + 1 end
-        else
-          counts.x = counts.x + 1
-        end
-        if responded then resp_n = resp_n + 1 end
-        if rt >= 0 then rts[#rts + 1] = rt end
         open = false
+        if kind == "rec" then
+          flush_pending()
+          pend = { t_end = t_close, start = start, rt = rt,
+                   responded = responded, over = over, last_heal = last_heal }
+          return
+        end
+        if kind == "die" then
+          if responded then record("l", rt, true)
+          elseif (t_close - start) < MINEP then record("oneshot", rt, false)
+          else record("m", rt, false) end
+        else
+          record("x", rt, responded)
+        end
       end
 
       for _, e in ipairs(list) do
+        if pend and (e.t - pend.t_end) > DELTA then flush_pending() end
         if open and last_pu > 0 and (e.t - last_pu) > SIGMA then
           close(last_pu + SIGMA, "cens")
         end
@@ -233,6 +249,7 @@ return function(H)
             if open then
               if e.rho >= TEXIT then close(e.t, "rec") end
             elseif e.rho < THETA then
+              flush_pending()
               open, start = true, e.t
               rt, responded, over, last_heal = -1, false, false, -1
             end
@@ -244,8 +261,15 @@ return function(H)
               if rt < 0 and e.direct then rt = e.t - start end
             end
             if e.over > 0 then over = true end
+          elseif pend and (e.t - pend.t_end) <= DELTA then
+            if e.hit > 0 then
+              pend.responded, pend.last_heal = true, e.t
+              if pend.rt < 0 and e.direct then pend.rt = e.t - pend.start end
+            end
+            if e.over > 0 then pend.over = true end
           end
         elseif e.k == "die" then
+          flush_pending()
           if open then close(e.t, "die") end
           dead = true
         elseif e.k == "res" then
@@ -253,6 +277,7 @@ return function(H)
           grace_until = e.t + GRACE
         end
       end
+      flush_pending()
       if open then close(t_end, "cens") end
     end
 
