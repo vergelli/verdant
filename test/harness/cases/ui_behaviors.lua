@@ -26,6 +26,27 @@ return function(H)
   Verdant.Settings.toggle()
   b._hidden = true
 
+  p._hidden = true
+  g._hidden = false
+  Verdant.Settings.toggle()
+  ok(VerdantSettingsPanelSecGraph._text == "GRAPH", "section headers must be titled")
+  local track = VerdantSettingsPanelSliderTrackTriage
+  H.state.mouse_x = track:GetLeft() + track:GetWidth() * 0.99
+  Verdant.Settings.on_triage_track_click(track)
+  H.state.mouse_x = 400
+  local sv = Verdant.SavedVars
+  ok(sv.settings.triage_theta == 0.75,
+     "theta slider must persist 0.75, got " .. tostring(sv.settings.triage_theta))
+  Verdant.Graph.on_record_click()
+  ok(math.abs(Verdant.Triage.theta() - 0.75) < 1e-9, "triage must adopt theta at session start")
+  Verdant.Graph.on_stop_click()
+  Verdant.Settings.on_reset_click()
+  ok(sv.settings.triage_theta == nil, "reset must clear the theta override")
+  ok(VerdantSettingsPanelTriageLabel._text == "50%",
+     "reset must show the default theta, got " .. tostring(VerdantSettingsPanelTriageLabel._text))
+  Verdant.Settings.toggle()
+  g._hidden = true
+
   local fb = VerdantAssignPanelFlyoutBg
   ok(fb._cr ~= nil and fb._ca and fb._ca > 0.9,
      "flyout backdrop must have a solid center color")

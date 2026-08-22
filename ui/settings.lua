@@ -81,6 +81,14 @@ for pct = 0, 100, 5 do
 end
 local VPALPHA_DEFAULT = 30
 
+local THETA_PRESETS = {}
+local THETA_LABELS  = {}
+for pct = 30, 75, 5 do
+  THETA_PRESETS[#THETA_PRESETS + 1] = pct
+  THETA_LABELS[pct] = pct .. "%"
+end
+local THETA_DEFAULT = 50
+
 local USER_PREFIX = "user:"
 
 local function is_user_profile(id)
@@ -151,6 +159,7 @@ local current_shield  = SHIELD_DEFAULT
 local current_sample  = SAMPLE_DEFAULT
 local current_twindow = TWINDOW_DEFAULT
 local current_vpalpha = VPALPHA_DEFAULT
+local current_theta   = THETA_DEFAULT
 local current_profile = PROFILE_DEFAULT
 
 local function nearest_idx(presets, ms)
@@ -282,6 +291,15 @@ local function refresh_all_sliders()
   update_slider(c.track_sample,  c.fill_sample,  c.thumb_sample,  c.label_sample,  SAMPLE_PRESETS,  SAMPLE_LABELS,  current_sample)
   update_slider(c.track_twindow, c.fill_twindow, c.thumb_twindow, c.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
   update_slider(c.track_vpalpha, c.fill_vpalpha, c.thumb_vpalpha, c.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
+  update_slider(c.track_triage,  c.fill_triage,  c.thumb_triage,  c.label_triage,  THETA_PRESETS,   THETA_LABELS,   current_theta)
+end
+
+function M.refresh_unknown_count()
+  local n = (Verdant.SkillColors and Verdant.SkillColors.unknown_count
+             and Verdant.SkillColors.unknown_count()) or 0
+  local text = GetString(VERDANT_SETTINGS_UNKNOWN)
+  if n > 0 then text = text .. " (" .. n .. ")" end
+  controls.unknown_label:SetText(text)
 end
 
 local function dock_window()
@@ -306,6 +324,7 @@ function M.toggle()
     dock_window()
     win:SetHidden(false)
     refresh_all_sliders()
+    M.refresh_unknown_count()
   else
     win:SetHidden(true)
   end
@@ -348,7 +367,10 @@ function M.on_gdm_click()
                                or GetString(VERDANT_SETTINGS_GDM_OFF))
 end
 
-local SHIELDDIR_LABEL = { [true] = "Shields: hang down", [false] = "Shields: grow up" }
+local SHIELDDIR_LABEL = {
+  [true]  = GetString(VERDANT_SETTINGS_SHIELD_DOWN),
+  [false] = GetString(VERDANT_SETTINGS_SHIELD_UP),
+}
 
 local function autorec_label(m)
   if m == "boss"   then return GetString(VERDANT_SETTINGS_AUTOREC_BOSS)   end
@@ -533,6 +555,20 @@ function M.on_vpalpha_track_click(control)
   update_slider(controls.track_vpalpha, controls.fill_vpalpha, controls.thumb_vpalpha, controls.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
 end
 
+function M.on_triage_track_click(control)
+  local cx      = GetUIMousePosition()
+  local track_w = control:GetWidth()
+  if track_w <= 0 then return end
+  local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
+  local idx = math_max(1, math_min(#THETA_PRESETS, math_floor(pct * (#THETA_PRESETS - 1) + 0.5) + 1))
+  current_theta = THETA_PRESETS[idx]
+  log:info("triage_theta ->", current_theta, "%")
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  sv.settings.triage_theta = current_theta / 100
+  update_slider(controls.track_triage, controls.fill_triage, controls.thumb_triage, controls.label_triage, THETA_PRESETS, THETA_LABELS, current_theta)
+end
+
 function M.on_reset_click()
   log:info("reset to defaults")
   apply_profile(PROFILE_DEFAULT)
@@ -545,7 +581,9 @@ function M.on_reset_click()
   if sv and sv.settings then
     sv.settings.group_death_markers = false
     controls.gdm_btn:SetText(GetString(VERDANT_SETTINGS_GDM_OFF))
+    sv.settings.triage_theta = nil
   end
+  current_theta = THETA_DEFAULT
 
   if profile_combo then
     profile_combo:SetSelectedItemText(profile_label_for(PROFILE_DEFAULT))
@@ -628,6 +666,9 @@ function M.init()
   controls.title_vpalpha  = VerdantSettingsPanelVPAlphaTitle
   controls.label_vpalpha  = VerdantSettingsPanelVPAlphaLabel
   controls.track_vpalpha  = VerdantSettingsPanelSliderTrackVPAlpha
+  controls.title_triage   = VerdantSettingsPanelTriageTitle
+  controls.label_triage   = VerdantSettingsPanelTriageLabel
+  controls.track_triage   = VerdantSettingsPanelSliderTrackTriage
   controls.window_title   = VerdantSettingsPanelWindowTitle
   controls.reset_btn      = VerdantSettingsPanelResetBtn
   controls.profile_label  = VerdantSettingsPanelProfileLabel
@@ -651,8 +692,21 @@ function M.init()
   controls.profile_label:SetText(GetString(VERDANT_SETTINGS_PROFILE))
   controls.profile_label:SetColor(0.75, 0.75, 0.75, 1)
 
-  controls.unknown_label:SetText(GetString(VERDANT_SETTINGS_UNKNOWN))
+  M.refresh_unknown_count()
   controls.unknown_label:SetColor(0.80, 0.80, 0.80, 1)
+
+  local SEC = {
+    { VerdantSettingsPanelSecProfile,   VerdantSettingsPanelSepProfile,   VERDANT_SETTINGS_SEC_PROFILE },
+    { VerdantSettingsPanelSecBar,       VerdantSettingsPanelSepBar,       VERDANT_SETTINGS_SEC_BAR },
+    { VerdantSettingsPanelSecGraph,     VerdantSettingsPanelSepGraph,     VERDANT_SETTINGS_SEC_GRAPH },
+    { VerdantSettingsPanelSecRecording, VerdantSettingsPanelSepRecording, VERDANT_SETTINGS_SEC_RECORDING },
+    { VerdantSettingsPanelSecGeneral,   VerdantSettingsPanelSepGeneral,   VERDANT_SETTINGS_SEC_GENERAL },
+  }
+  for _, sec in ipairs(SEC) do
+    sec[1]:SetText(GetString(sec[3]))
+    sec[1]:SetColor(0.46, 0.86, 0.58, 0.90)
+    sec[2]:SetColor(0.46, 0.86, 0.58, 0.22)
+  end
   controls.logo_btn:SetText(Verdant.Logo.is_enabled()
     and GetString(VERDANT_SETTINGS_LOGO_ON) or GetString(VERDANT_SETTINGS_LOGO_OFF))
 
@@ -696,6 +750,14 @@ function M.init()
   controls.title_vpalpha:SetColor(0.75, 0.75, 0.75, 1)
   controls.label_vpalpha:SetColor(0.95, 0.80, 0.20, 1)
 
+  controls.title_triage:SetText(GetString(VERDANT_SETTING_TRIAGE_THETA))
+  controls.title_triage:SetColor(0.75, 0.75, 0.75, 1)
+  controls.label_triage:SetColor(0.95, 0.80, 0.20, 1)
+
+  if sv.settings.triage_theta then
+    current_theta = math_floor(sv.settings.triage_theta * 100 + 0.5)
+  end
+
   local c = controls
   c.fill_rate,    c.thumb_rate    = setup_slider_visuals(c.track_rate,    "VerdantSettingsRate")
   c.fill_heal,    c.thumb_heal    = setup_slider_visuals(c.track_heal,    "VerdantSettingsHeal")
@@ -703,6 +765,7 @@ function M.init()
   c.fill_sample,  c.thumb_sample  = setup_slider_visuals(c.track_sample,  "VerdantSettingsSample")
   c.fill_twindow, c.thumb_twindow = setup_slider_visuals(c.track_twindow, "VerdantSettingsTWindow")
   c.fill_vpalpha, c.thumb_vpalpha = setup_slider_visuals(c.track_vpalpha, "VerdantSettingsVPAlpha")
+  c.fill_triage,  c.thumb_triage  = setup_slider_visuals(c.track_triage,  "VerdantSettingsTriage")
 
   if sv.settings.x and sv.settings.y then
     controls.window:ClearAnchors()
