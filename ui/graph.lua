@@ -12,6 +12,7 @@ local GetString                  = api.GetString
 local math_max                   = math.max
 local math_floor                 = math.floor
 local string_format              = string.format
+local table_sort                 = table.sort
 
 local log               = Verdant.Log.for_module("graph")
 local TOPLEFT           = zc.TOPLEFT
@@ -66,7 +67,8 @@ local VIEW_EMS    = 1
 local VIEW_SKILL  = 2
 local VIEW_CRIT   = 3
 local VIEW_BUFFS  = 4
-local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "BUFFS" }
+local VIEW_TRIAGE = 5
+local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "BUFFS", "TRIAGE" }
 local current_view = VIEW_EMS
 
 -- SKILL view shield orientation: false = shields grow UP from the subplot floor
@@ -1360,6 +1362,20 @@ local function seg_alpha(conc, max_conc)
   return 0.40 + 0.55 * (conc / max_conc)
 end
 
+local C_TRI_CLASS = {
+  { r = 0.55, g = 0.92, b = 0.62 },
+  { r = 0.55, g = 0.66, b = 0.82 },
+  { r = 0.95, g = 0.42, b = 0.34 },
+  { r = 0.62, g = 0.22, b = 0.22 },
+  { r = 0.55, g = 0.55, b = 0.55 },
+  { r = 0.50, g = 0.38, b = 0.38 },
+}
+local C_TRI_NAME  = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
+local C_TRI_SCORE = { r = 0.64, g = 0.72, b = 0.66, a = 1.0 }
+local tri_rows  = {}
+local tri_saves = {}
+local tri_total = {}
+
 
 local function render_view4()
   controls.pool_buff_seg:ReleaseAllObjects()
@@ -1526,6 +1542,121 @@ local function render_view4()
   end
 end
 
+local function render_view5()
+  controls.pool_buff_seg:ReleaseAllObjects()
+  controls.pool_buff_icon:ReleaseAllObjects()
+  controls.pool_buff_lbl:ReleaseAllObjects()
+
+  local T = Verdant.Triage
+  local eps, n_eps = T.episodes()
+
+  local n = 0
+  for i = 1, 12 do
+    tri_saves[i] = 0
+    tri_total[i] = 0
+  end
+  for i = 1, n_eps do
+    local e = eps[i]
+    if tri_total[e.slot] == 0 then
+      n = n + 1
+      tri_rows[n] = e.slot
+    end
+    tri_total[e.slot] = tri_total[e.slot] + 1
+    if e.class == T.CLASS_S then tri_saves[e.slot] = tri_saves[e.slot] + 1 end
+  end
+
+  if n == 0 then
+    controls.no_data:SetHidden(false)
+    hide_grid(controls.grid_ems)
+    return
+  end
+  controls.no_data:SetHidden(true)
+
+  local canvas = controls.canvas
+  local cw, ch = canvas:GetWidth(), canvas:GetHeight()
+  if cw <= BUFF_GUTTER_W + 40 or ch <= 4 then return end
+
+  local BT = Verdant.BuffTracker
+  local recording = Verdant.TemporalBuffer.is_recording()
+  local t0   = BT.session_start()
+  local t_hi = recording and GetGameTimeMilliseconds() or BT.session_end()
+  local span = t_hi - t0
+  if span <= 0 then return end
+
+  Verdant.Diagnostics.bump("graph.view_triage.renders")
+  draw_grid(controls.grid_ems, canvas, 0, span)
+
+  for i = n + 1, #tri_rows do tri_rows[i] = nil end
+  table_sort(tri_rows)
+  local rows_sorted = tri_rows
+  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+  local row_h   = math_floor(ch_plot / n) - BUFF_ROW_GAP
+  if row_h < BUFF_MIN_ROW then row_h = BUFF_MIN_ROW end
+  if row_h > BUFF_MAX_ROW_H + 8 then row_h = BUFF_MAX_ROW_H + 8 end
+
+  local lane_x = BUFF_GUTTER_W
+  local lane_w = cw - BUFF_GUTTER_W
+
+  for i = 1, n do
+    local slot = rows_sorted[i]
+    local y = (i - 1) * (row_h + BUFF_ROW_GAP)
+
+    local lane = controls.pool_buff_seg:AcquireObject()
+    lane:ClearAnchors()
+    lane:SetAnchor(TOPLEFT, canvas, TOPLEFT, lane_x, y)
+    lane:SetWidth(lane_w)
+    lane:SetHeight(row_h)
+    lane:SetColor(C_BUFF_LANE.r, C_BUFF_LANE.g, C_BUFF_LANE.b, C_BUFF_LANE.a)
+    lane:SetHidden(false)
+
+    local lbl = controls.pool_buff_lbl:AcquireObject()
+    lbl:ClearAnchors()
+    lbl:SetText(T.slot_name(slot) or ("group" .. slot))
+    lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    lbl:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, C_TRI_NAME.a)
+    lbl:SetDimensions(BUFF_GUTTER_W - BUFF_PCT_W - 12, row_h)
+    lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, y)
+    lbl:SetHidden(false)
+
+    local score = controls.pool_buff_lbl:AcquireObject()
+    score:ClearAnchors()
+    score:SetText(string_format("%d/%d", tri_saves[slot], tri_total[slot]))
+    score:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+    score:SetColor(C_TRI_SCORE.r, C_TRI_SCORE.g, C_TRI_SCORE.b, C_TRI_SCORE.a)
+    score:SetDimensions(BUFF_PCT_W, row_h)
+    score:SetAnchor(TOPLEFT, canvas, TOPLEFT, BUFF_GUTTER_W - BUFF_PCT_W - 6, y)
+    score:SetHidden(false)
+  end
+
+  for i = 1, n_eps do
+    local e = eps[i]
+    local row
+    for r = 1, n do
+      if rows_sorted[r] == e.slot then row = r break end
+    end
+    if row and e.t_end > t0 and e.t_start < t_hi then
+      local st = (e.t_start > t0) and e.t_start or t0
+      local en = (e.t_end < t_hi) and e.t_end or t_hi
+      local y  = (row - 1) * (row_h + BUFF_ROW_GAP)
+      local x0 = lane_x + math_floor((st - t0) / span * lane_w + 0.5)
+      local x1 = lane_x + math_floor((en - t0) / span * lane_w + 0.5)
+      local bw = x1 - x0
+      if bw < 3 then bw = 3 end
+      local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
+      local seg = controls.pool_buff_seg:AcquireObject()
+      seg:ClearAnchors()
+      seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y + 1)
+      seg:SetWidth(bw)
+      seg:SetHeight(row_h - 2)
+      seg:SetColor(c.r, c.g, c.b, e.star and 1.0 or 0.80)
+      seg:SetHidden(false)
+    end
+  end
+
+  draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
+               canvas, t0, span, lane_x, lane_w)
+end
+
 function render_current_view()
   if controls.pool_marker_line then
     controls.pool_marker_line:ReleaseAllObjects()
@@ -1539,6 +1670,8 @@ function render_current_view()
     render_view3()
   elseif current_view == VIEW_BUFFS then
     render_view4()
+  elseif current_view == VIEW_TRIAGE then
+    render_view5()
   else
     layout_skill_area()
     render_view2()
@@ -1552,16 +1685,24 @@ local C_SUM_PEAK = C_LINE_EMS
 local C_SUM_CRIT = C_CRIT
 local C_SUM_VAL  = { r = 0.92, g = 0.95, b = 0.93 }
 
+local C_SUM_RT = { r = 0.58, g = 0.85, b = 0.92 }
+
 local function build_summary_text()
   local s = Verdant.TemporalBuffer.summary()
   if s.count == 0 then return nil end
   local vc = hexc(C_SUM_VAL)
   local crit_pct = math_floor(s.crit_pct * 100 + 0.5)
-  return string_format(
+  local text = string_format(
     "|c%s%s|r |c%s%s|r   |c%s%s|r |c%s%s|r   |c%s%s|r |c%s%d%%|r",
     hexc(C_SUM_AVG),  GetString(VERDANT_SUMMARY_AVG),  vc, fmt_val(s.avg_ems),
     hexc(C_SUM_PEAK), GetString(VERDANT_SUMMARY_PEAK), vc, fmt_val(s.peak_ems),
     hexc(C_SUM_CRIT), GetString(VERDANT_SUMMARY_CRIT), vc, crit_pct)
+  local ts = Verdant.Triage.summary()
+  if ts.responded > 0 then
+    text = text .. string_format("   |c%s%s|r |c%s%.1fs|r",
+      hexc(C_SUM_RT), GetString(VERDANT_SUMMARY_RT), vc, ts.rt50 / 1000)
+  end
+  return text
 end
 
 local function update_summary_chip()
@@ -1595,6 +1736,8 @@ local function set_view(v)
   hover_key = nil
   if v == VIEW_BUFFS then
     controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_BUFFS))
+  elseif v == VIEW_TRIAGE then
+    controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_TRIAGE))
   else
     controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_DATA))
   end
@@ -1732,14 +1875,14 @@ end
 
 function M.prev_view()
   local v = current_view - 1
-  if v < VIEW_EMS then v = VIEW_BUFFS end
+  if v < VIEW_EMS then v = VIEW_TRIAGE end
   release_all_pools()
   set_view(v)
 end
 
 function M.next_view()
   local v = current_view + 1
-  if v > VIEW_BUFFS then v = VIEW_EMS end
+  if v > VIEW_TRIAGE then v = VIEW_EMS end
   release_all_pools()
   set_view(v)
 end
