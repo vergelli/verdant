@@ -83,15 +83,22 @@ function M.iterate(fn)
 end
 
 local markers = { n = 0 }
-local MARKER_CAP = 40
+local MARKER_CAP       = 80
+local MARKER_GROUP_CAP = 60
+local group_marker_n   = 0
 
-function M.add_marker(t, is_death)
+function M.add_marker(t, is_death, who)
   if markers.n >= MARKER_CAP then return end
+  if who then
+    if group_marker_n >= MARKER_GROUP_CAP then return end
+    group_marker_n = group_marker_n + 1
+  end
   markers.n = markers.n + 1
   local m = markers[markers.n]
   if not m then m = {}; markers[markers.n] = m end
   m.t = t
   m.death = is_death and true or false
+  m.who = who
 end
 
 function M.markers() return markers, markers.n end
@@ -158,4 +165,5 @@ function M.clear()
   state.write = 1
   state.count = 0
   markers.n = 0
+  group_marker_n = 0
 end

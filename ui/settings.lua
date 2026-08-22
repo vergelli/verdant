@@ -323,6 +323,15 @@ function M.on_bars_click()
                                  or GetString(VERDANT_SETTINGS_BARS_OFF))
 end
 
+function M.on_gdm_click()
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  local now = not (sv.settings.group_death_markers == true)
+  sv.settings.group_death_markers = now
+  controls.gdm_btn:SetText(now and GetString(VERDANT_SETTINGS_GDM_ON)
+                               or GetString(VERDANT_SETTINGS_GDM_OFF))
+end
+
 local SHIELDDIR_LABEL = { [true] = "Shields: hang down", [false] = "Shields: grow up" }
 
 local function autorec_label(m)
@@ -516,6 +525,12 @@ function M.on_reset_click()
   persist_temporal("viewport_alpha_pct", current_vpalpha)
   Verdant.Graph.set_viewport_alpha(current_vpalpha / 100)
 
+  local sv = Verdant.SavedVars
+  if sv and sv.settings then
+    sv.settings.group_death_markers = false
+    controls.gdm_btn:SetText(GetString(VERDANT_SETTINGS_GDM_OFF))
+  end
+
   if profile_combo then
     profile_combo:SetSelectedItemText(profile_label_for(PROFILE_DEFAULT))
   end
@@ -607,6 +622,7 @@ function M.init()
   controls.bars_btn       = VerdantSettingsPanelBarsBtn
   controls.shielddir_btn  = VerdantSettingsPanelShieldDirBtn
   controls.autorec_btn    = VerdantSettingsPanelAutoRecBtn
+  controls.gdm_btn        = VerdantSettingsPanelGdmBtn
   controls.pname_edit     = VerdantSettingsPanelPNameBoxEdit
   controls.psave_btn      = VerdantSettingsPanelPSaveBtn
   controls.pdelete_btn    = VerdantSettingsPanelPDeleteBtn
@@ -632,6 +648,8 @@ function M.init()
   local shield_down = (sv.settings.shield_down == true)
   controls.shielddir_btn:SetText(SHIELDDIR_LABEL[shield_down])
   controls.autorec_btn:SetText(autorec_label(sv.settings.auto_record or "off"))
+  controls.gdm_btn:SetText((sv.settings.group_death_markers == true)
+    and GetString(VERDANT_SETTINGS_GDM_ON) or GetString(VERDANT_SETTINGS_GDM_OFF))
   Verdant.Graph.set_shield_down(shield_down)
 
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)

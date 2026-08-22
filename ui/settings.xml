@@ -7,7 +7,7 @@
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="280" y="556"/>
+      <Dimensions x="280" y="588"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -272,6 +272,16 @@
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-44"/>
           <Dimensions y="22"/>
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
+        </Button>
+
+        <Button name="$(parent)GdmBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMLEFT"  offsetX="14"  offsetY="-206"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-206"/>
+          <Dimensions y="22"/>
+          <OnClicked>Verdant.Settings.on_gdm_click()</OnClicked>
         </Button>
 
         <Button name="$(parent)AutoRecBtn"

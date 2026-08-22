@@ -17,6 +17,7 @@ M.IsUnitInCombat          = IsUnitInCombat
 M.DoesUnitExist           = DoesUnitExist
 M.GetGroupSize            = GetGroupSize
 M.GetUnitName             = GetUnitName
+M.AreUnitsEqual           = AreUnitsEqual
 M.GetUnitDisplayName      = GetUnitDisplayName
 M.GetUnitClass            = GetUnitClass
 M.GetUnitRace             = GetUnitRace

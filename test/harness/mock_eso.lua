@@ -27,6 +27,7 @@ REGISTER_FILTER_TARGET_COMBAT_UNIT_TYPE = 102
 REGISTER_FILTER_COMBAT_RESULT           = 103
 REGISTER_FILTER_IS_ERROR                = 104
 REGISTER_FILTER_UNIT_TAG                = 105
+REGISTER_FILTER_UNIT_TAG_PREFIX         = 106
 
 COMBAT_UNIT_TYPE_PLAYER     = 1
 COMBAT_UNIT_TYPE_PLAYER_PET = 2
@@ -435,6 +436,14 @@ function IsUnitDead(tag)
   local b = H.state.bosses[tag]
   return b ~= nil and b.dead == true
 end
+function AreUnitsEqual(a, b)
+  if a == b then return true end
+  local pg = H.state.player_group_tag
+  if pg and ((a == "player" and b == pg) or (b == "player" and a == pg)) then
+    return true
+  end
+  return false
+end
 
 local handlers = {}
 local updates = {}
@@ -451,7 +460,8 @@ local FILTER_POS = {
     [REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE] = 16,
   },
   [EVENT_UNIT_DEATH_STATE_CHANGED] = {
-    [REGISTER_FILTER_UNIT_TAG] = 1,
+    [REGISTER_FILTER_UNIT_TAG]        = 1,
+    [REGISTER_FILTER_UNIT_TAG_PREFIX] = { pos = 1, mode = "prefix" },
   },
 }
 
@@ -494,8 +504,13 @@ function H.fire(code, ...)
     local pass = true
     if pos_map then
       for _, f in ipairs(reg.filters) do
-        local pos = pos_map[f[1]]
-        if pos and args[pos] ~= f[2] then pass = false break end
+        local spec = pos_map[f[1]]
+        if type(spec) == "table" then
+          local v = args[spec.pos]
+          if spec.mode == "prefix" then
+            if type(v) ~= "string" or v:sub(1, #f[2]) ~= f[2] then pass = false break end
+          elseif v ~= f[2] then pass = false break end
+        elseif spec and args[spec] ~= f[2] then pass = false break end
       end
     end
     if pass then

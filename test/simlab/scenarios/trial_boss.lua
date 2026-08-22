@@ -6,6 +6,7 @@ return {
   record = true,
   build = function(sim, H)
     sim:at(0, function(s)
+      Verdant.SavedVars.settings.group_death_markers = true
       s:combat(true)
       s:bosses({ { name = "Lord Warrior", in_combat = true } })
       s:shield_on(1, 41967)
@@ -55,10 +56,15 @@ return {
     end)
     sim:at(66000, function(s) s:res(7) end)
 
-    sim:at(100000, function(s)
+    sim:at(150000, function(s)
+      s:hit(5, 60000, ACTION_RESULT_CRITICAL_DAMAGE)
+    end)
+    sim:at(157000, function(s) s:res(5) end)
+
+    sim:at(155000, function(s)
       s:hit(1, 60000, ACTION_RESULT_CRITICAL_DAMAGE)
     end)
-    sim:at(106000, function(s) s:res(1) end)
+    sim:at(161000, function(s) s:res(1) end)
 
     sim:at(179800, function(s)
       s:combat(false)
