@@ -1,5 +1,60 @@
 # Changelog
 
+## [2.3.0] - 2026-08-22
+
+The BUFFS update: a fourth graph view showing the uptime of every buff you
+give your group, plus automatic recording, death markers and quality passes
+across the whole graph window. Battle-tested in Hel Ra Citadel and Sanctum
+Ophidia.
+
+### Added
+- **BUFFS view** — a Gantt timeline with one row per buff you applied while
+  recording. Bars are union intervals (open while at least one group member
+  still holds the buff), bar intensity encodes how many players hold it,
+  and each row shows its uptime % once the session freezes. Hovering a row
+  shows uptime, players reached, max/avg holders, applications, longest gap
+  and what the buff actually does — pulled live from the game's own tooltip
+  APIs, localized for free, nothing hardcoded.
+- **Smart buff filtering** — the view shows the buffs your skills grant,
+  not the skills themselves: cast auras, heal effects, debuffs, passive
+  procs (Sacred Ground, Frost Safeguard, Tri Focus) and class mechanic
+  states (Crux) are recognized structurally and excluded. Everything
+  filtered is listed in `/verdant report` with its reason, and two curated
+  tables (veto / block) always get the last word. Buffs whose single cast
+  emits several ability ids merge into one row.
+- **Automatic recording** — three modes: Off (default), Boss fights, Any
+  combat. Starts when the fight starts, stops a few seconds after combat
+  ends (re-entering combat during the grace window cancels the stop, so
+  wipe-checks don't split the pull). Auto sessions show an AUTO marker and
+  never overwrite a session you recorded manually.
+- **Death and resurrection markers** — your deaths appear as a vertical
+  line with a skull on every view; resurrections in green with the res
+  icon.
+- **Session summary** — after Stop, the window header shows AVG / PEAK /
+  CRIT for the frozen session, colored in the chart's own language (green
+  healing, pink EMS peak, gold crit).
+- **Group damage overlay** — the EMS view draws incoming group damage as a
+  red curve with a subtle area fill behind the healing bars, so you can see
+  whether your output lined up with the damage. Hover shows the rate.
+- **User-savable profiles** — save the current settings under your own name
+  from the settings panel, load them from the dropdown, overwrite or delete
+  them. Built-in presets unchanged.
+
+### Changed
+- Chart numbers (axis, hover, summary) show one decimal and the Y axis got
+  a top label with the true chart maximum.
+- Title-bar buttons aligned; BUFFS rows grow with window height instead of
+  stretching; explicit draw layering across the whole chart.
+- The graph window gained a header strip for the session summary (viewport
+  moved down 22px).
+
+### Internal
+- Offline mock-ESO test harness (`test/harness/`, 15 cases, excluded from
+  the release zip) and a build fingerprint in `/verdant report`.
+- Release workflow now fails if DEBUG is left enabled.
+
+---
+
 ## [2.2.0] - 2026-06-28
 
 The big visual + performance pass: pixel-perfect chart decimation (M4), a
