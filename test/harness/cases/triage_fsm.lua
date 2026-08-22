@@ -66,6 +66,19 @@ return function(H)
   local _, n_after = T.episodes()
   ok(n_after == s2.episodes, "power updates after stop must not open episodes")
 
+  Verdant.Graph.on_record_click()
+  H.power("group2", 10000, 40000)
+  H.advance(200)
+  H.heal({ hit = 900, target_name = "Ally2^Fx", target_unit_id = 602 })
+  H.heal({ hit = 900, target_name = "Koska^N", target_unit_id = 999, target_type = 0 })
+  local ps = T.power_stats()
+  ok(ps.matched == 1, "suffixed name must match its slot, matched=" .. ps.matched)
+  ok(ps.unmatched == 0, "companion heal must not count as unmatched, got " .. ps.unmatched)
+  H.power("group2", 39000, 40000)
+  local s3 = T.summary()
+  ok(s3.counts.s == 1 and s3.responded == 1, "suffixed heal must close the episode as save")
+  Verdant.Graph.on_stop_click()
+
   H.state.grouped = false
   H.state.group_size = 1
   H.state.player_group_tag = nil
