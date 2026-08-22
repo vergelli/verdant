@@ -298,7 +298,9 @@ function GetSlotBoundId(slot, cat)
   return (bar and bar[slot]) or 0
 end
 function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
-function GetAbilityIcon() return "EsoUI/Art/Icons/ability_mock.dds" end
+function GetAbilityIcon(id)
+  return (H.ability_icons and H.ability_icons[id]) or "EsoUI/Art/Icons/ability_mock.dds"
+end
 function IsAbilityPassive(id)
   return (H.passive_ids and H.passive_ids[id]) == true
 end

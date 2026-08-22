@@ -191,13 +191,20 @@ local function get_rec(id, tag)
     note_excluded(id, nil, nil, "passive skill")
     return nil
   end
+  local grp = SC.group_of(id) or "other"
+  if grp ~= "other" and grp ~= "item"
+     and not Verdant.SkillColors.has_explicit_override(id) then
+    bump("buffs.skipped_skill_line_proc")
+    note_excluded(id, nil, nil, "skill-line proc (" .. grp .. ")")
+    return nil
+  end
   if n_tracked >= MAX_TRACKED then
     bump("buffs.dropped_capacity")
     return nil
   end
   rec = rec_acquire(id)
   rec.name    = name
-  rec.group   = SC.group_of(id) or "other"
+  rec.group   = grp
   rec.n_ids   = 1
   rec.ids[1]  = id
   rec.desc    = resolve_desc(id, tag)

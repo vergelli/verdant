@@ -8,6 +8,15 @@
   moment you are resurrected shows in green with a resurrect icon. Captured
   while recording via the player death-state event, cleared on Flush.
 
+### Fixed (round 12, boss-fight evidence)
+- **Skill procs shielding allies (Frost Safeguard) excluded** — the last
+  leak category: passive procs with no skill keys that reach other players.
+  The trial evidence exposed the discriminator we already computed:
+  genuine granted buffs always classify as "other" (ability_buff_* icons)
+  or "item"; anything classifying to a class/weapon skill line via its
+  icon is the proc OF a skill. Those are now excluded as
+  "skill-line proc (<line>)", with the curated-override veto still on top.
+
 ### Fixed (round 11, Hel Ra trial evidence)
 - **Curated overrides veto the filters** — Warding Contingency fell to the
   new skill-aura rule because scribing grimoires do have skill keys. Ability

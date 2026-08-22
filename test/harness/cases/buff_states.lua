@@ -93,6 +93,23 @@ return function(H)
 
   Verdant.Graph.on_record_click()
   Verdant.Graph.on_stop_click()
+  H.ability_icons = { [860] = "/esoui/art/icons/ability_destructionstaff_012.dds" }
+  H.ability_names[860] = "Frosty Proc"
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 860, 600, 0)
+  H.effect(EFFECT_RESULT_GAINED, 860, 601, 0)
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+  local frosty
+  BT.iterate(function(_, r) if r.name == "Frosty Proc" then frosty = r end end)
+  ok(frosty == nil, "buffs whose icon classifies to a skill line must be excluded as procs")
+  local proc_line = false
+  for _, l in ipairs(BT.report_lines()) do
+    if l:find("skill%-line proc") then proc_line = true end
+  end
+  ok(proc_line, "report must show the skill-line proc exclusion")
+  H.ability_icons = nil
+
   H.skill_keys = nil
   H.slotted = nil
   H.unit_buffs = nil
