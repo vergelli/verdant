@@ -22,8 +22,8 @@ local zev     = Verdant.zenimax.events
 local C       = Verdant.zenimax.constants
 local GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
 
-local CAP   = 40000
-local CHUNK = 500
+local CAP       = 40000
+local CHUNK_MAX = 1800
 
 local lines  = {}
 local n      = 0
@@ -54,7 +54,14 @@ local function rec(tag, ...)
 end
 
 local function rec_group()
-  rec("GR", api.IsUnitGrouped("player"), api.GetGroupSize())
+  local names = {}
+  local n = api.GetGroupSize() or 0
+  local player_slot = 0
+  for i = 1, n do
+    names[i] = (api.GetUnitName("group" .. i) or ""):gsub("[|\t\n]", " ")
+    if api.AreUnitsEqual("group" .. i, "player") then player_slot = i end
+  end
+  rec("GR", api.IsUnitGrouped("player"), n, table.concat(names, "|"), player_slot)
 end
 
 local function rec_bosses()
@@ -89,9 +96,17 @@ end
 
 function M.save(sv)
   local chunks = {}
-  for i = 1, n, CHUNK do
-    chunks[#chunks + 1] = table.concat(lines, "\n", i, math.min(i + CHUNK - 1, n))
+  local buf, blen = {}, 0
+  for i = 1, n do
+    local llen = #lines[i] + 1
+    if blen + llen > CHUNK_MAX and #buf > 0 then
+      chunks[#chunks + 1] = table.concat(buf, "\n")
+      buf, blen = {}, 0
+    end
+    buf[#buf + 1] = lines[i]
+    blen = blen + llen
   end
+  if #buf > 0 then chunks[#chunks + 1] = table.concat(buf, "\n") end
   sv.trace = {
     version = 1,
     build   = Verdant.Constants.BUILD,
