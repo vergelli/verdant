@@ -43,6 +43,7 @@ return function(H)
         if (hit or 0) > 0 or (overflow or 0) > 0 then
           O.own_heals[#O.own_heals + 1] = {
             t = t, seq = O.seq, name = tname, hit = hit or 0, over = overflow or 0,
+            tt = targetType,
           }
         end
         if suid and suid ~= 0 then O.player_id = suid end
@@ -155,8 +156,13 @@ return function(H)
 
   function O.triage_expected(t_end)
     local THETA, TEXIT, DELTA, GRACE, SIGMA, MINEP = 0.50, 0.55, 1000, 3000, 2000, 400
+    local function base(nm)
+      return (tostring(nm):gsub("%^.*$", ""))
+    end
     local name_tag = {}
-    for tag, nm in pairs(H.unit_names or {}) do name_tag[nm] = tag end
+    for tag, nm in pairs(H.unit_names or {}) do
+      if tag:match("^group%d+$") then name_tag[base(nm)] = tag end
+    end
 
     local per = {}
     local function bucket(tag)
@@ -172,10 +178,12 @@ return function(H)
       l[#l + 1] = { t = d.t, seq = d.seq, k = d.dead and "die" or "res" }
     end
     for _, h in ipairs(O.own_heals) do
-      local tag = name_tag[h.name]
-      if tag then
-        local l = bucket(tag)
-        l[#l + 1] = { t = h.t, seq = h.seq, k = "heal", hit = h.hit, over = h.over }
+      if h.tt == COMBAT_UNIT_TYPE_PLAYER or h.tt == COMBAT_UNIT_TYPE_GROUP then
+        local tag = name_tag[base(h.name)]
+        if tag then
+          local l = bucket(tag)
+          l[#l + 1] = { t = h.t, seq = h.seq, k = "heal", hit = h.hit, over = h.over }
+        end
       end
     end
 

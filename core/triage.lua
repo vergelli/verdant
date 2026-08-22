@@ -4,9 +4,11 @@ local Verdant = Verdant
 Verdant.Triage = {}
 local M = Verdant.Triage
 
-local math_floor = math.floor
-local table_sort = table.sort
-local pairs      = pairs
+local math_floor  = math.floor
+local table_sort  = table.sort
+local pairs       = pairs
+local string_find = string.find
+local string_sub  = string.sub
 
 local THETA          = 0.50
 local THETA_EXIT     = 0.55
@@ -131,9 +133,20 @@ function M.on_power(unitTag, _idx, _ptype, value, _max, effMax)
   end
 end
 
-function M.on_own_heal(targetName, hit, overflow, now)
+local CU_PLAYER, CU_GROUP
+
+local function base_name(name)
+  local p = string_find(name, "^", 1, true)
+  if p then return string_sub(name, 1, p - 1) end
+  return name
+end
+
+function M.on_own_heal(targetName, hit, overflow, now, targetType)
   if not session_active or name_count == 0 then return end
+  if targetType ~= CU_GROUP and targetType ~= CU_PLAYER then return end
+  if not targetName or targetName == "" then return end
   local i = name_slot[targetName]
+  if not i then i = name_slot[base_name(targetName)] end
   if not i then
     heal_unmatched = heal_unmatched + 1
     return
@@ -184,7 +197,7 @@ function M.refresh_names()
     if i <= n then
       local nm = api.GetUnitName("group" .. i)
       if nm and nm ~= "" then
-        name_slot[nm] = i
+        name_slot[base_name(nm)] = i
         name_count = name_count + 1
       end
     end
@@ -318,5 +331,8 @@ function M.init()
   log = Verdant.Log.for_module("triage")
   api = Verdant.zenimax.api
   GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
+  local C = Verdant.zenimax.constants
+  CU_PLAYER = C.COMBAT_UNIT_TYPE_PLAYER
+  CU_GROUP  = C.COMBAT_UNIT_TYPE_GROUP
   log:info("init: theta=", THETA, "exit=", THETA_EXIT, "slots=", MAX_SLOTS)
 end

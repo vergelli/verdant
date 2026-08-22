@@ -25,6 +25,19 @@ local GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
 local CAP       = 40000
 local CHUNK_MAX = 1800
 
+local CONST_NAMES = {
+  "ACTION_RESULT_HEAL", "ACTION_RESULT_CRITICAL_HEAL", "ACTION_RESULT_HOT_TICK",
+  "ACTION_RESULT_HOT_TICK_CRITICAL", "ACTION_RESULT_HEAL_ABSORBED",
+  "ACTION_RESULT_DAMAGE", "ACTION_RESULT_CRITICAL_DAMAGE", "ACTION_RESULT_DOT_TICK",
+  "ACTION_RESULT_DOT_TICK_CRITICAL", "ACTION_RESULT_BLOCKED_DAMAGE",
+  "ACTION_RESULT_FALL_DAMAGE", "ACTION_RESULT_DAMAGE_SHIELDED",
+  "EFFECT_RESULT_GAINED", "EFFECT_RESULT_FADED", "EFFECT_RESULT_UPDATED",
+  "EFFECT_RESULT_FULL_REFRESH", "EFFECT_RESULT_TRANSFER",
+  "POWERTYPE_HEALTH", "BUFF_EFFECT_TYPE_BUFF", "BUFF_EFFECT_TYPE_DEBUFF",
+  "ABILITY_TYPE_HEAL", "COMBAT_UNIT_TYPE_PLAYER", "COMBAT_UNIT_TYPE_PLAYER_PET",
+  "COMBAT_UNIT_TYPE_GROUP", "COMBAT_UNIT_TYPE_OTHER",
+}
+
 local lines  = {}
 local n      = 0
 local active = false
@@ -107,12 +120,17 @@ function M.save(sv)
     blen = blen + llen
   end
   if #buf > 0 then chunks[#chunks + 1] = table.concat(buf, "\n") end
+  local consts = { API_VERSION = api.GetAPIVersion() }
+  for _, k in ipairs(CONST_NAMES) do
+    consts[k] = rawget(_G, k)
+  end
   sv.trace = {
-    version = 1,
-    build   = Verdant.Constants.BUILD,
-    world   = api.GetWorldName(),
-    count   = n,
-    chunks  = chunks,
+    version   = 2,
+    build     = Verdant.Constants.BUILD,
+    world     = api.GetWorldName(),
+    count     = n,
+    chunks    = chunks,
+    constants = consts,
   }
   d("[trace] " .. n .. " events staged to SavedVars; /reloadui to flush to disk")
 end
