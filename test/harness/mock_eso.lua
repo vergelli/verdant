@@ -74,6 +74,61 @@ SLASH_COMMANDS = {}
 
 H.controls = {}
 
+local FRACX = {
+  [TOPLEFT] = 0, [TOP] = 0.5, [TOPRIGHT] = 1,
+  [LEFT] = 0, [CENTER] = 0.5, [RIGHT] = 1,
+  [BOTTOMLEFT] = 0, [BOTTOM] = 0.5, [BOTTOMRIGHT] = 1,
+}
+local FRACY = {
+  [TOPLEFT] = 0, [TOP] = 0, [TOPRIGHT] = 0,
+  [LEFT] = 0.5, [CENTER] = 0.5, [RIGHT] = 0.5,
+  [BOTTOMLEFT] = 1, [BOTTOM] = 1, [BOTTOMRIGHT] = 1,
+}
+
+local resolving = {}
+local function layout(c)
+  if c == nil or c == true or c == GuiRoot then return 0, 0, 1920, 1080 end
+  if resolving[c] then return 100, 100, c._w or 600, c._h or 400 end
+  resolving[c] = true
+  local x, y, w, h
+  if c._fill then
+    local base = (c._fill == true) and (c._parent or GuiRoot) or c._fill
+    x, y, w, h = layout(base)
+  elseif c._anchor_list and #c._anchor_list > 0 then
+    local xs, ys = {}, {}
+    for _, a in ipairs(c._anchor_list) do
+      local rx, ry, rw, rh = layout(a.relTo or c._parent or GuiRoot)
+      xs[#xs + 1] = { f = FRACX[a.point] or 0, p = rx + (FRACX[a.relPoint] or 0) * rw + (a.ox or 0) }
+      ys[#ys + 1] = { f = FRACY[a.point] or 0, p = ry + (FRACY[a.relPoint] or 0) * rh + (a.oy or 0) }
+    end
+    local function solve(cons, dim, def)
+      if #cons >= 2 and cons[1].f ~= cons[2].f then
+        local d = (cons[2].p - cons[1].p) / (cons[2].f - cons[1].f)
+        if d < 0 then d = 0 end
+        return cons[1].p - cons[1].f * d, d
+      end
+      local d = dim or def
+      return cons[1].p - cons[1].f * d, d
+    end
+    x, w = solve(xs, c._w, 600)
+    y, h = solve(ys, c._h, 400)
+  else
+    if c._parent then
+      x, y = layout(c._parent)
+    else
+      x, y = 100, 100
+    end
+    w, h = c._w or 600, c._h or 400
+  end
+  resolving[c] = nil
+  return x, y, w, h
+end
+
+function H.layout(c)
+  local x, y, w, h = layout(c)
+  return { x = x, y = y, w = w, h = h }
+end
+
 local mock_control
 local MOCKC = {
   __index = function(self, k)
@@ -103,17 +158,22 @@ local MOCKC = {
     elseif k == "SetDimensions" then fn = function(s, w, h) s._w, s._h = w, h end
     elseif k == "SetWidth" then fn = function(s, w) s._w = w end
     elseif k == "SetHeight" then fn = function(s, h) s._h = h end
-    elseif k == "GetWidth" then fn = function(s) return s._w or 600 end
-    elseif k == "GetHeight" then fn = function(s) return s._h or 400 end
-    elseif k == "GetDimensions" then fn = function(s) return s._w or 600, s._h or 400 end
-    elseif k == "GetTop" then fn = function(s) return s._top or 100 end
-    elseif k == "GetBottom" then fn = function(s) return (s._top or 100) + (s._h or 400) end
-    elseif k == "GetLeft" then fn = function(s) return s._left or 100 end
-    elseif k == "GetRight" then fn = function(s) return (s._left or 100) + (s._w or 600) end
-    elseif k == "GetCenter" then fn = function(s) return 400, 300 end
+    elseif k == "GetWidth" then fn = function(s) if s._w then return s._w end local r = H.layout(s) return r.w end
+    elseif k == "GetHeight" then fn = function(s) if s._h then return s._h end local r = H.layout(s) return r.h end
+    elseif k == "GetDimensions" then fn = function(s) return s:GetWidth(), s:GetHeight() end
+    elseif k == "GetTop" then fn = function(s) local r = H.layout(s) return r.y end
+    elseif k == "GetBottom" then fn = function(s) local r = H.layout(s) return r.y + r.h end
+    elseif k == "GetLeft" then fn = function(s) local r = H.layout(s) return r.x end
+    elseif k == "GetRight" then fn = function(s) local r = H.layout(s) return r.x + r.w end
+    elseif k == "GetCenter" then fn = function(s) local r = H.layout(s) return r.x + r.w / 2, r.y + r.h / 2 end
     elseif k == "SetText" then fn = function(s, t) s._text = t end
     elseif k == "GetText" then fn = function(s) return s._text or "" end
-    elseif k == "GetTextWidth" then fn = function(s) return #tostring(s._text or "") * 7 end
+    elseif k == "GetTextWidth" then
+      fn = function(s)
+        local t = tostring(s._text or "")
+        t = t:gsub("|c%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|t.-|t", "")
+        return #t * 7
+      end
     elseif k == "GetTextHeight" then fn = function() return 14 end
     elseif k == "SetHidden" then fn = function(s, h) s._hidden = h and true or false end
     elseif k == "IsHidden" then fn = function(s) return s._hidden == true end

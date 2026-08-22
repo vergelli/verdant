@@ -8,6 +8,10 @@ for i = 2, #arg do
 end
 
 dofile(SIMLAB_ROOT .. "/test/harness/mock_eso.lua")
+
+local svg = want_svg and dofile(SIMLAB_ROOT .. "/test/simlab/svg.lua") or nil
+if svg then svg.apply_xml(SIMLAB_ROOT .. "/ui/graph.xml") end
+
 dofile(SIMLAB_ROOT .. "/test/harness/loader.lua")
 HARNESS.fire(EVENT_ADD_ON_LOADED, "Verdant")
 
@@ -16,7 +20,6 @@ local Prng         = dofile(SIMLAB_ROOT .. "/test/simlab/prng.lua")
 local make_engine  = dofile(SIMLAB_ROOT .. "/test/simlab/engine.lua")
 local make_oracle  = dofile(SIMLAB_ROOT .. "/test/simlab/oracle.lua")
 local Engine       = make_engine(H, Prng)
-local svg          = want_svg and dofile(SIMLAB_ROOT .. "/test/simlab/svg.lua") or nil
 
 local SCENARIOS = { "trial_boss", "dungeon_pull", "burst" }
 
@@ -53,6 +56,7 @@ for _, name in ipairs(SCENARIOS) do
     local sim = Engine.new({ seed = spec.seed })
     sim.oracle = O
     sim:group(spec.group)
+    if svg then Verdant.Visibility.set("graph", true) end
     if spec.record then Verdant.Graph.on_record_click() end
     spec.build(sim, H)
 
@@ -84,9 +88,13 @@ for _, name in ipairs(SCENARIOS) do
     end
 
     if svg then
-      local out = SIMLAB_ROOT .. "/test/simlab/out/" .. spec.name .. ".svg"
-      svg.snapshot(H, VerdantGraph, out)
-      print("      svg -> " .. out)
+      for _ = 1, 4 do
+        local view = tostring(VerdantGraphWindowViewLabel._text or "view")
+        local out = SIMLAB_ROOT .. "/test/simlab/out/" .. spec.name .. "_" .. view:lower() .. ".svg"
+        svg.snapshot(H, VerdantGraphWindow, out)
+        print("      svg -> " .. out)
+        Verdant.Graph.next_view()
+      end
     end
   end
 end
