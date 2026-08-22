@@ -67,6 +67,22 @@ return function(H)
   end
   ok(icon_seen, "ledger rows must show the member class icon")
 
+  local canvas = VerdantGraphWindowViewportCanvas
+  local hit    = VerdantGraphHitMain
+  H.state.mouse_x = canvas:GetLeft() + 100
+  H.state.mouse_y = canvas:GetTop() + 60
+  hit._onOnMouseEnter(hit)
+  H.advance(200)
+  local card = VerdantHoverCardName
+  ok(card._text == "Ally2" or card._text == "Ally3",
+     "triage hover must name the ally, got " .. tostring(card._text))
+  local stat = VerdantHoverCardStat
+  ok(stat._text and (stat._text:find("brought them back", 1, true)
+     or stat._text:find("without a single heal", 1, true)
+     or stat._text:find("recovered without", 1, true)),
+     "triage hover must explain the outcome, got " .. tostring(stat._text))
+  H.state.mouse_x, H.state.mouse_y = 400, 300
+
   local chip = VerdantGraphSummaryLabel
   ok(chip._text and chip._text:find("RT"), "summary chip must include RT when episodes responded")
 
