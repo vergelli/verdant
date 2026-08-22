@@ -51,6 +51,21 @@ end
 local events = codec.decode_chunks(trace.chunks)
 print(string.format("replay: %d events  trace_build=%s  world=%s",
   #events, tostring(trace.build), tostring(trace.world)))
+
+if trace.constants then
+  local drift = 0
+  for k, v in pairs(trace.constants) do
+    if k ~= "API_VERSION" then
+      local mv = rawget(_G, k)
+      if mv ~= v then
+        drift = drift + 1
+        print(string.format("  const mismatch: %-34s live=%s  mock=%s", k, tostring(v), tostring(mv)))
+      end
+    end
+  end
+  print(string.format("constants: api=%s  mismatches=%d",
+    tostring(trace.constants.API_VERSION), drift))
+end
 if #events == 0 then os.exit(2) end
 
 local O = make_oracle(H)

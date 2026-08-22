@@ -29,6 +29,10 @@ return function(H)
   Verdant.Trace.save(sv)
 
   ok(sv.trace ~= nil, "trace not saved")
+  ok(sv.trace.constants ~= nil, "trace must snapshot client constants")
+  ok(sv.trace.constants.ACTION_RESULT_HEAL == ACTION_RESULT_HEAL,
+     "constants snapshot must read live globals")
+  ok(sv.trace.constants.API_VERSION == 101050, "api version missing from snapshot")
   ok(sv.trace.count >= 106, "expected at least 106 events, got " .. tostring(sv.trace.count))
   ok(#sv.trace.chunks >= 2, "big capture must split into several chunks")
   for i, c in ipairs(sv.trace.chunks) do
