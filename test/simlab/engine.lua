@@ -19,6 +19,7 @@ return function(H, Prng)
     hp_max = hp_max or 40000
     H.state.grouped = n > 1
     H.state.group_size = n
+    H.state.player_group_tag = (n > 1) and "group1" or nil
     H.fire(EVENT_GROUP_UPDATE)
     for i = 1, n do
       self.members[i] = {
@@ -55,6 +56,7 @@ return function(H, Prng)
       m.hp = 0
       m.alive = false
       if i == 1 then H.death(true) end
+      if #self.members > 1 then H.death(true, "group" .. i) end
     end
   end
 
@@ -100,6 +102,7 @@ return function(H, Prng)
     m.alive = true
     m.hp = math.floor(m.hp_max / 2)
     if i == 1 then H.death(false) end
+    if #self.members > 1 then H.death(false, "group" .. i) end
   end
 
   function Sim:combat(on)

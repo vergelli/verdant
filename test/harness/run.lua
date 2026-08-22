@@ -23,6 +23,7 @@ local CASES = {
   "user_profiles",
   "slash_report",
   "trace_flow",
+  "group_death_markers",
 }
 
 local passed, failed = 0, 0

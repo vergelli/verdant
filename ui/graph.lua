@@ -42,7 +42,8 @@ local C_MARK_DEATH = { r = 0.92, g = 0.88, b = 0.84, a = 0.55 }
 local C_MARK_RES   = { r = 0.45, g = 1.00, b = 0.62, a = 0.55 }
 local TEX_SKULL    = "EsoUI/Art/TargetMarkers/Target_White_Skull_64.dds"
 local TEX_RES      = "EsoUI/Art/Notifications/notificationIcon_resurrect.dds"
-local MARK_ICON_SZ = 16
+local MARK_ICON_SZ     = 16
+local MARK_ICON_SZ_GRP = 11
 
 local C_VIEWPORT  = { r = 0.78, g = 1.00, b = 0.86 }
 
@@ -900,30 +901,42 @@ local function update_hover_gate()
   end
 end
 
+local function draw_one_marker(pool_line, pool_icon, canvas, m, x, is_group)
+  local c  = m.death and C_MARK_DEATH or C_MARK_RES
+  local sz = is_group and MARK_ICON_SZ_GRP or MARK_ICON_SZ
+
+  local ln = pool_line:AcquireObject()
+  ln:ClearAnchors()
+  ln:SetAnchor(TOPLEFT,    canvas, TOPLEFT,    x, 0)
+  ln:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
+  ln:SetWidth(1)
+  ln:SetColor(c.r, c.g, c.b, is_group and c.a * 0.45 or c.a)
+  ln:SetHidden(false)
+
+  local ic = pool_icon:AcquireObject()
+  ic:ClearAnchors()
+  ic:SetTexture(m.death and TEX_SKULL or TEX_RES)
+  ic:SetDimensions(sz, sz)
+  ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - math_floor(sz / 2), is_group and 4 or 1)
+  ic:SetColor(c.r, c.g, c.b, is_group and 0.50 or 0.95)
+  ic:SetHidden(false)
+end
+
 local function draw_markers(pool_line, pool_icon, canvas, t0, span, lane_x, lane_w)
   if span <= 0 then return end
   local ms, n = Verdant.TemporalBuffer.markers()
   for i = 1, n do
     local m = ms[i]
-    if m.t >= t0 and m.t <= t0 + span then
+    if m.who and m.t >= t0 and m.t <= t0 + span then
       local x = lane_x + math_floor((m.t - t0) / span * lane_w + 0.5)
-      local c = m.death and C_MARK_DEATH or C_MARK_RES
-
-      local ln = pool_line:AcquireObject()
-      ln:ClearAnchors()
-      ln:SetAnchor(TOPLEFT,    canvas, TOPLEFT,    x, 0)
-      ln:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, 0)
-      ln:SetWidth(1)
-      ln:SetColor(c.r, c.g, c.b, c.a)
-      ln:SetHidden(false)
-
-      local ic = pool_icon:AcquireObject()
-      ic:ClearAnchors()
-      ic:SetTexture(m.death and TEX_SKULL or TEX_RES)
-      ic:SetDimensions(MARK_ICON_SZ, MARK_ICON_SZ)
-      ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - math_floor(MARK_ICON_SZ / 2), 1)
-      ic:SetColor(c.r, c.g, c.b, 0.95)
-      ic:SetHidden(false)
+      draw_one_marker(pool_line, pool_icon, canvas, m, x, true)
+    end
+  end
+  for i = 1, n do
+    local m = ms[i]
+    if not m.who and m.t >= t0 and m.t <= t0 + span then
+      local x = lane_x + math_floor((m.t - t0) / span * lane_w + 0.5)
+      draw_one_marker(pool_line, pool_icon, canvas, m, x, false)
     end
   end
 end

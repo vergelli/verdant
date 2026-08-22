@@ -207,6 +207,16 @@ function M.dispatch_death_state(_unitTag, isDead)
   end
 end
 
+function M.dispatch_death_state_group(unitTag, isDead)
+  if Verdant.zenimax.api.AreUnitsEqual(unitTag, "player") then return end
+  bump(isDead and "engine.death.group_died" or "engine.death.group_res")
+  if not Verdant.TemporalBuffer.is_recording() then return end
+  local sv = Verdant.SavedVars
+  if not (sv and sv.settings and sv.settings.group_death_markers) then return end
+  Verdant.TemporalBuffer.add_marker(now(), isDead, unitTag)
+  Log:info(isDead and "group death marker" or "group res marker", unitTag)
+end
+
 function M.dispatch_group_change()
   bump("engine.group.changed")
   Log:info("group changed; refreshing coverage mode")
@@ -272,6 +282,10 @@ function M.init()
   E.register("Verdant_E_Death", EVENT_UNIT_DEATH_STATE_CHANGED, M.dispatch_death_state)
   E.add_filter("Verdant_E_Death", EVENT_UNIT_DEATH_STATE_CHANGED,
     REGISTER_FILTER_UNIT_TAG, "player")
+
+  E.register("Verdant_E_DeathGroup", EVENT_UNIT_DEATH_STATE_CHANGED, M.dispatch_death_state_group)
+  E.add_filter("Verdant_E_DeathGroup", EVENT_UNIT_DEATH_STATE_CHANGED,
+    C.REGISTER_FILTER_UNIT_TAG_PREFIX, "group")
 
   E.register("Verdant_E_GroupJ", EVENT_GROUP_MEMBER_JOINED, M.dispatch_group_change)
   E.register("Verdant_E_GroupL", EVENT_GROUP_MEMBER_LEFT,   M.dispatch_group_left)
