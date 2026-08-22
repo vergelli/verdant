@@ -49,6 +49,7 @@ local ep_log = { n = 0 }
 local ep_dropped = 0
 
 local name_slot = {}
+local name_count = 0
 local session_active = false
 local pu_count = 0
 local pu_first_t = 0
@@ -131,7 +132,7 @@ function M.on_power(unitTag, _idx, _ptype, value, _max, effMax)
 end
 
 function M.on_own_heal(targetName, hit, overflow, now)
-  if not session_active then return end
+  if not session_active or name_count == 0 then return end
   local i = name_slot[targetName]
   if not i then
     heal_unmatched = heal_unmatched + 1
@@ -177,11 +178,15 @@ end
 
 function M.refresh_names()
   for k in pairs(name_slot) do name_slot[k] = nil end
+  name_count = 0
   local n = api.GetGroupSize() or 0
   for i = 1, MAX_SLOTS do
     if i <= n then
       local nm = api.GetUnitName("group" .. i)
-      if nm and nm ~= "" then name_slot[nm] = i end
+      if nm and nm ~= "" then
+        name_slot[nm] = i
+        name_count = name_count + 1
+      end
     end
   end
 end
@@ -283,10 +288,8 @@ function M.report_lines()
   lines[#lines + 1] = string.format(
     "power_updates=%d  rate=%.1f/s  heals matched=%d unmatched=%d",
     ps.count, ps.rate, ps.matched, ps.unmatched)
-  local nm = 0
-  for _ in pairs(name_slot) do nm = nm + 1 end
   lines[#lines + 1] = string.format(
-    "session_active=%s  name_map=%d entries", tostring(session_active), nm)
+    "session_active=%s  name_map=%d entries", tostring(session_active), name_count)
   local s = M.summary()
   lines[#lines + 1] = string.format(
     "episodes=%d (dropped=%d)  S=%d (S*=%d)  O=%d  L=%d  M=%d  X=%d  oneshot=%d",
