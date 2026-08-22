@@ -1370,53 +1370,41 @@ local C_TRI_CLASS = {
   { r = 0.55, g = 0.55, b = 0.55 },
   { r = 0.50, g = 0.38, b = 0.38 },
 }
-local C_TRI_NAME  = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
-local C_TRI_SCORE = { r = 0.64, g = 0.72, b = 0.66, a = 1.0 }
-local C_TRI_LEG   = { r = 0.62, g = 0.68, b = 0.64, a = 0.95 }
-local TRI_LEGEND_H = 18
-local tri_rows  = {}
-local tri_saves = {}
-local tri_total = {}
+local C_TRI_NAME   = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
+local C_TRI_DIM    = { r = 0.60, g = 0.64, b = 0.61, a = 0.95 }
+local C_TRI_TIME   = { r = 0.48, g = 0.46, b = 0.42, a = 1.0 }
+local C_TRI_DEPTH  = { r = 0.91, g = 0.72, b = 0.29, a = 1.0 }
+local C_TRI_DEEP   = { r = 0.95, g = 0.42, b = 0.34, a = 1.0 }
+local C_TRI_STRIP  = { r = 0.16, g = 0.15, b = 0.13, a = 0.90 }
+local C_TRI_FAST   = { r = 0.58, g = 0.85, b = 0.92 }
+local C_TRI_MID    = { r = 0.92, g = 0.95, b = 0.93 }
+local C_TRI_SLOW   = { r = 0.91, g = 0.58, b = 0.42 }
+local TRI_HEADER_H = 20
+local TRI_STRIP_H  = 14
+local TRI_STRIP_GAP = 10
+local TRI_ROW_H    = 24
+local TRI_ROW_GAP  = 2
+local TRI_RT_FAST_MS = 1000
+local TRI_RT_SLOW_MS = 2500
 
-local TRI_LEGEND = {
-  { class = 1, key = "VERDANT_TRI_LEG_SAVE" },
-  { class = 2, key = "VERDANT_TRI_LEG_OTHER" },
-  { class = 3, key = "VERDANT_TRI_LEG_LOST" },
-  { class = 4, key = "VERDANT_TRI_LEG_MISSED" },
+local TRI_CHIP_KEY = {
+  "VERDANT_TRI_CHIP_SAVE",
+  "VERDANT_TRI_CHIP_RECOVERED",
+  "VERDANT_TRI_CHIP_DIED",
+  "VERDANT_TRI_CHIP_MISSED",
+  "VERDANT_TRI_CHIP_CUT",
+  "VERDANT_TRI_CHIP_ONESHOT",
 }
 
-local function draw_tri_legend(canvas, lane_x, lane_w)
-  local x = lane_x
-  for i = 1, #TRI_LEGEND do
-    local it = TRI_LEGEND[i]
-    local c  = C_TRI_CLASS[it.class]
-    local sq = controls.pool_buff_seg:AcquireObject()
-    sq:ClearAnchors()
-    sq:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, 4)
-    sq:SetWidth(9)
-    sq:SetHeight(9)
-    sq:SetColor(c.r, c.g, c.b, it.class == 2 and 0.35 or 0.85)
-    sq:SetHidden(false)
-    x = x + 13
-    local lbl = controls.pool_buff_lbl:AcquireObject()
-    lbl:ClearAnchors()
-    local text = GetString(rawget(_G, it.key))
-    lbl:SetText(text)
-    lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-    lbl:SetColor(C_TRI_LEG.r, C_TRI_LEG.g, C_TRI_LEG.b, C_TRI_LEG.a)
-    lbl:SetDimensions(#text * 7 + 8, 14)
-    lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, 2)
-    lbl:SetHidden(false)
-    x = x + #text * 7 + 14
-  end
-  local hint = controls.pool_buff_lbl:AcquireObject()
-  hint:ClearAnchors()
-  hint:SetText(GetString(VERDANT_TRI_LEG_SCORE))
-  hint:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-  hint:SetColor(C_TRI_LEG.r, C_TRI_LEG.g, C_TRI_LEG.b, 0.80)
-  hint:SetDimensions(140, 14)
-  hint:SetAnchor(TOPLEFT, canvas, TOPLEFT, lane_x + lane_w - 146, 2)
-  hint:SetHidden(false)
+local function tri_rt_color(rt)
+  if rt < TRI_RT_FAST_MS then return C_TRI_FAST end
+  if rt > TRI_RT_SLOW_MS then return C_TRI_SLOW end
+  return C_TRI_MID
+end
+
+local function tri_time_str(off_ms)
+  local s = math_floor(off_ms / 1000)
+  return string_format("%d:%02d", math_floor(s / 60), s % 60)
 end
 
 
@@ -1589,35 +1577,20 @@ local function render_view5()
   controls.pool_buff_seg:ReleaseAllObjects()
   controls.pool_buff_icon:ReleaseAllObjects()
   controls.pool_buff_lbl:ReleaseAllObjects()
+  hide_grid(controls.grid_ems)
 
   local T = Verdant.Triage
   local eps, n_eps = T.episodes()
 
-  local n = 0
-  for i = 1, 12 do
-    tri_saves[i] = 0
-    tri_total[i] = 0
-  end
-  for i = 1, n_eps do
-    local e = eps[i]
-    if tri_total[e.slot] == 0 then
-      n = n + 1
-      tri_rows[n] = e.slot
-    end
-    tri_total[e.slot] = tri_total[e.slot] + 1
-    if e.class == T.CLASS_S then tri_saves[e.slot] = tri_saves[e.slot] + 1 end
-  end
-
-  if n == 0 then
+  if n_eps == 0 then
     controls.no_data:SetHidden(false)
-    hide_grid(controls.grid_ems)
     return
   end
   controls.no_data:SetHidden(true)
 
   local canvas = controls.canvas
   local cw, ch = canvas:GetWidth(), canvas:GetHeight()
-  if cw <= BUFF_GUTTER_W + 40 or ch <= 4 then return end
+  if cw <= 180 or ch <= TRI_HEADER_H + TRI_STRIP_H + TRI_ROW_H then return end
 
   local BT = Verdant.BuffTracker
   local recording = Verdant.TemporalBuffer.is_recording()
@@ -1627,90 +1600,168 @@ local function render_view5()
   if span <= 0 then return end
 
   Verdant.Diagnostics.bump("graph.view_triage.renders")
-  draw_grid(controls.grid_ems, canvas, 0, span)
 
-  for i = n + 1, #tri_rows do tri_rows[i] = nil end
-  table_sort(tri_rows)
-  local rows_sorted = tri_rows
-  local ch_plot = math_max(4, ch - TIME_STRIP_H - TRI_LEGEND_H)
-  local row_h   = math_floor(ch_plot / n) - BUFF_ROW_GAP
-  if row_h < BUFF_MIN_ROW then row_h = BUFF_MIN_ROW end
-  if row_h > BUFF_MAX_ROW_H + 8 then row_h = BUFF_MAX_ROW_H + 8 end
-
-  local lane_x = BUFF_GUTTER_W
-  local lane_w = cw - BUFF_GUTTER_W
-  local pslot  = T.player_slot()
-
-  draw_tri_legend(canvas, lane_x, lane_w)
-
-  for i = 1, n do
-    local slot = rows_sorted[i]
-    local y = TRI_LEGEND_H + (i - 1) * (row_h + BUFF_ROW_GAP)
-
-    local lane = controls.pool_buff_seg:AcquireObject()
-    lane:ClearAnchors()
-    lane:SetAnchor(TOPLEFT, canvas, TOPLEFT, lane_x, y)
-    lane:SetWidth(lane_w)
-    lane:SetHeight(row_h)
-    lane:SetColor(C_BUFF_LANE.r, C_BUFF_LANE.g, C_BUFF_LANE.b, C_BUFF_LANE.a)
-    lane:SetHidden(false)
-
-    local pname = T.slot_name(slot) or ("group" .. slot)
-    if slot == pslot then pname = pname .. GetString(VERDANT_TRI_YOU) end
-    local lbl = controls.pool_buff_lbl:AcquireObject()
-    lbl:ClearAnchors()
-    lbl:SetText(pname)
-    lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-    lbl:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, C_TRI_NAME.a)
-    lbl:SetDimensions(BUFF_GUTTER_W - BUFF_PCT_W - 12, row_h)
-    lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, y)
-    lbl:SetHidden(false)
-
-    local score = controls.pool_buff_lbl:AcquireObject()
-    score:ClearAnchors()
-    score:SetText(string_format("%d/%d", tri_saves[slot], tri_total[slot]))
-    score:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-    score:SetColor(C_TRI_SCORE.r, C_TRI_SCORE.g, C_TRI_SCORE.b, C_TRI_SCORE.a)
-    score:SetDimensions(BUFF_PCT_W, row_h)
-    score:SetAnchor(TOPLEFT, canvas, TOPLEFT, BUFF_GUTTER_W - BUFF_PCT_W - 6, y)
-    score:SetHidden(false)
+  local s = T.summary()
+  local head = controls.pool_buff_lbl:AcquireObject()
+  head:ClearAnchors()
+  local head_text
+  if s.rt_n > 0 then
+    head_text = string_format("%s |cebf2ed%d/%d|r    RT50 |cebf2ed%.1fs|r    RT95 |cebf2ed%.1fs|r",
+      GetString(VERDANT_TRI_HEAD_SAVES), s.counts.s,
+      s.counts.s + s.counts.o + s.counts.l + s.counts.m,
+      s.rt50 / 1000, s.rt95 / 1000)
+  else
+    head_text = string_format("%s |cebf2ed%d/%d|r",
+      GetString(VERDANT_TRI_HEAD_SAVES), s.counts.s,
+      s.counts.s + s.counts.o + s.counts.l + s.counts.m)
   end
+  head:SetText(head_text)
+  head:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  head:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, C_TRI_DIM.a)
+  head:SetDimensions(cw, TRI_HEADER_H)
+  head:SetAnchor(TOPLEFT, canvas, TOPLEFT, 2, 0)
+  head:SetHidden(false)
+
+  local strip_y = TRI_HEADER_H
+  local strip = controls.pool_buff_seg:AcquireObject()
+  strip:ClearAnchors()
+  strip:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y)
+  strip:SetWidth(cw)
+  strip:SetHeight(TRI_STRIP_H)
+  strip:SetColor(C_TRI_STRIP.r, C_TRI_STRIP.g, C_TRI_STRIP.b, C_TRI_STRIP.a)
+  strip:SetHidden(false)
 
   for i = 1, n_eps do
     local e = eps[i]
-    local row
-    for r = 1, n do
-      if rows_sorted[r] == e.slot then row = r break end
-    end
-    if row and e.t_end > t0 and e.t_start < t_hi then
-      local st = (e.t_start > t0) and e.t_start or t0
-      local en = (e.t_end < t_hi) and e.t_end or t_hi
-      local y  = TRI_LEGEND_H + (row - 1) * (row_h + BUFF_ROW_GAP)
-      local x0 = lane_x + math_floor((st - t0) / span * lane_w + 0.5)
-      local x1 = lane_x + math_floor((en - t0) / span * lane_w + 0.5)
-      local bw = x1 - x0
-      if bw < 3 then bw = 3 end
+    if e.t_start >= t0 and e.t_start <= t_hi then
+      local x = math_floor((e.t_start - t0) / span * (cw - 8) + 0.5)
       local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
-      local seg = controls.pool_buff_seg:AcquireObject()
-      seg:ClearAnchors()
-      if e.class == T.CLASS_O then
-        local inset = math_floor(row_h / 4)
-        seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y + 1 + inset)
-        seg:SetWidth(bw)
-        seg:SetHeight(row_h - 2 - inset * 2)
-        seg:SetColor(c.r, c.g, c.b, 0.30)
-      else
-        seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y + 1)
-        seg:SetWidth(bw)
-        seg:SetHeight(row_h - 2)
-        seg:SetColor(c.r, c.g, c.b, e.star and 1.0 or 0.80)
-      end
-      seg:SetHidden(false)
+      local dot = controls.pool_buff_seg:AcquireObject()
+      dot:ClearAnchors()
+      dot:SetAnchor(TOPLEFT, canvas, TOPLEFT, x + 1, strip_y + 3)
+      dot:SetWidth(8)
+      dot:SetHeight(8)
+      dot:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.55 or 1.0)
+      dot:SetHidden(false)
     end
   end
 
-  draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
-               canvas, t0, span, lane_x, lane_w)
+  local ms, mn = Verdant.TemporalBuffer.markers()
+  for i = 1, mn do
+    local m = ms[i]
+    if m.death and m.t >= t0 and m.t <= t_hi then
+      local x = math_floor((m.t - t0) / span * (cw - 8) + 0.5)
+      local ic = controls.pool_marker_icon:AcquireObject()
+      ic:ClearAnchors()
+      ic:SetTexture(TEX_SKULL)
+      ic:SetDimensions(10, 10)
+      ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y - 11)
+      ic:SetColor(C_MARK_DEATH.r, C_MARK_DEATH.g, C_MARK_DEATH.b, m.who and 0.5 or 0.95)
+      ic:SetHidden(false)
+    end
+  end
+
+  local list_y = strip_y + TRI_STRIP_H + TRI_STRIP_GAP
+  local fit = math_floor((ch - list_y) / (TRI_ROW_H + TRI_ROW_GAP))
+  if fit < 1 then return end
+  local first = (n_eps > fit) and (n_eps - fit + 1) or 1
+  local pslot = T.player_slot()
+
+  if first > 1 then
+    local more = controls.pool_buff_lbl:AcquireObject()
+    more:ClearAnchors()
+    more:SetText(string_format(GetString(VERDANT_TRI_MORE), first - 1))
+    more:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+    more:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.9)
+    more:SetDimensions(160, TRI_HEADER_H)
+    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 164, 0)
+    more:SetHidden(false)
+  end
+
+  local row_i = 0
+  for i = first, n_eps do
+    local e = eps[i]
+    local y = list_y + row_i * (TRI_ROW_H + TRI_ROW_GAP)
+    row_i = row_i + 1
+    local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
+
+    local bg = controls.pool_buff_seg:AcquireObject()
+    bg:ClearAnchors()
+    bg:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y)
+    bg:SetWidth(cw)
+    bg:SetHeight(TRI_ROW_H)
+    bg:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.03 or 0.07)
+    bg:SetHidden(false)
+
+    local tlbl = controls.pool_buff_lbl:AcquireObject()
+    tlbl:ClearAnchors()
+    tlbl:SetText(tri_time_str(e.t_start - t0))
+    tlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    tlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, C_TRI_TIME.a)
+    tlbl:SetDimensions(38, TRI_ROW_H)
+    tlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, y)
+    tlbl:SetHidden(false)
+
+    local pname = T.slot_name(e.slot) or ("group" .. e.slot)
+    if e.slot == pslot then pname = pname .. GetString(VERDANT_TRI_YOU) end
+    local nlbl = controls.pool_buff_lbl:AcquireObject()
+    nlbl:ClearAnchors()
+    nlbl:SetText(pname)
+    nlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    if e.class == T.CLASS_O then
+      nlbl:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.85)
+    else
+      nlbl:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, C_TRI_NAME.a)
+    end
+    local name_w = math_floor((cw - 220) * 0.55)
+    nlbl:SetDimensions(name_w, TRI_ROW_H)
+    nlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 48, y)
+    nlbl:SetHidden(false)
+
+    local depth = math_floor(e.min_rho * 100 + 0.5)
+    local dc = (e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH
+    local dlbl = controls.pool_buff_lbl:AcquireObject()
+    dlbl:ClearAnchors()
+    dlbl:SetText(string_format("%d%%", depth))
+    dlbl:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+    dlbl:SetColor(dc.r, dc.g, dc.b, 1)
+    dlbl:SetDimensions(36, TRI_ROW_H)
+    dlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 48 + name_w, y)
+    dlbl:SetHidden(false)
+
+    local chip_x = 48 + name_w + 44
+    local chip_text = GetString(rawget(_G, TRI_CHIP_KEY[e.class] or TRI_CHIP_KEY[5]))
+    local chip = controls.pool_buff_seg:AcquireObject()
+    chip:ClearAnchors()
+    chip:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x, y + 3)
+    chip:SetWidth(#chip_text * 7 + 12)
+    chip:SetHeight(TRI_ROW_H - 6)
+    chip:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.10 or 0.20)
+    chip:SetHidden(false)
+    local clbl = controls.pool_buff_lbl:AcquireObject()
+    clbl:ClearAnchors()
+    clbl:SetText(chip_text)
+    clbl:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
+    clbl:SetColor(c.r, c.g, c.b, 1)
+    clbl:SetDimensions(#chip_text * 7 + 12, TRI_ROW_H)
+    clbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x, y)
+    clbl:SetHidden(false)
+
+    local rlbl = controls.pool_buff_lbl:AcquireObject()
+    rlbl:ClearAnchors()
+    if e.rt >= 0 then
+      local rc = tri_rt_color(e.rt)
+      rlbl:SetText(string_format("RT %.1fs", e.rt / 1000))
+      rlbl:SetColor(rc.r, rc.g, rc.b, 1)
+    else
+      rlbl:SetText("RT -")
+      rlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.8)
+    end
+    rlbl:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+    rlbl:SetDimensions(70, TRI_ROW_H)
+    rlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 76, y)
+    rlbl:SetHidden(false)
+  end
 end
 
 function render_current_view()

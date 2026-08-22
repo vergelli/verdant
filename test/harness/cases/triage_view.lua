@@ -40,17 +40,23 @@ return function(H)
   ok(view_label._text == "TRIAGE", "could not reach TRIAGE view: " .. tostring(view_label._text))
   ok(VerdantGraphWindowViewportNoDataLabel._hidden == true, "no_data must hide with episodes present")
 
-  local names, scores = {}, {}
+  local seen = {}
   for _, c in ipairs(H.controls) do
     if c._hidden == false and type(c._text) == "string" then
-      if c._text == "Ally2" or c._text == "Ally3" then names[c._text] = true end
-      if c._text:match("^%d/%d$") then scores[c._text] = (scores[c._text] or 0) + 1 end
+      if c._text == "Ally2" or c._text == "Ally3"
+         or c._text == "save" or c._text == "missed" then
+        seen[c._text] = true
+      end
+      if c._text:find("Saves", 1, true) then seen.header = true end
+      if c._text:match("^%d:%d%d$") then seen.time = true end
     end
   end
-  ok(names["Ally2"], "gutter must show Ally2")
-  ok(names["Ally3"], "gutter must show Ally3")
-  ok(scores["1/1"], "Ally2 row must score 1/1 saves")
-  ok(scores["0/1"], "Ally3 row must score 0/1 saves")
+  ok(seen["Ally2"], "ledger must show Ally2's row")
+  ok(seen["Ally3"], "ledger must show Ally3's row")
+  ok(seen["save"], "Ally2 episode must chip as save")
+  ok(seen["missed"], "Ally3 episode must chip as missed")
+  ok(seen.header, "view header must show the saves aggregate")
+  ok(seen.time, "rows must show session timestamps")
 
   local chip = VerdantGraphSummaryLabel
   ok(chip._text and chip._text:find("RT"), "summary chip must include RT when episodes responded")
