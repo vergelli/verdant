@@ -444,6 +444,12 @@ function IsUnitDead(tag)
   local b = H.state.bosses[tag]
   return b ~= nil and b.dead == true
 end
+function GetUnitZone(tag)
+  return H.state.zone or "Mock Zone"
+end
+function GetTimeStamp()
+  return 1755900000
+end
 function GetUnitClassId(tag)
   return (H.unit_classes and H.unit_classes[tag]) or 6
 end

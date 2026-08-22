@@ -42,6 +42,7 @@ core/skill_colors.lua
 core/metrics.lua
 core/buff_tracker.lua
 core/triage.lua
+core/session_store.lua
 observability/diagnostics.lua
 observability/trace.lua
 pipeline/acquisition.lua

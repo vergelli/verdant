@@ -28,6 +28,7 @@ local CASES = {
   "triage_view",
   "ui_behaviors",
   "vsf_codec",
+  "session_store",
 }
 
 local passed, failed = 0, 0
