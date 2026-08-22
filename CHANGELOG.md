@@ -8,6 +8,15 @@
   moment you are resurrected shows in green with a resurrect icon. Captured
   while recording via the player death-state event, cleared on Flush.
 
+### Fixed (round 13, Sanctum Ophidia evidence)
+- **Tri Focus resurrected by the veto** — the r12 veto used the skill-color
+  override table, which serves a different purpose (SKILL-view shield
+  coloring), so Tri Focus (69773, curated there for colors) slipped back
+  into the gantt. The gantt now has its own dedicated curation tables:
+  BUFF_VETO (force-include: the three Warding Contingency ids) and
+  BUFF_BLOCK (force-exclude, empty so far). Color classification and gantt
+  filtering no longer share state.
+
 ### Fixed (round 12, boss-fight evidence)
 - **Skill procs shielding allies (Frost Safeguard) excluded** — the last
   leak category: passive procs with no skill keys that reach other players.

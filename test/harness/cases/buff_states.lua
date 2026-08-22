@@ -149,10 +149,21 @@ return function(H)
   Verdant.Graph.on_stop_click()
   local vetoed
   BT.iterate(function(_, r) if r.name == "Veto Buff" then vetoed = r end end)
-  ok(vetoed, "explicitly overridden ids must veto the skill-aura exclusion")
+  ok(vetoed, "BUFF_VETO ids must survive the skill-aura exclusion")
   if Verdant.Constants.DEBUG then
     ok(Verdant.Diagnostics.get("buffs.aura_vetoed_by_override") >= 1, "veto counter missing")
   end
+
+  H.ability_icons = { [69773] = "/esoui/art/icons/ability_destructionstaff_005.dds" }
+  H.ability_names[69773] = "Tri Focus Mock"
+  Verdant.Graph.on_record_click()
+  H.effect(EFFECT_RESULT_GAINED, 69773, 600, 0)
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+  local trifocus
+  BT.iterate(function(_, r) if r.name == "Tri Focus Mock" then trifocus = r end end)
+  ok(trifocus == nil, "color-table overrides must NOT veto the gantt filters anymore")
+  H.ability_icons = nil
   H.skill_keys = nil
   H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = {} }
   Verdant.Graph.on_record_click()

@@ -19,6 +19,15 @@ local ABILITY_TYPE_HEAL          = C.ABILITY_TYPE_HEAL
 
 local MAX_TRACKED = 48
 
+local BUFF_VETO = {
+  [217608] = true,
+  [221161] = true,
+  [222285] = true,
+}
+
+local BUFF_BLOCK = {
+}
+
 local by_id      = {}
 local by_name    = {}
 local excluded   = {}
@@ -171,6 +180,11 @@ local function get_rec(id, tag)
     note_excluded(id, nil, nil, "slotted ability")
     return nil
   end
+  if BUFF_BLOCK[id] then
+    bump("buffs.skipped_curated_block")
+    note_excluded(id, nil, nil, "curated block")
+    return nil
+  end
   local skey = skill_key_of(id)
   if skey and slotted_keys[skey] then
     bump("buffs.skipped_ability_morph")
@@ -178,7 +192,7 @@ local function get_rec(id, tag)
     return nil
   end
   if skey then
-    if Verdant.SkillColors.has_explicit_override(id) then
+    if BUFF_VETO[id] then
       bump("buffs.aura_vetoed_by_override")
     else
       bump("buffs.skipped_skill_aura")
@@ -192,8 +206,7 @@ local function get_rec(id, tag)
     return nil
   end
   local grp = SC.group_of(id) or "other"
-  if grp ~= "other" and grp ~= "item"
-     and not Verdant.SkillColors.has_explicit_override(id) then
+  if grp ~= "other" and grp ~= "item" and not BUFF_VETO[id] then
     bump("buffs.skipped_skill_line_proc")
     note_excluded(id, nil, nil, "skill-line proc (" .. grp .. ")")
     return nil
@@ -209,7 +222,7 @@ local function get_rec(id, tag)
   rec.ids[1]  = id
   rec.desc    = resolve_desc(id, tag)
   rec.desc_tries = (tag and tag ~= "") and 1 or 0
-  rec.vetoed  = Verdant.SkillColors.has_explicit_override(id)
+  rec.vetoed  = BUFF_VETO[id] == true
   n_tracked   = n_tracked + 1
   by_id[id]   = rec
   by_name[name] = rec
