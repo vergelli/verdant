@@ -18,8 +18,7 @@ Ophidia.
 - **Smart buff filtering** — the view shows the buffs your skills grant,
   not the skills themselves: cast auras, heal effects, debuffs, passive
   procs (Sacred Ground, Frost Safeguard, Tri Focus) and class mechanic
-  states (Crux) are recognized structurally and excluded. Everything
-  filtered is listed in `/verdant report` with its reason, and two curated
+  states (Crux) are recognized structurally and excluded, and two curated
   tables (veto / block) always get the last word. Buffs whose single cast
   emits several ability ids merge into one row.
 - **Automatic recording** — three modes: Off (default), Boss fights, Any
