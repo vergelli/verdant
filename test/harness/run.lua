@@ -27,6 +27,7 @@ local CASES = {
   "triage_fsm",
   "triage_view",
   "ui_behaviors",
+  "vsf_codec",
 }
 
 local passed, failed = 0, 0
