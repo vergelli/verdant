@@ -58,6 +58,15 @@ return function(H)
   ok(seen.header, "view header must show the saves aggregate")
   ok(seen.time, "rows must show session timestamps")
 
+  local icon_seen = false
+  for _, c in ipairs(H.controls) do
+    if c._hidden == false and type(c._tex) == "string" and c._tex:find("class") then
+      icon_seen = true
+      break
+    end
+  end
+  ok(icon_seen, "ledger rows must show the member class icon")
+
   local chip = VerdantGraphSummaryLabel
   ok(chip._text and chip._text:find("RT"), "summary chip must include RT when episodes responded")
 

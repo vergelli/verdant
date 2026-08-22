@@ -55,6 +55,7 @@ local ep_dropped = 0
 
 local name_slot = {}
 local slot_names = {}
+local slot_icons = {}
 local name_count = 0
 local names_dirty = false
 local player_slot_i = 0
@@ -209,12 +210,17 @@ function M.refresh_names()
   player_slot_i = 0
   for i = 1, MAX_SLOTS do
     slot_names[i] = nil
+    slot_icons[i] = nil
     local nm = api.GetUnitName("group" .. i)
     if nm and nm ~= "" then
       local base = base_name(nm)
       name_slot[base] = i
       slot_names[i] = base
       name_count = name_count + 1
+      local cid = api.GetUnitClassId("group" .. i)
+      if cid and cid > 0 then
+        slot_icons[i] = api.ZO_GetClassIcon(cid)
+      end
     end
     if api.AreUnitsEqual("group" .. i, "player") then player_slot_i = i end
   end
@@ -222,6 +228,10 @@ end
 
 function M.slot_name(i)
   return slot_names[i]
+end
+
+function M.slot_icon(i)
+  return slot_icons[i]
 end
 
 function M.player_slot()
