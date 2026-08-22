@@ -98,13 +98,12 @@ local function make_row(i)
   when:SetDimensions(78, ROW_H)
   when:SetAnchor(RIGHT, row, RIGHT, -20, 0)
 
-  local star = WM:CreateControl(nm .. "Star", row, CT_LABEL)
-  star:SetFont("ZoFontGameSmall")
-  star:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-  star:SetVerticalAlignment(TEXT_ALIGN_CENTER)
-  star:SetDimensions(14, ROW_H)
+  local star = WM:CreateControl(nm .. "Star", row, CT_TEXTURE)
+  star:SetTexture("EsoUI/Art/Miscellaneous/status_locked.dds")
+  star:SetDimensions(13, 15)
   star:SetAnchor(RIGHT, row, RIGHT, -4, 0)
-  star:SetColor(C_STAR.r, C_STAR.g, C_STAR.b, 1)
+  star:SetColor(C_STAR.r, C_STAR.g, C_STAR.b, 0.95)
+  star:SetHidden(true)
 
   return { root = row, bg = bg, sel = sel, pip = pip,
            name = name, stats = stats, when = when, star = star }
@@ -160,7 +159,7 @@ function M.refresh()
     row.stats:SetColor(1, 1, 1, 1)
     row.when:SetText(fmt_dur(h.dur_ms) .. "  " .. fmt_ago(h.ts))
     row.when:SetColor(C_DIM.r, C_DIM.g, C_DIM.b, 1)
-    row.star:SetText(h.locked and "*" or "")
+    row.star:SetHidden(not h.locked)
   end
   for i = shown + 1, #rows do
     rows[i].root:SetHidden(true)
@@ -211,9 +210,23 @@ function M.on_delete_click()
   M.refresh()
 end
 
+local function dock_window()
+  local win = controls.window
+  local host = VerdantGraphWindow
+  if not host or host:IsHidden() then return end
+  local screen_h = GuiRoot:GetHeight()
+  win:ClearAnchors()
+  if host:GetBottom() + win:GetHeight() + 16 <= screen_h then
+    win:SetAnchor(TOPLEFT, host, BOTTOMLEFT, 0, 8)
+  else
+    win:SetAnchor(BOTTOMLEFT, host, TOPLEFT, 0, -8)
+  end
+end
+
 function M.show()
   selected = nil
   delete_armed = false
+  dock_window()
   M.refresh()
   controls.window:SetHidden(false)
 end
@@ -243,5 +256,7 @@ function M.init()
   controls.delete_btn:SetText(GetString(VERDANT_LIB_DELETE))
   VerdantLibraryBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantLibraryBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
+  VerdantLibraryListBg:SetCenterColor(0.055, 0.052, 0.046, 0.92)
+  VerdantLibraryListBg:SetEdgeColor(0.42, 1.00, 0.60, 0.55)
   set_buttons()
 end

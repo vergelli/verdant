@@ -53,6 +53,11 @@ return function(H)
   ok(tri2.rt50 == live_tri.rt50, "reloaded RT50 differs: "
      .. tostring(tri2.rt50) .. " vs " .. tostring(live_tri.rt50))
   ok(Verdant.BuffTracker.count() == live_bt, "reloaded buff count differs")
+  local shares_seen = 0
+  Verdant.TemporalBuffer.iterate(function(_, s)
+    shares_seen = shares_seen + ((s.ehps_groups and s.ehps_groups.count) or 0)
+  end)
+  ok(shares_seen > 0, "reloaded samples must carry group shares for the SKILL view")
   ok(Verdant.Triage.slot_name(2) == "Ally2", "reloaded roster name wrong")
   ok(VerdantGraphWindowStatusLabel._text:find("Direfrost", 1, true),
      "status banner must show the loaded zone")

@@ -2031,6 +2031,30 @@ function M.load_session(sess)
     return false
   end
 
+  if sess.streams.shares and sess.desc.shares then
+    local shares = vsf.unpack(sess.streams.shares, sess.desc.shares)
+    if shares then
+      local gkeys = sess.gkeys or {}
+      local SC = Verdant.SkillColors
+      for i = 1, #shares do
+        local r = shares[i]
+        local sample = series[r.si]
+        if sample then
+          local field = (r.ch == 0) and "eg" or "mg"
+          local tbl = sample[field]
+          if not tbl then tbl = { count = 0 }; sample[field] = tbl end
+          local key = gkeys[r.key + 1] or "other"
+          local c = SC.group_color(key)
+          tbl.count = tbl.count + 1
+          tbl[tbl.count] = {
+            r = c.r, g = c.g, b = c.b, a = c.a,
+            share = r.sh, key = key,
+          }
+        end
+      end
+    end
+  end
+
   release_all_pools()
   hide_all_grids()
 
