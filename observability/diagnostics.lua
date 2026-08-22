@@ -219,6 +219,9 @@ function M.full_report(include_gc)
   if Verdant.AutoRecord and Verdant.AutoRecord.report_lines then
     section("auto record", Verdant.AutoRecord.report_lines())
   end
+  if Verdant.Trace and Verdant.Trace.status_line then
+    section("trace", { Verdant.Trace.status_line() })
+  end
   section("diagnostics", build_diag_lines())
   if Verdant.Profiler and Verdant.Profiler.report_lines then
     section("profiler",   Verdant.Profiler.report_lines())

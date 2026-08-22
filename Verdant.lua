@@ -88,6 +88,15 @@ local function on_slash(input)
       Verdant.Probe.persist_to_savedvars(Verdant.SavedVars)
       d("[V] " .. GetString(VERDANT_DUMP_SAVED))
       return
+    elseif cmd == "trace" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      if sub == "start" then Verdant.Trace.start()
+      elseif sub == "stop" then Verdant.Trace.stop()
+      elseif sub == "save" then Verdant.Trace.save(Verdant.SavedVars)
+      elseif sub == "clear" then Verdant.Trace.clear(Verdant.SavedVars) d("[trace] cleared")
+      else d("[trace] " .. Verdant.Trace.status_line() .. "  (subcmd: start | stop | save | clear)")
+      end
+      return
     elseif cmd == "diag" then
       Verdant.Diagnostics.print_diag() ; return
     elseif cmd == "report" then
@@ -172,6 +181,7 @@ local function on_addon_loaded()
   Log:info("savedvars opened: world=", world, "version=", C.SV_VERSION)
 
   if C.DEBUG then Verdant.Probe.init() end
+  Verdant.Trace.init()
   Verdant.GC.init()            -- GC pacing (ported): smooth the incremental collector
   Verdant.Pipeline.init()
   Verdant.Bar.init()
