@@ -89,6 +89,18 @@ return function(H)
   ok(s4.rt_n == 1, "hot-only response must not measure RT, rt_n=" .. s4.rt_n)
   Verdant.Graph.on_stop_click()
 
+  local view_label = VerdantGraphWindowViewLabel
+  local guard = 0
+  while view_label._text ~= "TRIAGE" and guard < 8 do
+    Verdant.Graph.next_view()
+    guard = guard + 1
+  end
+  local hots_seen = false
+  for _, c in ipairs(H.controls) do
+    if c._hidden == false and c._text == "hots" then hots_seen = true break end
+  end
+  ok(hots_seen, "hot-only save must label its RT column as hots")
+
   H.state.grouped = false
   H.state.group_size = 1
   H.state.player_group_tag = nil
