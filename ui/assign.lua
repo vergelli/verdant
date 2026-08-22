@@ -298,6 +298,10 @@ function M.init()
 
   VerdantAssignPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantAssignPanelBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
+
+  VerdantAssignPanelFlyoutBg:SetCenterColor(0.075, 0.070, 0.062, 0.98)
+  controls.flyout:SetDrawLevel(100)
+  controls.confirm:SetDrawTier(DT_HIGH)
   VerdantAssignConfirmBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantAssignConfirmBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
 
