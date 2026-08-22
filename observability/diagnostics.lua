@@ -193,7 +193,8 @@ function M.full_report(include_gc)
     for _, l in ipairs(lines) do out[#out+1] = l end
   end
   out[#out+1] = "Verdant full report — uptime "
-                .. (GetGameTimeMilliseconds() - start_time) .. "ms"
+                .. (GetGameTimeMilliseconds() - start_time) .. "ms  build="
+                .. tostring(Verdant.Constants.BUILD or "?")
   if Verdant.Settings and Verdant.Settings.report_lines then
     section("config", Verdant.Settings.report_lines())
   end

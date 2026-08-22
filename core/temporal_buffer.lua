@@ -82,6 +82,20 @@ function M.iterate(fn)
   end
 end
 
+local markers = { n = 0 }
+local MARKER_CAP = 40
+
+function M.add_marker(t, is_death)
+  if markers.n >= MARKER_CAP then return end
+  markers.n = markers.n + 1
+  local m = markers[markers.n]
+  if not m then m = {}; markers[markers.n] = m end
+  m.t = t
+  m.death = is_death and true or false
+end
+
+function M.markers() return markers, markers.n end
+
 function M.count()        return state.count     end
 function M.capacity()     return state.capacity  end
 function M.is_recording() return state.recording end
@@ -132,7 +146,7 @@ function M.summary()
   s.dur_ms     = t_prev - t0
   s.avg_ems    = sum_ems / state.count
   s.peak_ems   = peak_ems
-  s.peak_t_off = peak_t - t0
+  s.peak_t_off = (peak_ems > 0) and (peak_t - t0) or 0
   s.active_pct = active_n / state.count
   local heal_total = sum_crit + sum_noncrit
   if heal_total > 0 then s.crit_pct = sum_crit / heal_total end
@@ -143,4 +157,5 @@ function M.clear()
   log:info("clear: discarding", state.count, "samples")
   state.write = 1
   state.count = 0
+  markers.n = 0
 end

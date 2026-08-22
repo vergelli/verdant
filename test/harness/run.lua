@@ -13,10 +13,13 @@ local CASES = {
   "record_flow",
   "header_metrics",
   "buff_tracker",
+  "buff_merge",
+  "buff_states",
   "buffs_view",
   "buffs_hover",
   "auto_record",
   "dmg_overlay",
+  "death_markers",
   "user_profiles",
   "slash_report",
 }

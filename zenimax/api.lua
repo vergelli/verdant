@@ -31,6 +31,11 @@ M.GetSlotName                            = GetSlotName
 M.GetSlotBoundId                         = GetSlotBoundId
 M.GetAbilityName                         = GetAbilityName
 M.GetAbilityIcon                         = GetAbilityIcon
+M.GetAbilityDescription                  = GetAbilityDescription
+M.IsAbilityPassive                       = IsAbilityPassive
+M.GetAbilityEffectDescription            = GetAbilityEffectDescription
+M.GetNumBuffs                            = GetNumBuffs
+M.GetUnitBuffInfo                        = GetUnitBuffInfo
 M.GetSpecificSkillAbilityKeysByAbilityId = GetSpecificSkillAbilityKeysByAbilityId
 M.GetSkillLineId                         = GetSkillLineId
 

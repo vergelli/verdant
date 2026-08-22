@@ -24,6 +24,8 @@ return function(H)
 
   local line1 = rawget(_G, "VerdantGraphLineDmg1")
   ok(line1 and line1._hidden == false, "damage overlay line must render on EMS view")
+  local fill1 = rawget(_G, "VerdantGraphDmgFill1")
+  ok(fill1 and fill1._hidden == false, "damage fill must render under the curve")
 
   local canvas = VerdantGraphWindowViewportCanvas
   local hit    = VerdantGraphHitMain
@@ -37,6 +39,7 @@ return function(H)
 
   Verdant.Graph.next_view()
   ok(line1._hidden == true, "damage line must release when leaving EMS view")
+  ok(rawget(_G, "VerdantGraphDmgFill1")._hidden == true, "damage fill must release too")
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
 
   Verdant.Graph.on_flush_click()

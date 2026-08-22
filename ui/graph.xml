@@ -56,7 +56,7 @@
         <Texture name="$(parent)ChromeTop"
                  textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
           <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPLEFT"  offsetX="6"  offsetY="6"/>
-          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="-6" offsetY="62"/>
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetX="-6" offsetY="84"/>
         </Texture>
 
         <Texture name="$(parent)ChromeBottom"
@@ -67,13 +67,13 @@
 
         <Texture name="$(parent)ChromeLeft"
                  textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
-          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPLEFT"    offsetX="6"  offsetY="62"/>
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPLEFT"    offsetX="6"  offsetY="84"/>
           <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMLEFT" offsetX="14" offsetY="-14"/>
         </Texture>
 
         <Texture name="$(parent)ChromeRight"
                  textureFile="EsoUI/Art/Tooltips/UI-TooltipCenter.dds">
-          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPRIGHT"    offsetX="-14" offsetY="62"/>
+          <Anchor point="TOPLEFT"     relativeTo="$(parent)" relativePoint="TOPRIGHT"    offsetX="-14" offsetY="84"/>
           <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" relativePoint="BOTTOMRIGHT" offsetX="-6"  offsetY="-14"/>
         </Texture>
 
@@ -213,7 +213,7 @@
 
         <!-- ── Inner viewport: tighter padding, less chrome presence ────── -->
         <Control name="$(parent)Viewport" mouseEnabled="false">
-          <Anchor point="TOPLEFT"     offsetX="14"  offsetY="62"/>
+          <Anchor point="TOPLEFT"     offsetX="14"  offsetY="84"/>
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-14"/>
 
           <Controls>

@@ -612,6 +612,7 @@ function M.init()
   controls.pdelete_btn    = VerdantSettingsPanelPDeleteBtn
   controls.psave_btn:SetText(GetString(VERDANT_SETTINGS_SAVE_PROFILE))
   controls.pdelete_btn:SetText(GetString(VERDANT_SETTINGS_DELETE_PROFILE))
+  controls.pname_edit:SetDefaultText(GetString(VERDANT_PROFILE_NAME_DEFAULT))
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))

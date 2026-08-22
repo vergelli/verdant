@@ -2,6 +2,166 @@
 
 ## [Unreleased]
 
+### Added
+- **Death and resurrection markers** — your deaths show as a vertical line
+  with a skull on every graph view (EMS, SKILL, CRIT, BUFFS), and the
+  moment you are resurrected shows in green with a resurrect icon. Captured
+  while recording via the player death-state event, cleared on Flush.
+
+### Fixed (round 13, Sanctum Ophidia evidence)
+- **Tri Focus resurrected by the veto** — the r12 veto used the skill-color
+  override table, which serves a different purpose (SKILL-view shield
+  coloring), so Tri Focus (69773, curated there for colors) slipped back
+  into the gantt. The gantt now has its own dedicated curation tables:
+  BUFF_VETO (force-include: the three Warding Contingency ids) and
+  BUFF_BLOCK (force-exclude, empty so far). Color classification and gantt
+  filtering no longer share state.
+
+### Fixed (round 12, boss-fight evidence)
+- **Skill procs shielding allies (Frost Safeguard) excluded** — the last
+  leak category: passive procs with no skill keys that reach other players.
+  The trial evidence exposed the discriminator we already computed:
+  genuine granted buffs always classify as "other" (ability_buff_* icons)
+  or "item"; anything classifying to a class/weapon skill line via its
+  icon is the proc OF a skill. Those are now excluded as
+  "skill-line proc (<line>)", with the curated-override veto still on top.
+
+### Fixed (round 11, Hel Ra trial evidence)
+- **Curated overrides veto the filters** — Warding Contingency fell to the
+  new skill-aura rule because scribing grimoires do have skill keys. Ability
+  ids you have explicitly classified (ABILITY_OVERRIDES or in-game
+  assignments) now bypass the skill-aura and self-state exclusions: your
+  curation is the human veto over the heuristics. Removing the override
+  removes the veto.
+
+### Fixed (round 10, trial evidence)
+- **Self states leaking back in groups** — in a group you also carry a
+  group tag, so your own buffs fire the effect event twice (player + groupN)
+  and the duplicate broke the self-only detection: Crux, Sacred Ground and
+  externally-granted synergy buffs (Feeding Frenzy) reappeared in trials.
+  Self-detection now compares unit ids (the player id is learned from the
+  player-tagged event), immune to the duplicate.
+- **Skill auras (Tri Focus, Sacred Ground) excluded structurally** — any
+  aura whose id resolves to valid skill-tree keys is the aura OF a skill
+  (active or passive), not a granted buff, and is excluded with reason
+  "skill aura". Granted Major/Minor buffs have no skill keys, so they are
+  untouched.
+
+### Fixed
+- **Duplicate buff rows** — buffs whose single cast emits several ability ids
+  (Combat Prayer, Channeled Focus, Warding Contingency...) now merge into one
+  row by name; a unit holding two ids of the same buff counts as one holder.
+  The report lists the merged ids and the classified group per row.
+- **BUFFS rows vs window height** — the row cap is gone: resizing the window
+  vertically now reveals more rows (bars stop stretching past 26px), so the
+  "+N more" hint is finally honest. Tracker capacity raised 24 → 48.
+- **Buffs now have their own identity color** — unclassified buffs render in
+  Verdant's healing green (the same tone as the EMS chart) instead of grey.
+
+### Added (BUFFS view)
+- **Buff descriptions on hover** — the hover card now tells you what the buff
+  actually does ("Increases your damage done by 5%"). Nothing hardcoded and
+  localized for free: descriptions resolve through a three-step chain at the
+  moment the buff lands — `GetAbilityDescription(id, nil, "player")` (caster
+  context), then the plain id lookup, then the live buff-slot tooltip
+  (`GetUnitBuffInfo` + `GetAbilityEffectDescription`, the same text the
+  game's buff bar shows), which only exists while the buff is active. The
+  report counts which source resolved each one (`buffs.desc_from_*`).
+- **Session summary placement** — the AVG/PEAK/CRIT chip moved out of the
+  viewport into its own strip in the window header, under the button row.
+- **Profile save UX** — the name field sits right under the profile dropdown
+  with a "save profile as..." hint instead of hiding at the bottom.
+- **Bogus peak timestamp** — sessions with zero healing no longer report a
+  negative `peak_at` in the summary.
+
+### Changed (round 9)
+- **Damage overlay presence** — the group-damage curve on the EMS view now
+  has a subtle red area fill under the line (alpha 0.10) and a stronger
+  line (alpha 0.60), sitting explicitly behind the healing bars via draw
+  levels (fill 1 < bars 2 < lines 3). Visible on dense charts too, where
+  the polyline alone used to vanish.
+
+### Fixed (round 8, in-game evidence)
+- **Blockade of Frost coming back** — the slot's display name depends on
+  which bar is active when Record is pressed ("Elemental Blockade" vs
+  "Blockade of Frost"), so a single scan could miss the elemental name. The
+  tracker now rescans both bars on every weapon swap, accumulates the names,
+  and retroactively purges rows that turn out to match a slotted skill.
+- **Axis vs hover rounding** — values were abbreviated to whole units
+  ("3K" for 3.2K), so bars could visually exceed a gridline their hover
+  seemed to contradict. All chart numbers (axis, hover, summary chip) now
+  show one decimal, and the Y axis gained a top label with the true chart
+  maximum, so the scale is explicit.
+
+### Fixed (round 7, regression)
+- **Everything excluded as "renamed aura"** — the skill-keys API returns a
+  0,0,0 sentinel for abilities that belong to no skill, and one slotted
+  entry returned the same sentinel, so every generic buff matched it and
+  the tracker went empty. Keys are now validated the same way SkillColors
+  does (> 0), with a harness case pinning the sentinel behavior.
+- **Rows vanishing at Stop** — self-only mechanic states were rendered
+  during live recording and removed on finalize, which read as rows
+  disappearing. The live view now applies the same visibility rule, so
+  what you see while recording is what survives the Stop.
+
+### Fixed (round 6, in-game evidence)
+- **Renamed morph auras filtered** — "Blockade of Frost" escaped the slotted
+  filter because the aura renames per staff element while the slot says
+  "Elemental Blockade". Slotted skills are now also matched by skill keys
+  (the same family identity SkillColors uses), which is invariant to morph
+  and elemental renames.
+- **Set procs get an honest tooltip line** — item-proc rows without an
+  engine description (Ozezan's Plating, Pillager's Profit — now classified
+  as Item Set) show "Item set effect - the game exposes no tooltip for this
+  proc." instead of a silently missing line.
+- **Description race fixed** — some buffs (Minor Vitality) raced the buff
+  list at GAINED time and stayed descriptionless; the 1 Hz session tick now
+  retries unresolved descriptions against your own buff bar.
+
+### Fixed (round 5, in-game evidence)
+- **Mechanic states filtered from the BUFFS view** — class resources and
+  passive proc-states (Crux, Sacred Ground) are not buffs you maintain on
+  the group, so they no longer occupy rows. Two layers: abilities flagged
+  passive by the engine are rejected on sight, and rows that only ever
+  touched yourself AND have no tooltip are dropped when the session freezes
+  (item procs like Ozezan's Plating are exempt so they survive solo
+  parses). Every exclusion is listed in the report with its reason, and
+  tracked rows now show a `self=y/n` marker.
+
+### Fixed (round 4, in-game evidence)
+- **Ability auras filtered by your own action bars** — the engine types the
+  short "Combat Prayer" aura as a legitimate buff, so type-based filtering
+  could not catch it. The tracker now scans both hotbars at Record time and
+  excludes any buff whose name matches a slotted ability: what remains is
+  exactly what your skills grant (Minor Berserk, Major Courage...), not the
+  skills themselves. The report prints the scanned slot names and every
+  exclusion with its reason.
+- **Description still ellipsized** — the label height was clamping the text
+  measurement in a feedback loop; the card now measures against an
+  unclamped height before sizing.
+- **Build fingerprint** — the report header and the DEBUG load message now
+  print the build tag, so evidence is unambiguous about which code ran.
+
+### Fixed (round 3, in-game evidence)
+- **Cast abilities no longer pollute the BUFFS view** — the tracker was
+  ingesting every player-sourced effect, so the casting ability (Combat
+  Prayer, Radiating Regeneration...) showed its own short bar next to the
+  buffs it grants. Effects are now gated by the event's own typing: only
+  `BUFF_EFFECT_TYPE_BUFF` and never `ABILITY_TYPE_HEAL`. Whatever gets
+  filtered is listed in the report ("excluded as non-buffs") with its raw
+  types, so misfires are visible instead of silent.
+- **Buff description cut off with "..."** — the hover description now allows
+  unlimited wrapped lines (`SetMaxLineCount(0)`).
+
+### Fixed (round 2, in-game evidence)
+- **Combat Prayer classified as Sorcerer** — the engine's skill-key API
+  mistags its new effect ids (218784/218786/218787); pinned to Restoration
+  Staff via ABILITY_OVERRIDES. This was the mysterious blue row.
+- **Buff descriptions burning retries on tagless units** — description
+  capture now only spends attempts on events that carry a unit tag, and
+  retries up to 5 times, so short AoE buffs get more chances to resolve via
+  the live buff-slot tooltip.
+
 ### Changed
 - **UI consolidation pass** — title-bar buttons of the graph window now share
   one vertical center line; the summary chip uses the chart's own encoding
