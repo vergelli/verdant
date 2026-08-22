@@ -1,8 +1,8 @@
 ## Title: Verdant
 ## Description: Real-time healer contribution bar — eHPS, shield mitigation and EMS, with skill-colour breakdown
 ## Author: Federico Vergelli
-## Version: 2.2.0
-## AddOnVersion: 7
+## Version: 2.3.0
+## AddOnVersion: 8
 ## APIVersion: 101049 101050
 ## SavedVariables: VerdantSavedVars
 
