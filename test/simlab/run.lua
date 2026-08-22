@@ -64,17 +64,28 @@ for _, name in ipairs(SCENARIOS) do
     local r = sim:run(spec.duration)
     local wall = os.clock() - t0
 
-    if spec.record then Verdant.Graph.on_stop_click() end
+    local triage
+    if spec.record then
+      Verdant.Graph.on_stop_click()
+      triage = O.triage_check(H.now())
+    end
     H.fire = orig_fire
 
     local pool_exhausted = Verdant.Diagnostics.get("engine.pool.exhausted")
-    local ok = (r.fails == 0) and (pool_exhausted == 0)
+    local ok = (O.fails == 0) and (pool_exhausted == 0)
     if not ok then total_fail = total_fail + 1 end
 
     print(string.format(
       "%s  %-14s sim=%ds actions=%d checks=%d max_rel_err=%.2e events[h=%d o=%d s=%d d=%d] wall=%.2fs",
-      ok and "PASS" or "FAIL", spec.name, spec.duration / 1000, r.actions, r.checks,
+      ok and "PASS" or "FAIL", spec.name, spec.duration / 1000, r.actions, O.checks,
       r.max_rel_err, r.events.heals, r.events.overheals, r.events.shields, r.events.damage, wall))
+    if triage then
+      print(string.format(
+        "      triage: episodes=%d S=%d (S*=%d) O=%d L=%d M=%d X=%d oneshot=%d RT50=%dms RT95=%dms",
+        triage.episodes, triage.counts.s, triage.counts.s_star, triage.counts.o,
+        triage.counts.l, triage.counts.m, triage.counts.x, triage.counts.oneshot,
+        triage.rt50, triage.rt95))
+    end
     if pool_exhausted > 0 then
       print("      pool exhausted " .. pool_exhausted .. " times")
     end

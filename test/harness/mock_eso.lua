@@ -20,6 +20,9 @@ EVENT_ACTION_SLOT_ABILITY_USED = 10
 EVENT_BOSSES_CHANGED           = 11
 EVENT_UNIT_DEATH_STATE_CHANGED = 12
 EVENT_ACTIVE_WEAPON_PAIR_CHANGED = 13
+EVENT_POWER_UPDATE               = 14
+POWERTYPE_HEALTH                 = 201
+REGISTER_FILTER_POWER_TYPE       = 107
 NUMBER_ABBREVIATION_PRECISION_TENTHS = 1
 
 REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE = 101
@@ -378,6 +381,7 @@ function GetUIMousePosition() return H.state.mouse_x, H.state.mouse_y end
 function IsUnitGrouped() return H.state.grouped end
 function GetGroupSize() return H.state.group_size end
 function GetUnitName(tag)
+  if H.unit_names and H.unit_names[tag] then return H.unit_names[tag] end
   if H.state.bosses[tag] then return H.state.bosses[tag].name end
   return "Velladocuments"
 end
@@ -460,6 +464,11 @@ local FILTER_POS = {
     [REGISTER_FILTER_SOURCE_COMBAT_UNIT_TYPE] = 16,
   },
   [EVENT_UNIT_DEATH_STATE_CHANGED] = {
+    [REGISTER_FILTER_UNIT_TAG]        = 1,
+    [REGISTER_FILTER_UNIT_TAG_PREFIX] = { pos = 1, mode = "prefix" },
+  },
+  [EVENT_POWER_UPDATE] = {
+    [REGISTER_FILTER_POWER_TYPE]      = 3,
     [REGISTER_FILTER_UNIT_TAG]        = 1,
     [REGISTER_FILTER_UNIT_TAG_PREFIX] = { pos = 1, mode = "prefix" },
   },
@@ -551,7 +560,7 @@ function H.heal(opts)
   return H.fire(EVENT_COMBAT_EVENT,
     result, false, "MockHeal", 0, 0,
     "Me", opts.source_type or COMBAT_UNIT_TYPE_PLAYER,
-    "Ally", opts.target_type or COMBAT_UNIT_TYPE_GROUP,
+    opts.target_name or "Ally", opts.target_type or COMBAT_UNIT_TYPE_GROUP,
     opts.hit or 1000, 0, 0, false,
     opts.source_unit_id or 500, opts.target_unit_id or 600,
     opts.ability_id or 77, opts.overflow or 0)
@@ -591,6 +600,10 @@ end
 
 function H.death(is_dead, tag)
   return H.fire(EVENT_UNIT_DEATH_STATE_CHANGED, tag or "player", is_dead and true or false)
+end
+
+function H.power(tag, value, max)
+  return H.fire(EVENT_POWER_UPDATE, tag, 0, POWERTYPE_HEALTH, value, max, max)
 end
 
 function H.combat_state(in_combat)

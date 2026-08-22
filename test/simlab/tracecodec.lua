@@ -8,6 +8,7 @@ local SIG = {
   WP = "",
   BO = "s",
   GR = "bn",
+  PU = "snnnnn",
 }
 
 function M.decode_line(line)
@@ -53,6 +54,8 @@ function M.fire(H, e)
     H.fire(EVENT_UNIT_DEATH_STATE_CHANGED, a[1], a[2])
   elseif e.tag == "WP" then
     H.fire(EVENT_ACTIVE_WEAPON_PAIR_CHANGED)
+  elseif e.tag == "PU" then
+    H.fire(EVENT_POWER_UPDATE, unpack(a, 1, e.n))
   elseif e.tag == "BO" then
     local list = {}
     for nm in tostring(a[1] or ""):gmatch("([^|]+)") do

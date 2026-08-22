@@ -9,6 +9,7 @@ scripted combat without the game. Built on the mock-ESO harness
 | Aspect | Coverage | Still needs in-game |
 |---|---|---|
 | Metric math (eHPS/OHPS/MPS/EMS/D_group/crit) | Oracle recomputes every metric naively from the raw event log and compares against the addon's incremental hot path at 4 Hz. Tolerance 1e-6. | New ZOS API behavior never captured |
+| Triage FSM (episodes, S/S*/O/L/M/X matrix, RT quantiles) | Batch oracle re-derives episodes from the recorded power/heal/death streams and compares exact counts and RT50/RT95 at stop | Real EVENT_POWER_UPDATE rates (the trace answers this) |
 | Window/config semantics | Oracle reads the live window config, so changing heal/shield windows is covered | — |
 | Foreign-event filtering | Scenarios and replayed traces include events the addon must reject | First sighting of each engine quirk |
 | UI geometry & palette | Layout-aware mock resolves the real anchor chains; SVG snapshots render the window | DDS textures, fonts, feel |
@@ -59,6 +60,11 @@ One captured trial becomes a permanent regression corpus: real multi-tag
 duplicates, engine mistags and foreign events, replayable forever without
 re-entering the game. The oracle runs during replay, so divergences between
 the formal model and the hot path surface on real data too.
+
+The trace also records group health power updates (C++-filtered to
+health + group tags), so a single captured dungeon answers the open
+triage question: the real EVENT_POWER_UPDATE rate under load. The report's
+triage section prints the observed rate live (`power_updates=N rate=X/s`).
 
 ## Extending
 

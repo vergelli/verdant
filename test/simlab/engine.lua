@@ -20,13 +20,22 @@ return function(H, Prng)
     H.state.grouped = n > 1
     H.state.group_size = n
     H.state.player_group_tag = (n > 1) and "group1" or nil
-    H.fire(EVENT_GROUP_UPDATE)
+    H.unit_names = H.unit_names or {}
     for i = 1, n do
       self.members[i] = {
         unit_id = (i == 1) and self.player_unit_id or (600 + i),
         hp_max = hp_max, hp = hp_max, alive = true,
+        name = "Member" .. i,
       }
+      H.unit_names["group" .. i] = "Member" .. i
     end
+    H.fire(EVENT_GROUP_UPDATE)
+  end
+
+  function Sim:push_power(i)
+    if #self.members <= 1 then return end
+    local m = self.members[i]
+    H.power("group" .. i, m.hp, m.hp_max)
   end
 
   function Sim:at(t, fn)
@@ -55,8 +64,11 @@ return function(H, Prng)
     if m.hp <= 0 then
       m.hp = 0
       m.alive = false
+      self:push_power(i)
       if i == 1 then H.death(true) end
       if #self.members > 1 then H.death(true, "group" .. i) end
+    else
+      self:push_power(i)
     end
   end
 
@@ -77,9 +89,11 @@ return function(H, Prng)
       hit = eff, overflow = over, result = result,
       source_unit_id = self.player_unit_id,
       target_unit_id = m.unit_id,
+      target_name = m.name,
       target_type = (i == 1) and COMBAT_UNIT_TYPE_PLAYER or COMBAT_UNIT_TYPE_GROUP,
       ability_id = (opts and opts.ability_id) or 77,
     })
+    if eff > 0 then self:push_power(i) end
   end
 
   function Sim:shield_on(i, ability_id)
@@ -103,6 +117,7 @@ return function(H, Prng)
     m.hp = math.floor(m.hp_max / 2)
     if i == 1 then H.death(false) end
     if #self.members > 1 then H.death(false, "group" .. i) end
+    self:push_power(i)
   end
 
   function Sim:combat(on)

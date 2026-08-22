@@ -113,6 +113,11 @@ function M.init()
   zev.register("Verdant_Trace_DE", C.EVENT_UNIT_DEATH_STATE_CHANGED, function(tag, dead) rec("DE", tag, dead) end)
   zev.register("Verdant_Trace_WP", C.EVENT_ACTIVE_WEAPON_PAIR_CHANGED, function() rec("WP") end)
   zev.register("Verdant_Trace_BO", C.EVENT_BOSSES_CHANGED, rec_bosses)
+  zev.register("Verdant_Trace_PU", C.EVENT_POWER_UPDATE, function(...) rec("PU", ...) end)
+  zev.add_filter("Verdant_Trace_PU", C.EVENT_POWER_UPDATE,
+    C.REGISTER_FILTER_POWER_TYPE, C.POWERTYPE_HEALTH)
+  zev.add_filter("Verdant_Trace_PU", C.EVENT_POWER_UPDATE,
+    C.REGISTER_FILTER_UNIT_TAG_PREFIX, "group")
   zev.register("Verdant_Trace_GJ", C.EVENT_GROUP_MEMBER_JOINED, rec_group)
   zev.register("Verdant_Trace_GL", C.EVENT_GROUP_MEMBER_LEFT, rec_group)
   zev.register("Verdant_Trace_GU", C.EVENT_GROUP_UPDATE, rec_group)
