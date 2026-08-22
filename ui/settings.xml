@@ -7,7 +7,7 @@
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="300" y="702"/>
+      <Dimensions x="300" y="730"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -305,20 +305,30 @@
           <OnClicked>Verdant.Settings.on_autorec_click()</OnClicked>
         </Button>
 
+        <Button name="$(parent)AutosaveBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="556"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="556"/>
+          <Dimensions y="22"/>
+          <OnClicked>Verdant.Settings.on_autosave_click()</OnClicked>
+        </Button>
+
         <Label name="$(parent)SecGeneral" font="ZoFontGameSmall"
                horizontalAlignment="LEFT" verticalAlignment="CENTER">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="562"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="590"/>
           <Dimensions x="200" y="12"/>
         </Label>
         <Texture name="$(parent)SepGeneral">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="576"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="576"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="604"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="604"/>
           <Dimensions y="1"/>
         </Texture>
 
         <Button name="$(parent)UnknownBtn" mouseEnabled="true"
                 mouseOverBlendMode="ADD" inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPLEFT" offsetX="14" offsetY="582"/>
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="610"/>
           <Dimensions x="28" y="28"/>
           <Textures normal="EsoUI/Art/Dye/dyes_toolIcon_fill_up.dds"
                     pressed="EsoUI/Art/Dye/dyes_toolIcon_fill_down.dds"
@@ -340,8 +350,8 @@
                 mouseEnabled="true"
                 font="ZoFontGameSmall"
                 inherits="ZO_DefaultButton">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="616"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="616"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="644"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="644"/>
           <Dimensions y="22"/>
           <OnClicked>Verdant.Settings.on_logo_click()</OnClicked>
         </Button>
@@ -350,8 +360,8 @@
                 mouseEnabled="true"
                 font="ZoFontGameSmall"
                 inherits="ZO_DefaultButton">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="644"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="644"/>
+          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="672"/>
+          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="672"/>
           <Dimensions y="22"/>
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
         </Button>

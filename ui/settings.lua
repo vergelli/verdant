@@ -358,6 +358,15 @@ function M.on_bars_click()
                                  or GetString(VERDANT_SETTINGS_BARS_OFF))
 end
 
+function M.on_autosave_click()
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  local now = not (sv.settings.session_autosave == true)
+  sv.settings.session_autosave = now
+  controls.autosave_btn:SetText(now and GetString(VERDANT_SETTINGS_AUTOSAVE_ON)
+                                    or GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
+end
+
 function M.on_gdm_click()
   local sv = Verdant.SavedVars
   sv.settings = sv.settings or {}
@@ -582,6 +591,8 @@ function M.on_reset_click()
     sv.settings.group_death_markers = false
     controls.gdm_btn:SetText(GetString(VERDANT_SETTINGS_GDM_OFF))
     sv.settings.triage_theta = nil
+    sv.settings.session_autosave = false
+    controls.autosave_btn:SetText(GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
   end
   current_theta = THETA_DEFAULT
 
@@ -680,6 +691,7 @@ function M.init()
   controls.shielddir_btn  = VerdantSettingsPanelShieldDirBtn
   controls.autorec_btn    = VerdantSettingsPanelAutoRecBtn
   controls.gdm_btn        = VerdantSettingsPanelGdmBtn
+  controls.autosave_btn   = VerdantSettingsPanelAutosaveBtn
   controls.pname_edit     = VerdantSettingsPanelPNameBoxEdit
   controls.psave_btn      = VerdantSettingsPanelPSaveBtn
   controls.pdelete_btn    = VerdantSettingsPanelPDeleteBtn
@@ -720,6 +732,8 @@ function M.init()
   controls.autorec_btn:SetText(autorec_label(sv.settings.auto_record or "off"))
   controls.gdm_btn:SetText((sv.settings.group_death_markers == true)
     and GetString(VERDANT_SETTINGS_GDM_ON) or GetString(VERDANT_SETTINGS_GDM_OFF))
+  controls.autosave_btn:SetText((sv.settings.session_autosave == true)
+    and GetString(VERDANT_SETTINGS_AUTOSAVE_ON) or GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
   Verdant.Graph.set_shield_down(shield_down)
 
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)

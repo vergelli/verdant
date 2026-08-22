@@ -298,9 +298,7 @@ function M.theta() return THETA end
 
 function M.on_session_start()
   local sv = Verdant.SavedVars
-  if sv and sv.settings and sv.settings.triage_theta then
-    M.set_theta(sv.settings.triage_theta)
-  end
+  M.set_theta((sv and sv.settings and sv.settings.triage_theta) or 0.50)
   session_active = true
   ep_log.n = 0
   ep_dropped = 0

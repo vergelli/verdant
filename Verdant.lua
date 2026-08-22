@@ -171,7 +171,7 @@ local function on_addon_loaded()
   local world = GetWorldName()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
     C.SV_TABLE, C.SV_VERSION, world,
-    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {}, skill_overrides = {}, logo = {}, assign = {} })
+    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {}, skill_overrides = {}, logo = {}, assign = {}, library = {} })
 
   Verdant.SkillColors.load_persisted(Verdant.SavedVars)
 
@@ -183,6 +183,7 @@ local function on_addon_loaded()
   if C.DEBUG then Verdant.Probe.init() end
   Verdant.Trace.init()
   Verdant.Triage.init()
+  Verdant.SessionStore.init()
   Verdant.GC.init()            -- GC pacing (ported): smooth the incremental collector
   Verdant.Pipeline.init()
   Verdant.Bar.init()
