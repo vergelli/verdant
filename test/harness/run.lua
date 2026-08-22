@@ -25,6 +25,7 @@ local CASES = {
   "trace_flow",
   "group_death_markers",
   "triage_fsm",
+  "triage_view",
 }
 
 local passed, failed = 0, 0

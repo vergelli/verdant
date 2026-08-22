@@ -1,0 +1,63 @@
+return function(H)
+  local function ok(cond, msg) if not cond then error(msg, 2) end end
+  local T = Verdant.Triage
+
+  Verdant.Metrics.reset()
+  Verdant.TemporalBuffer.clear()
+  H.state.grouped = true
+  H.state.group_size = 4
+  H.state.player_group_tag = "group1"
+  H.unit_names = H.unit_names or {}
+  H.unit_names.group1 = "Me1"
+  H.unit_names.group2 = "Ally2"
+  H.unit_names.group3 = "Ally3"
+  H.unit_names.group4 = "Ally4"
+  H.fire(EVENT_GROUP_UPDATE)
+
+  Verdant.Visibility.set("graph", true)
+  Verdant.Graph.on_record_click()
+  H.heal({ hit = 500, target_name = "Ally2", target_unit_id = 602 })
+  H.advance(1000)
+
+  H.power("group2", 19000, 40000)
+  H.advance(500)
+  H.heal({ hit = 2000, target_name = "Ally2", target_unit_id = 602 })
+  H.power("group2", 23000, 40000)
+
+  H.power("group3", 15000, 40000)
+  H.advance(1000)
+  H.death(true, "group3")
+
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+
+  local view_label = VerdantGraphWindowViewLabel
+  local guard = 0
+  while view_label._text ~= "TRIAGE" and guard < 8 do
+    Verdant.Graph.next_view()
+    guard = guard + 1
+  end
+  ok(view_label._text == "TRIAGE", "could not reach TRIAGE view: " .. tostring(view_label._text))
+  ok(VerdantGraphWindowViewportNoDataLabel._hidden == true, "no_data must hide with episodes present")
+
+  local names, scores = {}, {}
+  for _, c in ipairs(H.controls) do
+    if c._hidden == false and type(c._text) == "string" then
+      if c._text == "Ally2" or c._text == "Ally3" then names[c._text] = true end
+      if c._text:match("^%d/%d$") then scores[c._text] = (scores[c._text] or 0) + 1 end
+    end
+  end
+  ok(names["Ally2"], "gutter must show Ally2")
+  ok(names["Ally3"], "gutter must show Ally3")
+  ok(scores["1/1"], "Ally2 row must score 1/1 saves")
+  ok(scores["0/1"], "Ally3 row must score 0/1 saves")
+
+  local chip = VerdantGraphSummaryLabel
+  ok(chip._text and chip._text:find("RT"), "summary chip must include RT when episodes responded")
+
+  H.state.grouped = false
+  H.state.group_size = 1
+  H.state.player_group_tag = nil
+  Verdant.Graph.on_flush_click()
+  Verdant.Visibility.set("graph", false)
+end

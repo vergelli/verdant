@@ -99,7 +99,7 @@ for _, name in ipairs(SCENARIOS) do
     end
 
     if svg then
-      for _ = 1, 4 do
+      for _ = 1, 5 do
         local view = tostring(VerdantGraphWindowViewLabel._text or "view")
         local out = SIMLAB_ROOT .. "/test/simlab/out/" .. spec.name .. "_" .. view:lower() .. ".svg"
         svg.snapshot(H, VerdantGraphWindow, out)

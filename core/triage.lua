@@ -51,6 +51,7 @@ local ep_log = { n = 0 }
 local ep_dropped = 0
 
 local name_slot = {}
+local slot_names = {}
 local name_count = 0
 local session_active = false
 local pu_count = 0
@@ -194,14 +195,21 @@ function M.refresh_names()
   name_count = 0
   local n = api.GetGroupSize() or 0
   for i = 1, MAX_SLOTS do
+    slot_names[i] = nil
     if i <= n then
       local nm = api.GetUnitName("group" .. i)
       if nm and nm ~= "" then
-        name_slot[base_name(nm)] = i
+        local base = base_name(nm)
+        name_slot[base] = i
+        slot_names[i] = base
         name_count = name_count + 1
       end
     end
   end
+end
+
+function M.slot_name(i)
+  return slot_names[i]
 end
 
 function M.on_session_start()
