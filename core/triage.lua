@@ -47,6 +47,9 @@ for i = 1, MAX_SLOTS do
     start = 0, last_t = 0, grace_until = 0,
     rt = -1, responded = false, overflow = false,
     last_heal_t = -1, min_rho = 1,
+    p_active = false, p_start = 0, p_end = 0,
+    p_rt = -1, p_responded = false, p_overflow = false,
+    p_last_heal = -1, p_min_rho = 1,
   }
 end
 
@@ -90,16 +93,42 @@ local function log_episode(slot_i, s, t_end, class, star)
   e.responded = s.responded
 end
 
+local ep_scratch = {}
+
+local function finalize_pending(slot_i, s)
+  if not s.p_active then return end
+  s.p_active = false
+  local class, star
+  if s.p_responded then
+    class = CLASS_S
+    star  = s.p_overflow or (s.p_last_heal >= 0 and (s.p_end - s.p_last_heal) <= DELTA_MS)
+  else
+    class, star = CLASS_O, false
+  end
+  ep_scratch.start     = s.p_start
+  ep_scratch.rt        = s.p_rt
+  ep_scratch.min_rho   = s.p_min_rho
+  ep_scratch.responded = s.p_responded
+  log_episode(slot_i, ep_scratch, s.p_end, class, star)
+  bump("triage.episode.closed")
+end
+
 local function close_episode(slot_i, s, now, kind)
-  local class, star = CLASS_X, false
+  s.open = false
   if kind == 1 then
-    if s.responded then
-      class = CLASS_S
-      star  = s.overflow or (s.last_heal_t >= 0 and (now - s.last_heal_t) <= DELTA_MS)
-    else
-      class = CLASS_O
-    end
-  elseif kind == 2 then
+    finalize_pending(slot_i, s)
+    s.p_active    = true
+    s.p_start     = s.start
+    s.p_end       = now
+    s.p_rt        = s.rt
+    s.p_responded = s.responded
+    s.p_overflow  = s.overflow
+    s.p_last_heal = s.last_heal_t
+    s.p_min_rho   = s.min_rho
+    return
+  end
+  local class, star = CLASS_X, false
+  if kind == 2 then
     if s.responded then
       class = CLASS_L
     elseif (now - s.start) < MIN_EPISODE_MS then
@@ -110,7 +139,6 @@ local function close_episode(slot_i, s, now, kind)
   end
   log_episode(slot_i, s, now, class, star)
   bump("triage.episode.closed")
-  s.open = false
 end
 
 function M.on_power(unitTag, _idx, _ptype, value, _max, effMax)
@@ -131,6 +159,7 @@ function M.on_power(unitTag, _idx, _ptype, value, _max, effMax)
     if rho < s.min_rho then s.min_rho = rho end
     if rho >= THETA_EXIT then close_episode(i, s, now, 1) end
   elseif rho < THETA then
+    finalize_pending(i, s)
     s.open        = true
     s.start       = now
     s.rt          = -1
@@ -162,15 +191,28 @@ function M.on_own_heal(targetName, hit, overflow, now, targetType, result)
   end
   heal_matched = heal_matched + 1
   local s = slots[i]
-  if not s.open then return end
-  if hit and hit > 0 then
-    s.responded   = true
-    s.last_heal_t = now
-    if s.rt < 0 and (result == AR_HEAL or result == AR_CRIT_HEAL) then
-      s.rt = now - s.start
+  if s.open then
+    if hit and hit > 0 then
+      s.responded   = true
+      s.last_heal_t = now
+      if s.rt < 0 and (result == AR_HEAL or result == AR_CRIT_HEAL) then
+        s.rt = now - s.start
+      end
     end
+    if overflow and overflow > 0 then s.overflow = true end
+    return
   end
-  if overflow and overflow > 0 then s.overflow = true end
+  if s.p_active and (now - s.p_end) <= DELTA_MS then
+    if hit and hit > 0 then
+      s.p_responded = true
+      s.p_last_heal = now
+      if s.p_rt < 0 and (result == AR_HEAL or result == AR_CRIT_HEAL) then
+        s.p_rt = now - s.p_start
+      end
+      bump("triage.episode.late_attribution")
+    end
+    if overflow and overflow > 0 then s.p_overflow = true end
+  end
 end
 
 function M.on_unit_death(unitTag, isDead)
@@ -180,6 +222,7 @@ function M.on_unit_death(unitTag, isDead)
   local s = slots[i]
   local now = GetGameTimeMilliseconds()
   if isDead then
+    finalize_pending(i, s)
     if s.open then close_episode(i, s, now, 2) end
     s.dead = true
   else
@@ -197,6 +240,9 @@ local function censor_tick()
   local now = GetGameTimeMilliseconds()
   for i = 1, MAX_SLOTS do
     local s = slots[i]
+    if s.p_active and (now - s.p_end) > DELTA_MS then
+      finalize_pending(i, s)
+    end
     if s.open and (now - s.last_t) > SIGMA_MS then
       close_episode(i, s, now, 3)
       bump("triage.episode.censored_stale")
@@ -205,6 +251,7 @@ local function censor_tick()
 end
 
 function M.refresh_names()
+  if not session_active then return end
   for k in pairs(name_slot) do name_slot[k] = nil end
   name_count = 0
   player_slot_i = 0
@@ -268,6 +315,7 @@ function M.on_session_start()
     s.dead = false
     s.grace_until = 0
     s.last_t = 0
+    s.p_active = false
   end
   M.refresh_names()
   Verdant.zenimax.events.register_update("Verdant_TriageCensor", CENSOR_TICK_MS, censor_tick)
@@ -278,6 +326,7 @@ function M.on_session_stop()
   local now = GetGameTimeMilliseconds()
   for i = 1, MAX_SLOTS do
     local s = slots[i]
+    finalize_pending(i, s)
     if s.open then close_episode(i, s, now, 3) end
   end
   session_active = false
