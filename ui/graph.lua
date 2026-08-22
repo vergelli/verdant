@@ -1753,6 +1753,9 @@ local function render_view5()
       local rc = tri_rt_color(e.rt)
       rlbl:SetText(string_format("RT %.1fs", e.rt / 1000))
       rlbl:SetColor(rc.r, rc.g, rc.b, 1)
+    elseif e.responded then
+      rlbl:SetText(GetString(VERDANT_TRI_RT_HOTS))
+      rlbl:SetColor(C_TRI_FAST.r, C_TRI_FAST.g, C_TRI_FAST.b, 0.55)
     else
       rlbl:SetText("RT -")
       rlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.8)
