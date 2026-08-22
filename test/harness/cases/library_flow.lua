@@ -68,6 +68,9 @@ return function(H)
   Verdant.Graph.on_stop_click()
 
   Verdant.Library.show()
+  Verdant.Library.on_row_enter(1)
+  ok(H.last_tooltip and H.last_tooltip:find("saved by you", 1, true),
+     "row tooltip must explain the rescue counts")
   Verdant.Library.on_row_click(1)
   Verdant.Library.on_lock_click()
   ok(SS.get(SS.count()).head.locked == true or SS.get(1).head.locked == true,

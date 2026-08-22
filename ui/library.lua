@@ -63,10 +63,24 @@ local function make_row(i)
   row:SetHeight(ROW_H)
   row:SetMouseEnabled(true)
   row:SetHandler("OnMouseUp", function() M.on_row_click(i) end)
+  row:SetHandler("OnMouseEnter", function() M.on_row_enter(i) end)
+  row:SetHandler("OnMouseExit", function() ZO_Tooltips_HideTextTooltip() end)
 
   local bg = WM:CreateControl(nm .. "Bg", row, CT_TEXTURE)
   bg:SetAnchorFill(row)
   bg:SetColor(1, 1, 1, 0.02)
+
+  local hl = WM:CreateControl(nm .. "Hl", row, CT_TEXTURE)
+  hl:SetAnchor(TOPLEFT, row, TOPLEFT, 0, 0)
+  hl:SetAnchor(TOPRIGHT, row, TOPRIGHT, 0, 0)
+  hl:SetHeight(1)
+  hl:SetColor(1, 1, 1, 0.05)
+
+  local sh = WM:CreateControl(nm .. "Sh", row, CT_TEXTURE)
+  sh:SetAnchor(BOTTOMLEFT, row, BOTTOMLEFT, 0, 0)
+  sh:SetAnchor(BOTTOMRIGHT, row, BOTTOMRIGHT, 0, 0)
+  sh:SetHeight(1)
+  sh:SetColor(0, 0, 0, 0.40)
 
   local sel = WM:CreateControl(nm .. "Sel", row, CT_TEXTURE)
   sel:SetAnchorFill(row)
@@ -167,6 +181,20 @@ function M.refresh()
   end
   if selected and (selected > shown) then selected = nil end
   set_buttons()
+end
+
+function M.on_row_enter(i)
+  local idx = row_session[i]
+  if not idx then return end
+  local s = Verdant.SessionStore.get(idx)
+  if not s then return end
+  local sum = s.head.sum or {}
+  local text = string_format(GetString(VERDANT_LIB_ROW_TIP),
+    sum.saves or 0, sum.o or 0, (sum.l or 0) + (sum.m or 0))
+  if s.head.locked then
+    text = text .. "\n" .. GetString(VERDANT_LIB_ROW_TIP_LOCKED)
+  end
+  ZO_Tooltips_ShowTextTooltip(rows[i].root, TOP, text)
 end
 
 function M.on_row_click(i)

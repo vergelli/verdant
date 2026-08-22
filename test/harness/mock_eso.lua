@@ -371,6 +371,12 @@ SCENE_MANAGER = {
 }
 
 function ZO_CreateStringId(id, str) rawset(_G, id, str) end
+function ZO_Tooltips_ShowTextTooltip(control, side, text)
+  H.last_tooltip = text
+end
+function ZO_Tooltips_HideTextTooltip()
+  H.last_tooltip = nil
+end
 function GetString(s) return s or "" end
 function ZO_AbbreviateAndLocalizeNumber(n) return tostring(math.floor(n or 0)) end
 function ZO_CommaDelimitNumber(n) return tostring(n) end

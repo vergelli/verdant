@@ -671,6 +671,51 @@ local function show_card(band, col, unit, mx, my, elapsed_ms)
   position_card(mx, my)
 end
 
+local C_TRI_CLASS = {
+  { r = 0.55, g = 0.92, b = 0.62 },
+  { r = 0.55, g = 0.66, b = 0.82 },
+  { r = 0.95, g = 0.42, b = 0.34 },
+  { r = 0.62, g = 0.22, b = 0.22 },
+  { r = 0.55, g = 0.55, b = 0.55 },
+  { r = 0.50, g = 0.38, b = 0.38 },
+}
+local C_TRI_NAME   = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
+local C_TRI_DIM    = { r = 0.60, g = 0.64, b = 0.61, a = 0.95 }
+local C_TRI_TIME   = { r = 0.48, g = 0.46, b = 0.42, a = 1.0 }
+local C_TRI_DEPTH  = { r = 0.91, g = 0.72, b = 0.29, a = 1.0 }
+local C_TRI_DEEP   = { r = 0.95, g = 0.42, b = 0.34, a = 1.0 }
+local C_TRI_STRIP  = { r = 0.16, g = 0.15, b = 0.13, a = 0.90 }
+local C_TRI_FAST   = { r = 0.58, g = 0.85, b = 0.92 }
+local C_TRI_MID    = { r = 0.92, g = 0.95, b = 0.93 }
+local C_TRI_SLOW   = { r = 0.91, g = 0.58, b = 0.42 }
+local TRI_HEADER_H = 20
+local TRI_STRIP_H  = 14
+local TRI_STRIP_GAP = 10
+local TRI_ROW_H    = 24
+local TRI_ROW_GAP  = 2
+local TRI_RT_FAST_MS = 1000
+local TRI_RT_SLOW_MS = 2500
+
+local TRI_CHIP_KEY = {
+  "VERDANT_TRI_CHIP_SAVE",
+  "VERDANT_TRI_CHIP_RECOVERED",
+  "VERDANT_TRI_CHIP_DIED",
+  "VERDANT_TRI_CHIP_MISSED",
+  "VERDANT_TRI_CHIP_CUT",
+  "VERDANT_TRI_CHIP_ONESHOT",
+}
+
+local TRI_TIP_KEY = {
+  "VERDANT_TRI_TIP_SAVE",
+  "VERDANT_TRI_TIP_RECOVERED",
+  "VERDANT_TRI_TIP_DIED",
+  "VERDANT_TRI_TIP_MISSED",
+  "VERDANT_TRI_TIP_CUT",
+  "VERDANT_TRI_TIP_ONESHOT",
+}
+
+local tri_hit = { n = 0, y0 = {}, y1 = {}, ep = {} }
+
 local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, my)
   local card = controls.card
   if not card then return end
@@ -826,6 +871,43 @@ local function hover_poll()
   local mx, my = GetUIMousePosition()
   if current_view == VIEW_BUFFS then
     buff_hover_poll(mx, my)
+    return
+  end
+  if current_view == VIEW_TRIAGE then
+    local canvas = controls.canvas
+    local rel_y  = my - canvas:GetTop()
+    local rel_x  = mx - canvas:GetLeft()
+    local inside = rel_x >= 0 and rel_x <= canvas:GetWidth()
+    local e = nil
+    if inside then
+      for i = 1, tri_hit.n do
+        if rel_y >= tri_hit.y0[i] and rel_y <= tri_hit.y1[i] then
+          e = tri_hit.ep[i]
+          break
+        end
+      end
+    end
+    if e then
+      local T = Verdant.Triage
+      local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
+      local who = T.slot_name(e.slot) or ("group" .. e.slot)
+      local depth = math_floor(e.min_rho * 100 + 0.5)
+      local detail
+      if e.rt >= 0 then
+        detail = string_format(GetString(VERDANT_TRI_TIP_RT), e.rt / 1000)
+      elseif e.responded then
+        detail = GetString(VERDANT_TRI_TIP_VIA_HOTS)
+      else
+        detail = ""
+      end
+      show_moment_card(c, who,
+        string_format("|c%s%d%%|r  %s%s",
+          hexc((e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH), depth,
+          GetString(rawget(_G, TRI_TIP_KEY[e.class] or TRI_TIP_KEY[5])), detail),
+        e.t_start - tri_hit.t0, mx, my)
+    else
+      fade_out(card_fader)
+    end
     return
   end
   local band, col, canvas, H, unit
@@ -1362,39 +1444,6 @@ local function seg_alpha(conc, max_conc)
   return 0.40 + 0.55 * (conc / max_conc)
 end
 
-local C_TRI_CLASS = {
-  { r = 0.55, g = 0.92, b = 0.62 },
-  { r = 0.55, g = 0.66, b = 0.82 },
-  { r = 0.95, g = 0.42, b = 0.34 },
-  { r = 0.62, g = 0.22, b = 0.22 },
-  { r = 0.55, g = 0.55, b = 0.55 },
-  { r = 0.50, g = 0.38, b = 0.38 },
-}
-local C_TRI_NAME   = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
-local C_TRI_DIM    = { r = 0.60, g = 0.64, b = 0.61, a = 0.95 }
-local C_TRI_TIME   = { r = 0.48, g = 0.46, b = 0.42, a = 1.0 }
-local C_TRI_DEPTH  = { r = 0.91, g = 0.72, b = 0.29, a = 1.0 }
-local C_TRI_DEEP   = { r = 0.95, g = 0.42, b = 0.34, a = 1.0 }
-local C_TRI_STRIP  = { r = 0.16, g = 0.15, b = 0.13, a = 0.90 }
-local C_TRI_FAST   = { r = 0.58, g = 0.85, b = 0.92 }
-local C_TRI_MID    = { r = 0.92, g = 0.95, b = 0.93 }
-local C_TRI_SLOW   = { r = 0.91, g = 0.58, b = 0.42 }
-local TRI_HEADER_H = 20
-local TRI_STRIP_H  = 14
-local TRI_STRIP_GAP = 10
-local TRI_ROW_H    = 24
-local TRI_ROW_GAP  = 2
-local TRI_RT_FAST_MS = 1000
-local TRI_RT_SLOW_MS = 2500
-
-local TRI_CHIP_KEY = {
-  "VERDANT_TRI_CHIP_SAVE",
-  "VERDANT_TRI_CHIP_RECOVERED",
-  "VERDANT_TRI_CHIP_DIED",
-  "VERDANT_TRI_CHIP_MISSED",
-  "VERDANT_TRI_CHIP_CUT",
-  "VERDANT_TRI_CHIP_ONESHOT",
-}
 
 local function tri_rt_color(rt)
   if rt < TRI_RT_FAST_MS then return C_TRI_FAST end
@@ -1601,6 +1650,11 @@ local function render_view5()
   if span <= 0 then return end
 
   Verdant.Diagnostics.bump("graph.view_triage.renders")
+  hit_begin(hit_main, 0)
+
+  local capture = not recording
+  tri_hit.n  = 0
+  tri_hit.t0 = t0
 
   local s = T.summary()
   local head = controls.pool_buff_lbl:AcquireObject()
@@ -1631,6 +1685,21 @@ local function render_view5()
   strip:SetHeight(TRI_STRIP_H)
   strip:SetColor(C_TRI_STRIP.r, C_TRI_STRIP.g, C_TRI_STRIP.b, C_TRI_STRIP.a)
   strip:SetHidden(false)
+
+  local s_top = controls.pool_buff_seg:AcquireObject()
+  s_top:ClearAnchors()
+  s_top:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y - 1)
+  s_top:SetWidth(cw)
+  s_top:SetHeight(1)
+  s_top:SetColor(0, 0, 0, 0.45)
+  s_top:SetHidden(false)
+  local s_bot = controls.pool_buff_seg:AcquireObject()
+  s_bot:ClearAnchors()
+  s_bot:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y + TRI_STRIP_H)
+  s_bot:SetWidth(cw)
+  s_bot:SetHeight(1)
+  s_bot:SetColor(1, 1, 1, 0.05)
+  s_bot:SetHidden(false)
 
   for i = 1, n_eps do
     local e = eps[i]
@@ -1710,6 +1779,13 @@ local function render_view5()
     row_i = row_i + 1
     local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
 
+    if capture then
+      tri_hit.n = tri_hit.n + 1
+      tri_hit.y0[tri_hit.n] = y
+      tri_hit.y1[tri_hit.n] = y + TRI_ROW_H
+      tri_hit.ep[tri_hit.n] = e
+    end
+
     local bg = controls.pool_buff_seg:AcquireObject()
     bg:ClearAnchors()
     bg:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y)
@@ -1718,12 +1794,20 @@ local function render_view5()
     bg:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.03 or 0.07)
     bg:SetHidden(false)
 
+    local hl = controls.pool_buff_seg:AcquireObject()
+    hl:ClearAnchors()
+    hl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y)
+    hl:SetWidth(cw)
+    hl:SetHeight(1)
+    hl:SetColor(1, 1, 1, 0.05)
+    hl:SetHidden(false)
+
     local sep = controls.pool_buff_seg:AcquireObject()
     sep:ClearAnchors()
     sep:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + TRI_ROW_H)
     sep:SetWidth(cw)
     sep:SetHeight(1)
-    sep:SetColor(0, 0, 0, 0.30)
+    sep:SetColor(0, 0, 0, 0.40)
     sep:SetHidden(false)
 
     local tlbl = controls.pool_buff_lbl:AcquireObject()
