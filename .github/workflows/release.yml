@@ -63,6 +63,15 @@ jobs:
             exit 1
           fi
 
+      - name: Verify DEBUG is disabled
+        run: |
+          DBG=$(grep -E '^\s*DEBUG\s*=' core/constants.lua | head -1)
+          if ! echo "$DBG" | grep -q 'false'; then
+            echo "::error::core/constants.lua DEBUG must be false for a release (found: $DBG)"
+            exit 1
+          fi
+          echo "DEBUG guard passed ($DBG)"
+
       - name: Verify constants.lua VERSION matches tag
         run: |
           CONST=$(grep -E '^\s*VERSION\s*=' core/constants.lua | sed -E 's/.*"([^"]+)".*/\1/')
