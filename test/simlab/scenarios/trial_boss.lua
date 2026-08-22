@@ -51,6 +51,18 @@ return {
       s:absorb(2, s.rng:range(800, 2200))
     end)
 
+    sim:at(30000, function(s)
+      s:hit(9, 23000, ACTION_RESULT_CRITICAL_DAMAGE)
+    end)
+
+    sim:at(140000, function(s)
+      s:hit(11, 21000, ACTION_RESULT_CRITICAL_DAMAGE)
+    end)
+    sim:at(143500, function(s)
+      s:hit(11, 60000, ACTION_RESULT_CRITICAL_DAMAGE)
+    end)
+    sim:at(149000, function(s) s:res(11) end)
+
     sim:at(60000, function(s)
       s:hit(7, 60000, ACTION_RESULT_CRITICAL_DAMAGE)
     end)

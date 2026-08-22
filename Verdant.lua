@@ -182,6 +182,7 @@ local function on_addon_loaded()
 
   if C.DEBUG then Verdant.Probe.init() end
   Verdant.Trace.init()
+  Verdant.Triage.init()
   Verdant.GC.init()            -- GC pacing (ported): smooth the incremental collector
   Verdant.Pipeline.init()
   Verdant.Bar.init()
