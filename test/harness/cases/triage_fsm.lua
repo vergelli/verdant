@@ -83,6 +83,7 @@ return function(H)
   H.heal({ hit = 800, target_name = "Ally3", target_unit_id = 603,
            result = ACTION_RESULT_HOT_TICK })
   H.power("group3", 23000, 40000)
+  H.advance(1200)
   local s4 = T.summary()
   ok(s4.counts.s == 2, "hot-tick response must still attribute the save, S=" .. s4.counts.s)
   ok(s4.responded == 2, "hot-tick response must count as responded")
