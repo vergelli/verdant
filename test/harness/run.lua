@@ -29,6 +29,7 @@ local CASES = {
   "ui_behaviors",
   "vsf_codec",
   "session_store",
+  "library_flow",
 }
 
 local passed, failed = 0, 0

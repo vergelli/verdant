@@ -11,29 +11,30 @@ local CAP = 24
 
 local DESC = {
   series = {
-    { name = "t",       width = 3, scale = 0.01, delta = true },
-    { name = "eHPS",    width = 3 },
-    { name = "MPS",     width = 3 },
-    { name = "crit",    width = 3 },
-    { name = "noncrit", width = 3 },
-    { name = "d",       width = 3 },
+    { name = "t",       width = 4, delta = true },
+    { name = "eHPS",    width = 4, scale = 10 },
+    { name = "MPS",     width = 4, scale = 10 },
+    { name = "crit",    width = 4, scale = 10 },
+    { name = "noncrit", width = 4, scale = 10 },
+    { name = "d",       width = 4, scale = 10 },
   },
   steps = {
     { name = "b", width = 1 },
-    { name = "t", width = 3, scale = 0.01 },
+    { name = "t", width = 4 },
     { name = "c", width = 1 },
   },
   episodes = {
     { name = "slot", width = 1 },
-    { name = "ts",   width = 3, scale = 0.01 },
-    { name = "dur",  width = 3, scale = 0.01 },
+    { name = "ts",   width = 4 },
+    { name = "dur",  width = 4 },
     { name = "cls",  width = 1 },
-    { name = "rt",   width = 3 },
+    { name = "rt1",  width = 3 },
     { name = "rho",  width = 2, scale = 1000 },
     { name = "resp", width = 1 },
+    { name = "star", width = 1 },
   },
   markers = {
-    { name = "t",     width = 3, scale = 0.01 },
+    { name = "t",     width = 4 },
     { name = "death", width = 1 },
     { name = "who",   width = 1 },
   },
@@ -83,6 +84,10 @@ function M.capture()
       desc = rec.desc, uptime_ms = rec.uptime_ms,
       max_conc = rec.max_conc, only_self = rec.only_self or false,
       vetoed = rec.vetoed or false,
+      unique_units = rec.unique_units or 0,
+      applications = rec.applications or 0,
+      conc_avg = rec.conc_avg or 0,
+      longest_gap_ms = rec.longest_gap_ms or 0,
     }
     for k = 1, rec.n_steps do
       steps[#steps + 1] = {
@@ -102,9 +107,10 @@ function M.capture()
       ts   = e.t_start - t0,
       dur  = e.t_end - e.t_start,
       cls  = e.class,
-      rt   = (e.rt >= 0) and e.rt or 0,
+      rt1  = (e.rt >= 0) and (e.rt + 1) or 0,
       rho  = e.min_rho,
       resp = e.responded and 1 or 0,
+      star = e.star and 1 or 0,
     }
   end
 
