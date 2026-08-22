@@ -77,6 +77,16 @@ return function(H)
   H.power("group2", 39000, 40000)
   local s3 = T.summary()
   ok(s3.counts.s == 1 and s3.responded == 1, "suffixed heal must close the episode as save")
+
+  H.power("group3", 15000, 40000)
+  H.advance(300)
+  H.heal({ hit = 800, target_name = "Ally3", target_unit_id = 603,
+           result = ACTION_RESULT_HOT_TICK })
+  H.power("group3", 23000, 40000)
+  local s4 = T.summary()
+  ok(s4.counts.s == 2, "hot-tick response must still attribute the save, S=" .. s4.counts.s)
+  ok(s4.responded == 2, "hot-tick response must count as responded")
+  ok(s4.rt_n == 1, "hot-only response must not measure RT, rt_n=" .. s4.rt_n)
   Verdant.Graph.on_stop_click()
 
   H.state.grouped = false

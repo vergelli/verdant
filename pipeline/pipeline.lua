@@ -76,7 +76,7 @@ function M.dispatch_heal_out(result, isError, _name, _g, _slot,
   bump("engine.heal.accepted")
 
   local t = now()
-  Verdant.Triage.on_own_heal(targetName, hit, overflow, t, targetType)
+  Verdant.Triage.on_own_heal(targetName, hit, overflow, t, targetType, result)
   prof_enter("pipeline.combat_event.acquisition")
   local ev_heal, ev_overheal = Acquisition.acquire_heal_out(
     t, hit, overflow, targetUnitId, targetType, abilityId, result)

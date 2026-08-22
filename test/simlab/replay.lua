@@ -130,7 +130,7 @@ print(string.format(
 for _, line in ipairs(O.fail_lines) do print("  " .. line) end
 
 if svg then
-  for _ = 1, 4 do
+  for _ = 1, 5 do
     local view = tostring(VerdantGraphWindowViewLabel._text or "view"):lower()
     local out = SIMLAB_ROOT .. "/test/simlab/out/replay_" .. view .. ".svg"
     svg.snapshot(H, VerdantGraphWindow, out)
