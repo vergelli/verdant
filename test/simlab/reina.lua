@@ -30,7 +30,7 @@ if Verdant.SessionStore.count() ~= 1 then
   os.exit(1)
 end
 
-local canvas = VerdantGraphWindowViewportCanvas
+local canvas = VerdantGraphWindowViewport
 local VIEWS = { "EMS", "SKILL", "CRIT", "BUFFS", "TRIAGE" }
 local function goto_view(name)
   local guard = 0
@@ -73,9 +73,7 @@ for _, v in ipairs(VIEWS) do
   end
   local pct = (n > 0) and (diff / n * 100) or 0
   local verdict
-  if v == "SKILL" then
-    verdict = "SKIP (v1: sin shares por grupo)"
-  elseif diff == 0 then
+  if diff == 0 then
     verdict = "IDENTICAL"
   elseif pct <= 1.0 then
     verdict = string.format("OK (%d/%d lineas difieren, %.2f%%)", diff, n, pct)

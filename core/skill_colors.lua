@@ -355,6 +355,10 @@ end
 
 local gs_buckets = {}
 
+function M.group_color(key)
+  return GROUP_COLORS[key] or FALLBACK
+end
+
 function M.group_shares_into(out, buf, now_ms, predicate)
   buf:trim(now_ms)
   for k in pairs(gs_buckets) do gs_buckets[k] = nil end

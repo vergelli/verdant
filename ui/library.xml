@@ -51,10 +51,18 @@
           <OnClicked>Verdant.Library.hide()</OnClicked>
         </Button>
 
+        <Backdrop name="$(parent)ListBg">
+          <Anchor point="TOPLEFT"     offsetX="14"  offsetY="44"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-46"/>
+          <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
+                edgeFileWidth="128" edgeFileHeight="16" edgeSize="4"/>
+          <Insets left="4" top="4" right="-4" bottom="-4"/>
+        </Backdrop>
+
         <Control name="$(parent)List" mouseEnabled="false">
-          <Anchor point="TOPLEFT"  offsetX="14"  offsetY="44"/>
-          <Anchor point="TOPRIGHT" offsetX="-14" offsetY="44"/>
-          <Dimensions y="364"/>
+          <Anchor point="TOPLEFT"  offsetX="20"  offsetY="50"/>
+          <Anchor point="TOPRIGHT" offsetX="-20" offsetY="50"/>
+          <Dimensions y="352"/>
           <Controls>
             <Label name="$(parent)Empty"
                    font="ZoFontGameSmall"

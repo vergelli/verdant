@@ -38,6 +38,12 @@ local DESC = {
     { name = "death", width = 1 },
     { name = "who",   width = 1 },
   },
+  shares = {
+    { name = "si",  width = 2 },
+    { name = "ch",  width = 1 },
+    { name = "key", width = 1 },
+    { name = "sh",  width = 3, scale = 10000 },
+  },
 }
 
 M.DESC = DESC
@@ -66,11 +72,34 @@ function M.capture()
   local tri = T.summary()
 
   local series = {}
-  TB.iterate(function(_, s)
+  local share_recs = {}
+  local gkeys = {}
+  local gkey_idx = {}
+  local function key_of(k)
+    local idx = gkey_idx[k]
+    if not idx then
+      gkeys[#gkeys + 1] = k
+      idx = #gkeys - 1
+      gkey_idx[k] = idx
+    end
+    return idx
+  end
+  local function harvest(si, ch, groups)
+    local n = (groups and groups.count) or 0
+    for g = 1, n do
+      local e = groups[g]
+      share_recs[#share_recs + 1] = {
+        si = si, ch = ch, key = key_of(e.key or "other"), sh = e.share or 0,
+      }
+    end
+  end
+  TB.iterate(function(i, s)
     series[#series + 1] = {
       t = s.t - t0, eHPS = s.eHPS, MPS = s.MPS,
       crit = s.crit, noncrit = s.noncrit, d = s.d,
     }
+    harvest(#series, 0, s.ehps_groups)
+    harvest(#series, 1, s.mps_groups)
   end)
 
   local buffs_meta = {}
@@ -163,12 +192,14 @@ function M.capture()
     },
     roster = roster,
     buffs = buffs_meta,
+    gkeys = gkeys,
     desc = DESC,
     streams = {
       series   = vsf.pack(series, DESC.series),
       steps    = vsf.pack(steps, DESC.steps),
       episodes = vsf.pack(ep_recs, DESC.episodes),
       markers  = vsf.pack(mk_recs, DESC.markers),
+      shares   = vsf.pack(share_recs, DESC.shares),
     },
   }
   return session
