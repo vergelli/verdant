@@ -12,6 +12,9 @@ local string_sub  = string.sub
 
 local THETA          = 0.50
 local THETA_EXIT     = 0.55
+local THETA_MIN      = 0.30
+local THETA_MAX      = 0.75
+local THETA_HYST     = 0.05
 local DELTA_MS       = 1000
 local GRACE_RES_MS   = 3000
 local SIGMA_MS       = 2000
@@ -53,6 +56,8 @@ local ep_dropped = 0
 local name_slot = {}
 local slot_names = {}
 local name_count = 0
+local names_dirty = false
+local player_slot_i = 0
 local session_active = false
 local pu_count = 0
 local pu_first_t = 0
@@ -74,13 +79,14 @@ local function log_episode(slot_i, s, t_end, class, star)
   ep_log.n = ep_log.n + 1
   local e = ep_log[ep_log.n]
   if not e then e = {}; ep_log[ep_log.n] = e end
-  e.slot    = slot_i
-  e.t_start = s.start
-  e.t_end   = t_end
-  e.class   = class
-  e.star    = star or false
-  e.rt      = s.rt
-  e.min_rho = s.min_rho
+  e.slot      = slot_i
+  e.t_start   = s.start
+  e.t_end     = t_end
+  e.class     = class
+  e.star      = star or false
+  e.rt        = s.rt
+  e.min_rho   = s.min_rho
+  e.responded = s.responded
 end
 
 local function close_episode(slot_i, s, now, kind)
@@ -114,6 +120,7 @@ function M.on_power(unitTag, _idx, _ptype, value, _max, effMax)
   if not session_active then return end
   local i = TAG_SLOT[unitTag]
   if not i then return end
+  if not slot_names[i] then names_dirty = true end
   local s = slots[i]
   s.last_t = now
   if s.dead or now < s.grace_until then return end
@@ -134,7 +141,7 @@ function M.on_power(unitTag, _idx, _ptype, value, _max, effMax)
   end
 end
 
-local CU_PLAYER, CU_GROUP
+local CU_PLAYER, CU_GROUP, AR_HEAL, AR_CRIT_HEAL
 
 local function base_name(name)
   local p = string_find(name, "^", 1, true)
@@ -142,7 +149,7 @@ local function base_name(name)
   return name
 end
 
-function M.on_own_heal(targetName, hit, overflow, now, targetType)
+function M.on_own_heal(targetName, hit, overflow, now, targetType, result)
   if not session_active or name_count == 0 then return end
   if targetType ~= CU_GROUP and targetType ~= CU_PLAYER then return end
   if not targetName or targetName == "" then return end
@@ -156,9 +163,11 @@ function M.on_own_heal(targetName, hit, overflow, now, targetType)
   local s = slots[i]
   if not s.open then return end
   if hit and hit > 0 then
-    if s.rt < 0 then s.rt = now - s.start end
     s.responded   = true
     s.last_heal_t = now
+    if s.rt < 0 and (result == AR_HEAL or result == AR_CRIT_HEAL) then
+      s.rt = now - s.start
+    end
   end
   if overflow and overflow > 0 then s.overflow = true end
 end
@@ -180,6 +189,10 @@ end
 
 local function censor_tick()
   if not session_active then return end
+  if names_dirty then
+    names_dirty = false
+    M.refresh_names()
+  end
   local now = GetGameTimeMilliseconds()
   for i = 1, MAX_SLOTS do
     local s = slots[i]
@@ -193,18 +206,17 @@ end
 function M.refresh_names()
   for k in pairs(name_slot) do name_slot[k] = nil end
   name_count = 0
-  local n = api.GetGroupSize() or 0
+  player_slot_i = 0
   for i = 1, MAX_SLOTS do
     slot_names[i] = nil
-    if i <= n then
-      local nm = api.GetUnitName("group" .. i)
-      if nm and nm ~= "" then
-        local base = base_name(nm)
-        name_slot[base] = i
-        slot_names[i] = base
-        name_count = name_count + 1
-      end
+    local nm = api.GetUnitName("group" .. i)
+    if nm and nm ~= "" then
+      local base = base_name(nm)
+      name_slot[base] = i
+      slot_names[i] = base
+      name_count = name_count + 1
     end
+    if api.AreUnitsEqual("group" .. i, "player") then player_slot_i = i end
   end
 end
 
@@ -212,7 +224,26 @@ function M.slot_name(i)
   return slot_names[i]
 end
 
+function M.player_slot()
+  return player_slot_i
+end
+
+function M.set_theta(v)
+  if type(v) ~= "number" then return false end
+  if v < THETA_MIN then v = THETA_MIN end
+  if v > THETA_MAX then v = THETA_MAX end
+  THETA      = v
+  THETA_EXIT = v + THETA_HYST
+  return true
+end
+
+function M.theta() return THETA end
+
 function M.on_session_start()
+  local sv = Verdant.SavedVars
+  if sv and sv.settings and sv.settings.triage_theta then
+    M.set_theta(sv.settings.triage_theta)
+  end
   session_active = true
   ep_log.n = 0
   ep_dropped = 0
@@ -248,6 +279,7 @@ local rt_scratch = {}
 function M.summary()
   local c = { s = 0, s_star = 0, o = 0, l = 0, m = 0, x = 0, oneshot = 0 }
   local rn = 0
+  local resp = 0
   for i = 1, ep_log.n do
     local e = ep_log[i]
     if e.class == CLASS_S then
@@ -259,6 +291,7 @@ function M.summary()
     elseif e.class == CLASS_X then c.x = c.x + 1
     elseif e.class == CLASS_ONESHOT then c.oneshot = c.oneshot + 1
     end
+    if e.responded then resp = resp + 1 end
     if e.rt >= 0 then
       rn = rn + 1
       rt_scratch[rn] = e.rt
@@ -280,7 +313,8 @@ function M.summary()
     episodes  = ep_log.n,
     dropped   = ep_dropped,
     counts    = c,
-    responded = rn,
+    responded = resp,
+    rt_n      = rn,
     rt50      = rt50,
     rt95      = rt95,
     coverage  = (denom > 0) and (c.s / denom) or -1,
@@ -316,13 +350,13 @@ function M.report_lines()
     "episodes=%d (dropped=%d)  S=%d (S*=%d)  O=%d  L=%d  M=%d  X=%d  oneshot=%d",
     s.episodes, s.dropped, s.counts.s, s.counts.s_star, s.counts.o,
     s.counts.l, s.counts.m, s.counts.x, s.counts.oneshot)
-  if s.responded > 0 then
+  if s.rt_n > 0 then
     lines[#lines + 1] = string.format(
-      "RT50=%dms  RT95=%dms  responded=%d  coverage=%.0f%%",
-      s.rt50, s.rt95, s.responded,
+      "RT50=%dms  RT95=%dms  measured=%d  responded=%d  coverage=%.0f%%",
+      s.rt50, s.rt95, s.rt_n, s.responded,
       (s.coverage >= 0) and s.coverage * 100 or 0)
   else
-    lines[#lines + 1] = "RT: no responded episodes"
+    lines[#lines + 1] = "RT: no direct-heal responses measured (hot ticks never count)"
   end
   for i = 1, MAX_SLOTS do
     local sl = slots[i]
@@ -340,7 +374,9 @@ function M.init()
   api = Verdant.zenimax.api
   GetGameTimeMilliseconds = api.GetGameTimeMilliseconds
   local C = Verdant.zenimax.constants
-  CU_PLAYER = C.COMBAT_UNIT_TYPE_PLAYER
-  CU_GROUP  = C.COMBAT_UNIT_TYPE_GROUP
+  CU_PLAYER    = C.COMBAT_UNIT_TYPE_PLAYER
+  CU_GROUP     = C.COMBAT_UNIT_TYPE_GROUP
+  AR_HEAL      = C.ACTION_RESULT_HEAL
+  AR_CRIT_HEAL = C.ACTION_RESULT_CRITICAL_HEAL
   log:info("init: theta=", THETA, "exit=", THETA_EXIT, "slots=", MAX_SLOTS)
 end

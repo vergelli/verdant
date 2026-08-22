@@ -44,6 +44,7 @@ return function(H)
           O.own_heals[#O.own_heals + 1] = {
             t = t, seq = O.seq, name = tname, hit = hit or 0, over = overflow or 0,
             tt = targetType,
+            direct = (result == ACTION_RESULT_HEAL or result == ACTION_RESULT_CRITICAL_HEAL),
           }
         end
         if suid and suid ~= 0 then O.player_id = suid end
@@ -182,13 +183,14 @@ return function(H)
         local tag = name_tag[base(h.name)]
         if tag then
           local l = bucket(tag)
-          l[#l + 1] = { t = h.t, seq = h.seq, k = "heal", hit = h.hit, over = h.over }
+          l[#l + 1] = { t = h.t, seq = h.seq, k = "heal", hit = h.hit, over = h.over, direct = h.direct }
         end
       end
     end
 
     local counts = { s = 0, s_star = 0, o = 0, l = 0, m = 0, x = 0, oneshot = 0 }
     local rts = {}
+    local resp_n = 0
 
     for _, list in pairs(per) do
       table.sort(list, function(a, b)
@@ -216,6 +218,7 @@ return function(H)
         else
           counts.x = counts.x + 1
         end
+        if responded then resp_n = resp_n + 1 end
         if rt >= 0 then rts[#rts + 1] = rt end
         open = false
       end
@@ -237,8 +240,8 @@ return function(H)
         elseif e.k == "heal" then
           if open then
             if e.hit > 0 then
-              if rt < 0 then rt = e.t - start end
               responded, last_heal = true, e.t
+              if rt < 0 and e.direct then rt = e.t - start end
             end
             if e.over > 0 then over = true end
           end
@@ -263,7 +266,7 @@ return function(H)
       if i95 < 1 then i95 = 1 end
       rt50, rt95 = rts[i50], rts[i95]
     end
-    return { counts = counts, responded = rn, rt50 = rt50, rt95 = rt95 }
+    return { counts = counts, responded = resp_n, rt_n = rn, rt50 = rt50, rt95 = rt95 }
   end
 
   function O.triage_check(t_end)
@@ -287,6 +290,7 @@ return function(H)
     eq("X",        got.counts.x,       want.counts.x)
     eq("oneshot",  got.counts.oneshot, want.counts.oneshot)
     eq("resp",     got.responded,      want.responded)
+    eq("rt_n",     got.rt_n,           want.rt_n)
     eq("rt50",     got.rt50,           want.rt50)
     eq("rt95",     got.rt95,           want.rt95)
     return got

@@ -383,6 +383,7 @@ function GetGroupSize() return H.state.group_size end
 function GetUnitName(tag)
   if H.unit_names and H.unit_names[tag] then return H.unit_names[tag] end
   if H.state.bosses[tag] then return H.state.bosses[tag].name end
+  if type(tag) == "string" and tag:find("^group") then return "" end
   return "Velladocuments"
 end
 function GetUnitDisplayName() return "@vergelli" end
