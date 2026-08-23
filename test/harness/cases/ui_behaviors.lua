@@ -47,6 +47,23 @@ return function(H)
   Verdant.Settings.toggle()
   g._hidden = true
 
+  g._hidden = false
+  Verdant.Settings.toggle()
+  Verdant.Library.show()
+  ok(VerdantSettingsPanel._hidden == false and VerdantLibrary._hidden == false,
+     "both aux windows open before the menu test")
+  H.scene("inventory", SCENE_SHOWN)
+  ok(VerdantSettingsPanel._hidden == true, "settings must hide when a game menu opens")
+  ok(VerdantLibrary._hidden == true, "library must hide when a game menu opens")
+  H.scene("hud", SCENE_SHOWN)
+  ok(VerdantSettingsPanel._hidden == false, "settings must restore when returning to hud")
+  ok(VerdantLibrary._hidden == false, "library must restore when returning to hud")
+  H.scene("inventory", SCENE_SHOWN)
+  H.scene("hud", SCENE_SHOWN)
+  Verdant.Library.hide()
+  Verdant.Settings.toggle()
+  g._hidden = true
+
   local fb = VerdantAssignPanelFlyoutBg
   ok(fb._cr ~= nil and fb._ca and fb._ca > 0.9,
      "flyout backdrop must have a solid center color")
