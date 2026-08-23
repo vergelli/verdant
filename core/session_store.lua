@@ -196,7 +196,7 @@ function M.capture()
         oneshot = tri.counts.oneshot, x = tri.counts.x,
         eps = tri.episodes, rt50 = tri.rt50, rt95 = tri.rt95,
       },
-      cfg = { theta = theta },
+      cfg = { theta = theta, ping = T.avg_latency() },
     },
     roster = roster,
     buffs = buffs_meta,

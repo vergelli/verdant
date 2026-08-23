@@ -456,6 +456,9 @@ end
 function GetTimeStamp()
   return 1755900000
 end
+function GetLatency()
+  return H.state.latency or 66
+end
 function GetUnitClassId(tag)
   return (H.unit_classes and H.unit_classes[tag]) or 6
 end

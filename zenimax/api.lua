@@ -22,6 +22,7 @@ M.GetUnitClassId          = GetUnitClassId
 M.ZO_GetClassIcon         = ZO_GetClassIcon
 M.GetUnitZone             = GetUnitZone
 M.GetTimeStamp            = GetTimeStamp
+M.GetLatency              = GetLatency
 M.GetUnitDisplayName      = GetUnitDisplayName
 M.GetUnitClass            = GetUnitClass
 M.GetUnitRace             = GetUnitRace

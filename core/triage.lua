@@ -66,6 +66,8 @@ local session_active = false
 local pu_count = 0
 local pu_first_t = 0
 local pu_last_t = 0
+local lat_sum = 0
+local lat_n = 0
 local heal_matched = 0
 local heal_unmatched = 0
 
@@ -237,6 +239,11 @@ local function censor_tick()
     names_dirty = false
     M.refresh_names()
   end
+  local lat = api.GetLatency and api.GetLatency()
+  if lat and lat > 0 then
+    lat_sum = lat_sum + lat
+    lat_n = lat_n + 1
+  end
   local now = GetGameTimeMilliseconds()
   for i = 1, MAX_SLOTS do
     local s = slots[i]
@@ -320,6 +327,8 @@ function M.on_session_start()
   pu_last_t = 0
   heal_matched = 0
   heal_unmatched = 0
+  lat_sum = 0
+  lat_n = 0
   for i = 1, MAX_SLOTS do
     local s = slots[i]
     s.open = false
@@ -445,6 +454,10 @@ function M.power_stats()
   }
 end
 
+function M.avg_latency()
+  return (lat_n > 0) and math_floor(lat_sum / lat_n + 0.5) or 0
+end
+
 function M.report_lines()
   local lines = {}
   local ps = M.power_stats()
@@ -463,9 +476,9 @@ function M.report_lines()
     s.counts.l, s.counts.m, s.counts.x, s.counts.oneshot)
   if s.rt_n > 0 then
     lines[#lines + 1] = string.format(
-      "RT50=%dms  RT95=%dms  measured=%d  responded=%d  coverage=%.0f%%",
+      "RT50=%dms  RT95=%dms  measured=%d  responded=%d  coverage=%.0f%%  @ ping avg %dms",
       s.rt50, s.rt95, s.rt_n, s.responded,
-      (s.coverage >= 0) and s.coverage * 100 or 0)
+      (s.coverage >= 0) and s.coverage * 100 or 0, M.avg_latency())
   else
     lines[#lines + 1] = "RT: no direct-heal responses measured (hot ticks never count)"
   end
