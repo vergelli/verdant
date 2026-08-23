@@ -16,7 +16,9 @@ return function(H)
   Verdant.Graph.on_stop_click()
 
   local rec = Verdant.BuffTracker.get(1)
-  ok(rec and rec.n_steps >= 700, "stress curve too small: " .. tostring(rec and rec.n_steps))
+  ok(rec and rec.n_steps >= 100, "stress curve too small: " .. tostring(rec and rec.n_steps))
+  ok(rec.n_steps <= 450,
+     "step curve must stay time-quantized in memory, got " .. rec.n_steps)
 
   local view_label = VerdantGraphWindowViewLabel
   local guard = 0

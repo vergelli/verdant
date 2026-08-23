@@ -51,6 +51,7 @@ end
 
 local function rec_reset(rec, id)
   rec.id           = id
+  rec.step_quant   = nil
   rec.name         = nil
   rec.group        = "other"
   rec.n_ids        = 0
@@ -231,11 +232,22 @@ local function get_rec(id, tag)
   return rec
 end
 
+local STEP_QUANT_MS   = 250
+local STEP_COARSEN_AT = 1200
+
 local function push_step(rec, t)
-  local n = rec.n_steps + 1
+  local n = rec.n_steps
+  if n > 0 and (t - rec.step_t[n]) < (rec.step_quant or STEP_QUANT_MS) then
+    rec.step_c[n] = rec.conc
+    return
+  end
+  n = n + 1
   rec.n_steps = n
   rec.step_t[n] = t
   rec.step_c[n] = rec.conc
+  if n % STEP_COARSEN_AT == 0 then
+    rec.step_quant = (rec.step_quant or STEP_QUANT_MS) * 2
+  end
 end
 
 local function open_interval(rec, t)
