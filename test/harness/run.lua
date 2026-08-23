@@ -27,6 +27,7 @@ local CASES = {
   "triage_fsm",
   "triage_view",
   "ui_behaviors",
+  "solid_fills",
   "vsf_codec",
   "session_store",
   "library_flow",

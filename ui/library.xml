@@ -53,6 +53,12 @@
           <OnClicked>Verdant.Library.hide()</OnClicked>
         </Button>
 
+        <Texture name="$(parent)ListFill"
+                 textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds">
+          <Anchor point="TOPLEFT"     offsetX="15"  offsetY="45"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-15" offsetY="-47"/>
+        </Texture>
+
         <Backdrop name="$(parent)ListBg">
           <Anchor point="TOPLEFT"     offsetX="14"  offsetY="44"/>
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-46"/>

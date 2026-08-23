@@ -724,6 +724,8 @@ function M.init()
   for _, sec in ipairs(SEC) do
     sec[1]:SetText(GetString(sec[3]))
     sec[1]:SetColor(0.46, 0.86, 0.58, 0.90)
+    sec[2]:SetTexture("EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds")
+    sec[2]:SetTextureCoords(0, 1, 0, 0.05)
     sec[2]:SetColor(0.46, 0.86, 0.58, 0.22)
   end
   controls.logo_btn:SetText(Verdant.Logo.is_enabled()
