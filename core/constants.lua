@@ -3,8 +3,8 @@ local Verdant = Verdant
 
 Verdant.Constants = {
   ADDON_NAME    = "Verdant",
-  VERSION       = "2.3.0",
-  BUILD         = "2.4.0-dev1",
+  VERSION       = "2.4.0",
+  BUILD         = "2.4.0",
   SLASH_COMMAND = "/verdant",
 
   DEBUG         = false,

@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.4.0] - 2026-08-23
+
+The rescue update: a fifth graph view that scores your clutch heals, a
+session library that remembers every fight, and a settings panel that grew
+into its role. Battle-tested in trials, dungeons and battlegrounds, and
+verified on the Update 51 PTS — ships declaring API 101051.
+
+### Added
+- **TRIAGE view** — a rescue-episode feed with your reaction time. When an
+  ally drops below the configurable threshold (default 50%), Verdant tracks
+  the episode: who, minimum health reached, outcome (your save / recovered
+  without you / died / missed) and your response time, measured on direct
+  casts only — HoTs attribute the save but never fake reflexes. Session
+  strip with outcome dots, per-episode rows with class icons, RT graded by
+  speed, and a Saves / RT50 / RT95 header. Hovering an episode explains its
+  outcome in plain words.
+- **Session Library** — with Session Autosave enabled (Settings >
+  Recording, off by default) every recording is saved: last 24 sessions,
+  lock favorites so they never rotate out. Open any session from the Lib
+  button (or `/verdant lib`) and every view is restored exactly as it
+  looked at Stop. Sessions are stored in a compact self-describing format
+  (~3 KB each) with integrity checks.
+- **Group death/res markers** on the timeline, toggleable (off by
+  default), drawn smaller and dimmed under your own. Your own deaths wear
+  a red skull, teammates' stay white.
+- **Triage Threshold control** (30–75%) and **Session Autosave** toggle in
+  a settings panel reorganized into titled sections (Profile / Bar / Graph
+  / Recording / General). Unknown Contributions shows its pending count.
+- **RT50 on the session summary chip** when reaction times were measured.
+
+### Changed
+- Windows dock magnetically: settings beside the graph window, the session
+  library under it.
+- Time window extends to 20 minutes (one-minute steps past 10m) for long
+  boss fights, with bars that stay readable at any window length.
+- The BUFFS view no longer hitches after long fights — rendering is
+  bounded by screen pixels, not fight length — and buff timelines are
+  time-quantized in memory.
+
+### Fixed
+- The assignment window's category picker is no longer transparent, and
+  its confirmation dialog can't be covered by other windows.
+- Heal attribution is immune to the game's power-update/combat-event
+  ordering race.
+- Roster names no longer degrade to "group N" after leaving the group.
+- Buff-row icons no longer inherit tint from other views.
+- The session library's list background no longer renders white under
+  Update 51's backdrop behavior (found on the PTS, fixed for both APIs).
+
 ## [2.3.0] - 2026-08-22
 
 The BUFFS update: a fourth graph view showing the uptime of every buff you
