@@ -42,6 +42,7 @@ return function(H)
   ok(s.head.dur_ms > 4000, "duration wrong: " .. tostring(s.head.dur_ms))
   ok(s.head.sum.saves == 1, "summary must carry the save, got " .. s.head.sum.saves)
   ok(s.head.cfg.theta == 0.5, "theta snapshot wrong")
+  ok(s.head.cfg.ping == 66, "session must record average ping, got " .. tostring(s.head.cfg.ping))
   ok(#s.roster == 2, "roster must have 2 named slots, got " .. #s.roster)
 
   local series = V.unpack(s.streams.series, s.desc.series)
