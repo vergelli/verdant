@@ -73,6 +73,16 @@ return function(H)
   ok(ff._tex ~= nil and ff._tex:find("attributeBar"),
      "flyout fill must use the opaque-strip fill texture (fileless renders NOTHING in game)")
   ok(ff._a and ff._a >= 0.95, "flyout fill must be near-opaque, got " .. tostring(ff._a))
+  ok(ff._draw_layer == DL_OVERLAY, "flyout fill must live on the overlay layer")
+  ok(VerdantAssignPanelFlyoutBg._draw_layer == DL_OVERLAY,
+     "flyout border must live on the overlay layer")
+  Verdant.Assign.show()
+  local entry = rawget(_G, "VerdantAssignFlyoutE1")
+  if entry then
+    ok(entry._draw_layer == DL_OVERLAY and entry._draw_level == 103,
+       "flyout entries must draw above the row pick buttons")
+  end
+  Verdant.Assign.hide()
   ok(VerdantAssignPanelFlyout._draw_level == 100, "flyout must draw above the rows")
   ok(VerdantAssignConfirm._draw_tier == DT_HIGH, "confirm dialog must sit on the high draw tier")
 end
