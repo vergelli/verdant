@@ -736,7 +736,20 @@ local TRI_TIP_KEY = {
   "VERDANT_TRI_TIP_ONESHOT",
 }
 
+local function tri_rt_color(rt)
+  if rt < TRI_RT_FAST_MS then return C_TRI_FAST end
+  if rt > TRI_RT_SLOW_MS then return C_TRI_SLOW end
+  return C_TRI_MID
+end
+
+local function tri_time_str(off_ms)
+  local s = math_floor(off_ms / 1000)
+  return string_format("%d:%02d", math_floor(s / 60), s % 60)
+end
+
 local tri_hit = { n = 0, y0 = {}, y1 = {}, ep = {} }
+local tri_dot_lastx = {}
+local TRI_GLYPH_GAP = 6
 
 local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, my)
   local card = controls.card
@@ -1483,16 +1496,6 @@ local function seg_alpha(conc, max_conc)
 end
 
 
-local function tri_rt_color(rt)
-  if rt < TRI_RT_FAST_MS then return C_TRI_FAST end
-  if rt > TRI_RT_SLOW_MS then return C_TRI_SLOW end
-  return C_TRI_MID
-end
-
-local function tri_time_str(off_ms)
-  local s = math_floor(off_ms / 1000)
-  return string_format("%d:%02d", math_floor(s / 60), s % 60)
-end
 
 
 local function render_view4()
@@ -1752,25 +1755,30 @@ local function render_view5()
   s_bot:SetColor(1, 1, 1, 0.05)
   s_bot:SetHidden(false)
 
+  for k in pairs(tri_dot_lastx) do tri_dot_lastx[k] = nil end
   for i = 1, n_eps do
     local e = eps[i]
     if e.t_start >= t0 and e.t_start <= t_hi then
       local x = math_floor((e.t_start - t0) / span * (cw - 8) + 0.5)
-      local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
-      local rim = controls.pool_buff_seg:AcquireObject()
-      rim:ClearAnchors()
-      rim:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y + 2)
-      rim:SetWidth(10)
-      rim:SetHeight(10)
-      rim:SetColor(0.04, 0.04, 0.035, 0.95)
-      rim:SetHidden(false)
-      local dot = controls.pool_buff_seg:AcquireObject()
-      dot:ClearAnchors()
-      dot:SetAnchor(TOPLEFT, canvas, TOPLEFT, x + 1, strip_y + 3)
-      dot:SetWidth(8)
-      dot:SetHeight(8)
-      dot:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.55 or 1.0)
-      dot:SetHidden(false)
+      local lx = tri_dot_lastx[e.class]
+      if lx == nil or (x - lx) >= TRI_GLYPH_GAP then
+        tri_dot_lastx[e.class] = x
+        local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
+        local rim = controls.pool_buff_seg:AcquireObject()
+        rim:ClearAnchors()
+        rim:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y + 2)
+        rim:SetWidth(10)
+        rim:SetHeight(10)
+        rim:SetColor(0.04, 0.04, 0.035, 0.95)
+        rim:SetHidden(false)
+        local dot = controls.pool_buff_seg:AcquireObject()
+        dot:ClearAnchors()
+        dot:SetAnchor(TOPLEFT, canvas, TOPLEFT, x + 1, strip_y + 3)
+        dot:SetWidth(8)
+        dot:SetHeight(8)
+        dot:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.55 or 1.0)
+        dot:SetHidden(false)
+      end
     end
   end
 
@@ -1792,18 +1800,23 @@ local function render_view5()
   tr:SetHidden(false)
 
   local ms, mn = Verdant.TemporalBuffer.markers()
+  local last_own_x, last_grp_x
   for i = 1, mn do
     local m = ms[i]
     if m.death and m.t >= t0 and m.t <= t_hi then
       local x = math_floor((m.t - t0) / span * (cw - 8) + 0.5)
-      local ic = controls.pool_marker_icon:AcquireObject()
-      ic:ClearAnchors()
-      ic:SetTexture(TEX_SKULL)
-      ic:SetDimensions(10, 10)
-      ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y + 2)
-      local mc = m.who and C_MARK_DEATH or C_MARK_DEATH_OWN
-      ic:SetColor(mc.r, mc.g, mc.b, m.who and 0.5 or 0.95)
-      ic:SetHidden(false)
+      local lx = m.who and last_grp_x or last_own_x
+      if lx == nil or (x - lx) >= TRI_GLYPH_GAP then
+        if m.who then last_grp_x = x else last_own_x = x end
+        local ic = controls.pool_marker_icon:AcquireObject()
+        ic:ClearAnchors()
+        ic:SetTexture(TEX_SKULL)
+        ic:SetDimensions(10, 10)
+        ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y + 2)
+        local mc = m.who and C_MARK_DEATH or C_MARK_DEATH_OWN
+        ic:SetColor(mc.r, mc.g, mc.b, m.who and 0.5 or 0.95)
+        ic:SetHidden(false)
+      end
     end
   end
 

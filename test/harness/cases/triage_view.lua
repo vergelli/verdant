@@ -85,6 +85,17 @@ return function(H)
       or desc._text:find("without a single heal", 1, true)
       or desc._text:find("Got back up", 1, true)),
      "triage hover must explain the outcome, got " .. tostring(desc and desc._text))
+
+  local names_seen = { [tostring(VerdantHoverCardName._text)] = true }
+  local rt_seen = stat._text:find("RT 0.5s", 1, true) ~= nil
+  H.state.mouse_y = canvas:GetTop() + 82
+  H.advance(200)
+  names_seen[tostring(VerdantHoverCardName._text)] = true
+  rt_seen = rt_seen or (VerdantHoverCardStat._text:find("RT 0.5s", 1, true) ~= nil)
+  ok(names_seen["Ally2"] and names_seen["Ally3"],
+     "both episode rows must be hoverable")
+  ok(rt_seen, "the responded row must show its measured RT, got "
+     .. tostring(VerdantHoverCardStat._text))
   H.state.mouse_x, H.state.mouse_y = 400, 300
 
   local chip = VerdantGraphSummaryLabel
