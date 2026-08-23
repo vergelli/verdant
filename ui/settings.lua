@@ -700,6 +700,8 @@ function M.init()
   controls.pname_edit:SetDefaultText(GetString(VERDANT_PROFILE_NAME_DEFAULT))
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
+  VerdantSettingsPanelVersionLabel:SetText("v" .. Verdant.Constants.VERSION)
+  VerdantSettingsPanelVersionLabel:SetColor(0.45, 0.50, 0.46, 0.9)
   controls.reset_btn:SetText(GetString(VERDANT_SETTINGS_RESET))
   controls.profile_label:SetText(GetString(VERDANT_SETTINGS_PROFILE))
   controls.profile_label:SetColor(0.75, 0.75, 0.75, 1)
