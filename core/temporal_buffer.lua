@@ -171,7 +171,7 @@ function M.load_session(samples, marker_list)
     local s = samples[i]
     M.push(s.t, s.eHPS, s.MPS, s.crit, s.noncrit,
            s.eg or EMPTY_SHARES, s.mg or EMPTY_SHARES,
-           EMPTY_SHARES, EMPTY_SHARES, s.d)
+           s.ea or EMPTY_SHARES, s.ma or EMPTY_SHARES, s.d)
   end
   for i = 1, #marker_list do
     local m = marker_list[i]

@@ -2204,6 +2204,29 @@ function M.load_session(sess)
     end
   end
 
+  if sess.streams.abilities and sess.desc.abilities then
+    local abilities = vsf.unpack(sess.streams.abilities, sess.desc.abilities)
+    if abilities then
+      local SC = Verdant.SkillColors
+      for i = 1, #abilities do
+        local r = abilities[i]
+        local sample = series[r.si]
+        if sample then
+          local field = (r.ch == 0) and "ea" or "ma"
+          local tbl = sample[field]
+          if not tbl then tbl = { count = 0 }; sample[field] = tbl end
+          local key = SC.ability_group(r.id)
+          local c = SC.group_color(key)
+          tbl.count = tbl.count + 1
+          tbl[tbl.count] = {
+            id = r.id, share = r.sh, key = key,
+            r = c.r, g = c.g, b = c.b, a = c.a,
+          }
+        end
+      end
+    end
+  end
+
   release_all_pools()
   hide_all_grids()
 
