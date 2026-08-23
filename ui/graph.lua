@@ -39,8 +39,9 @@ local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green b
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
 local C_LINE_DMG  = { r = 0.93, g = 0.44, b = 0.38, a = 0.60 }
 local C_FILL_DMG  = { r = 0.90, g = 0.38, b = 0.32, a = 0.10 }
-local C_MARK_DEATH = { r = 0.92, g = 0.88, b = 0.84, a = 0.55 }
-local C_MARK_RES   = { r = 0.45, g = 1.00, b = 0.62, a = 0.55 }
+local C_MARK_DEATH     = { r = 0.92, g = 0.88, b = 0.84, a = 0.55 }
+local C_MARK_DEATH_OWN = { r = 0.95, g = 0.34, b = 0.28, a = 0.65 }
+local C_MARK_RES       = { r = 0.45, g = 1.00, b = 0.62, a = 0.55 }
 local TEX_SKULL    = "EsoUI/Art/TargetMarkers/Target_White_Skull_64.dds"
 local TEX_RES      = "EsoUI/Art/Notifications/notificationIcon_resurrect.dds"
 local MARK_ICON_SZ     = 16
@@ -1018,7 +1019,12 @@ local function update_hover_gate()
 end
 
 local function draw_one_marker(pool_line, pool_icon, canvas, m, x, is_group)
-  local c  = m.death and C_MARK_DEATH or C_MARK_RES
+  local c
+  if m.death then
+    c = is_group and C_MARK_DEATH or C_MARK_DEATH_OWN
+  else
+    c = C_MARK_RES
+  end
   local sz = is_group and MARK_ICON_SZ_GRP or MARK_ICON_SZ
 
   local ln = pool_line:AcquireObject()
@@ -1795,7 +1801,8 @@ local function render_view5()
       ic:SetTexture(TEX_SKULL)
       ic:SetDimensions(10, 10)
       ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y + 2)
-      ic:SetColor(C_MARK_DEATH.r, C_MARK_DEATH.g, C_MARK_DEATH.b, m.who and 0.5 or 0.95)
+      local mc = m.who and C_MARK_DEATH or C_MARK_DEATH_OWN
+      ic:SetColor(mc.r, mc.g, mc.b, m.who and 0.5 or 0.95)
       ic:SetHidden(false)
     end
   end
