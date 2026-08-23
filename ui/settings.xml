@@ -34,6 +34,14 @@
           <Dimensions y="18"/>
         </Label>
 
+        <Label name="$(parent)VersionLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPRIGHT" offsetX="-30" offsetY="12"/>
+          <Dimensions x="60" y="14"/>
+        </Label>
+
         <Button name="$(parent)CloseBtn" mouseEnabled="true"
                 mouseOverBlendMode="ADD" inherits="ZO_ButtonBehaviorClickSound">
           <Anchor point="TOPRIGHT" offsetX="-8" offsetY="8"/>
