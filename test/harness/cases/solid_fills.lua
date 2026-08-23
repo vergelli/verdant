@@ -54,6 +54,53 @@ return function(H)
   local fly = VerdantAssignPanelFlyoutFill
   ok(fly._tex ~= nil and fly._tex:find("attributeBar"), "flyout floor must use the fill texture")
 
+  local bare = {}
+  for _, rel in ipairs({ "ui/bar.xml", "ui/settings.xml", "ui/assign.xml",
+                         "ui/graph.xml", "ui/library.xml" }) do
+    local f = io.open((HARNESS_ROOT or ".") .. "/" .. rel, "r")
+    ok(f ~= nil, "cannot open " .. rel)
+    local src = f:read("*a")
+    f:close()
+    src = src:gsub("<!%-%-.-%-%->", "")
+    local stack = {}
+    local backdrop
+    for tag in src:gmatch("<[^>]+>") do
+      local closing = tag:find("^</")
+      local selfclosed = tag:find("/>%s*$")
+      if closing then
+        local top = table.remove(stack)
+        if top and top.is_backdrop then
+          if not top.has_center and not top.inherits then
+            bare[#bare + 1] = top.name
+          end
+          backdrop = nil
+        end
+      elseif not selfclosed then
+        local raw = tag:match('name="([^"]+)"')
+        local parent = stack[#stack] and stack[#stack].name or ""
+        local name = raw and raw:gsub("%$%(parent%)", parent) or parent
+        local entry = { name = name }
+        if tag:find("^<Backdrop") then
+          entry.is_backdrop = true
+          entry.inherits = tag:find('inherits="') ~= nil
+          backdrop = entry
+        end
+        stack[#stack + 1] = entry
+      elseif tag:find("^<Center") and backdrop then
+        backdrop.has_center = true
+      end
+    end
+  end
+  ok(#bare > 0, "backdrop sweep found no edge-only backdrops; parser broken?")
+  local naked = {}
+  for _, name in ipairs(bare) do
+    local c = _G[name]
+    if c._ca == nil then naked[#naked + 1] = name end
+  end
+  ok(#naked == 0,
+     "edge-only backdrops without an explicit SetCenterColor render a WHITE center "
+     .. "on API 101051+: " .. table.concat(naked, ", "))
+
   Verdant.Assign.hide()
   Verdant.Library.hide()
   Verdant.Settings.toggle()
