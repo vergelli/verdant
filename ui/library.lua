@@ -26,6 +26,7 @@ local rows = {}
 local row_session = {}
 local selected = nil
 local delete_armed = false
+local scroll_off = 0
 local log
 
 local function pip_color(sum)
@@ -125,30 +126,40 @@ end
 
 local function set_buttons()
   local has = selected ~= nil
-  controls.open_btn:SetEnabled(has)
-  controls.lock_btn:SetEnabled(has)
-  controls.delete_btn:SetEnabled(has)
-  controls.delete_btn:SetText(delete_armed and GetString(VERDANT_LIB_CONFIRM)
-                                            or GetString(VERDANT_LIB_DELETE))
+  local locked = false
   if has then
     local s = Verdant.SessionStore.get(row_session[selected])
-    controls.lock_btn:SetText((s and s.head.locked)
+    locked = (s and s.head.locked) or false
+    controls.lock_btn:SetText(locked
       and GetString(VERDANT_LIB_UNLOCK) or GetString(VERDANT_LIB_LOCK))
   else
     controls.lock_btn:SetText(GetString(VERDANT_LIB_LOCK))
   end
+  controls.open_btn:SetEnabled(has)
+  controls.lock_btn:SetEnabled(has)
+  controls.delete_btn:SetEnabled(has and not locked)
+  controls.delete_btn:SetText(delete_armed and GetString(VERDANT_LIB_CONFIRM)
+                                            or GetString(VERDANT_LIB_DELETE))
 end
 
 function M.refresh()
   local SS = Verdant.SessionStore
   local n = SS.count()
-  controls.count:SetText(string_format(GetString(VERDANT_LIB_COUNT), n, 24))
+  local max_off = (n > MAX_ROWS) and (n - MAX_ROWS) or 0
+  if scroll_off > max_off then scroll_off = max_off end
+  if scroll_off < 0 then scroll_off = 0 end
+
+  local count_text = string_format(GetString(VERDANT_LIB_COUNT), n, 24)
+  if scroll_off > 0 then count_text = count_text .. "  ^" .. scroll_off end
+  local below = max_off - scroll_off
+  if below > 0 then count_text = count_text .. "  v" .. below end
+  controls.count:SetText(count_text)
   controls.empty:SetHidden(n > 0)
   controls.empty:SetText(GetString(VERDANT_LIB_EMPTY))
   controls.empty:SetColor(0.5, 0.5, 0.5, 1)
 
   local shown = 0
-  for i = n, 1, -1 do
+  for i = n - scroll_off, 1, -1 do
     if shown >= MAX_ROWS then break end
     shown = shown + 1
     local row = rows[shown]
@@ -225,8 +236,21 @@ function M.on_lock_click()
   end
 end
 
+function M.on_scroll(delta)
+  local dir = (delta and delta < 0) and 1 or -1
+  local new_off = scroll_off + dir
+  if new_off ~= scroll_off then
+    scroll_off = new_off
+    selected = nil
+    delete_armed = false
+    M.refresh()
+  end
+end
+
 function M.on_delete_click()
   if not selected then return end
+  local s = Verdant.SessionStore.get(row_session[selected])
+  if s and s.head.locked then return end
   if not delete_armed then
     delete_armed = true
     set_buttons()
@@ -254,6 +278,7 @@ end
 function M.show()
   selected = nil
   delete_armed = false
+  scroll_off = 0
   dock_window()
   M.refresh()
   controls.window:SetHidden(false)

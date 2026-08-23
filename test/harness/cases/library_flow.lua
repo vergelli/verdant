@@ -88,11 +88,33 @@ return function(H)
   Verdant.Library.on_lock_click()
   ok(SS.get(SS.count()).head.locked == true or SS.get(1).head.locked == true,
      "lock must persist on the session")
-  Verdant.Library.on_delete_click()
   local before = SS.count()
+  Verdant.Library.on_delete_click()
+  Verdant.Library.on_delete_click()
+  ok(SS.count() == before, "locked sessions must refuse deletion")
+  ok(VerdantLibraryDeleteBtn._enabled == false, "delete button must disable on locked rows")
+  Verdant.Library.on_lock_click()
+  Verdant.Library.on_delete_click()
   ok(SS.count() == before, "first delete click must only arm")
   Verdant.Library.on_delete_click()
-  ok(SS.count() == before - 1, "second delete click must delete")
+  ok(SS.count() == before - 1, "second delete click must delete after unlock")
+
+  for i = 1, 14 do
+    SS.store({ head = { locked = false, zone = "Scroll" .. i, ts = 1755900000,
+                        dur_ms = 1000, group_size = 0,
+                        sum = { avg = 0, peak = 0, saves = 0, o = 0, l = 0, m = 0 } },
+               streams = {} })
+  end
+  Verdant.Library.show()
+  ok(VerdantLibraryRow1Name._text == "Scroll14", "top row must be newest")
+  ok(VerdantLibraryCountLabel._text:find("v3", 1, true),
+     "count must show hidden-below indicator, got " .. tostring(VerdantLibraryCountLabel._text))
+  Verdant.Library.on_scroll(-1)
+  Verdant.Library.on_scroll(-1)
+  ok(VerdantLibraryRow1Name._text == "Scroll12",
+     "scrolling down must reveal older sessions, got " .. tostring(VerdantLibraryRow1Name._text))
+  ok(VerdantLibraryCountLabel._text:find("^2", 1, true),
+     "count must show hidden-above indicator, got " .. tostring(VerdantLibraryCountLabel._text))
   Verdant.Library.hide()
 
   sv.settings.session_autosave = false
