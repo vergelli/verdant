@@ -10,6 +10,8 @@
       <Dimensions x="440" y="470"/>
       <Anchor point="CENTER" relativeTo="GuiRoot" relativePoint="CENTER" offsetX="120" offsetY="0"/>
 
+      <OnMouseWheel>Verdant.Library.on_scroll(delta)</OnMouseWheel>
+
       <Controls>
 
         <Backdrop name="$(parent)Bg">
