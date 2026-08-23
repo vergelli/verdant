@@ -44,6 +44,12 @@ local DESC = {
     { name = "key", width = 1 },
     { name = "sh",  width = 3, scale = 10000 },
   },
+  abilities = {
+    { name = "si", width = 2 },
+    { name = "ch", width = 1 },
+    { name = "id", width = 4 },
+    { name = "sh", width = 2, scale = 1000 },
+  },
 }
 
 M.DESC = DESC
@@ -101,6 +107,17 @@ function M.capture()
       }
     end
   end
+  local ability_recs = {}
+  local function harvest_abilities(si, ch, abilities)
+    if si > 4095 then return end
+    local n = (abilities and abilities.count) or 0
+    for a = 1, n do
+      local e = abilities[a]
+      ability_recs[#ability_recs + 1] = {
+        si = si, ch = ch, id = e.id or 0, sh = e.share or 0,
+      }
+    end
+  end
   TB.iterate(function(i, s)
     series[#series + 1] = {
       t = s.t - t0, eHPS = s.eHPS, MPS = s.MPS,
@@ -108,6 +125,8 @@ function M.capture()
     }
     harvest(#series, 0, s.ehps_groups)
     harvest(#series, 1, s.mps_groups)
+    harvest_abilities(#series, 0, s.ehps_abilities)
+    harvest_abilities(#series, 1, s.mps_abilities)
   end)
 
   local buffs_meta = {}
@@ -203,11 +222,12 @@ function M.capture()
     gkeys = gkeys,
     desc = DESC,
     streams = {
-      series   = vsf.pack(series, DESC.series),
-      steps    = vsf.pack(steps, DESC.steps),
-      episodes = vsf.pack(ep_recs, DESC.episodes),
-      markers  = vsf.pack(mk_recs, DESC.markers),
-      shares   = vsf.pack(share_recs, DESC.shares),
+      series    = vsf.pack(series, DESC.series),
+      steps     = vsf.pack(steps, DESC.steps),
+      episodes  = vsf.pack(ep_recs, DESC.episodes),
+      markers   = vsf.pack(mk_recs, DESC.markers),
+      shares    = vsf.pack(share_recs, DESC.shares),
+      abilities = vsf.pack(ability_recs, DESC.abilities),
     },
   }
   return session
