@@ -92,6 +92,7 @@ function M.capture()
     return idx
   end
   local function harvest(si, ch, groups)
+    if si > 4095 then return end
     local n = (groups and groups.count) or 0
     for g = 1, n do
       local e = groups[g]

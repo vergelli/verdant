@@ -60,6 +60,11 @@ local function twindow_presets()
   local p, lbls = {}, {}
   for s = 15, 600, 15 do
     p[#p + 1] = s
+  end
+  for s = 660, 1200, 60 do
+    p[#p + 1] = s
+  end
+  for _, s in ipairs(p) do
     if s % 60 == 0 then
       lbls[s] = (s / 60) .. "m"
     elseif s < 60 then
