@@ -80,6 +80,9 @@
         <Control name="$(parent)Flyout" hidden="true" mouseEnabled="true">
           <Dimensions x="200" y="100"/>
           <Controls>
+            <Texture name="$(parent)Fill">
+              <AnchorFill/>
+            </Texture>
             <Backdrop name="$(parent)Bg">
               <AnchorFill/>
               <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
