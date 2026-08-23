@@ -30,6 +30,7 @@ local CASES = {
   "vsf_codec",
   "session_store",
   "library_flow",
+  "render_bounds",
 }
 
 local passed, failed = 0, 0

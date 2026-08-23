@@ -1612,6 +1612,24 @@ local function render_view4()
     end
 
     local n_steps = rec.n_steps
+    local run_x0, run_x1, run_conc
+    local function flush_run()
+      if not run_x0 then return end
+      local seg = controls.pool_buff_seg:AcquireObject()
+      seg:ClearAnchors()
+      seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, run_x0, y)
+      seg:SetWidth(math_max(1, run_x1 - run_x0))
+      seg:SetHeight(row_h)
+      local a = seg_alpha(run_conc, rec.max_conc)
+      if hk ~= nil and rec.id ~= hk then
+        seg:SetColor(c.r * 0.30 + C_DIM_BIAS, c.g * 0.30 + C_DIM_BIAS,
+                     c.b * 0.30 + C_DIM_BIAS, 0.25)
+      else
+        seg:SetColor(c.r, c.g, c.b, a)
+      end
+      seg:SetHidden(false)
+      run_x0 = nil
+    end
     for k = 1, n_steps do
       local conc = rec.step_c[k]
       if conc > 0 then
@@ -1621,23 +1639,18 @@ local function render_view4()
         if en > st then
           local x0 = lane_x + math_floor((st - t0) / span * lane_w + 0.5)
           local x1 = lane_x + math_floor((en - t0) / span * lane_w + 0.5)
-          local bw = math_max(1, x1 - x0)
-          local seg = controls.pool_buff_seg:AcquireObject()
-          seg:ClearAnchors()
-          seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y)
-          seg:SetWidth(bw)
-          seg:SetHeight(row_h)
-          local a = seg_alpha(conc, rec.max_conc)
-          if hk ~= nil and rec.id ~= hk then
-            seg:SetColor(c.r * 0.30 + C_DIM_BIAS, c.g * 0.30 + C_DIM_BIAS,
-                         c.b * 0.30 + C_DIM_BIAS, 0.25)
+          if x1 <= x0 then x1 = x0 + 1 end
+          if run_x0 and x0 <= run_x1 then
+            if x1 > run_x1 then run_x1 = x1 end
+            if conc > run_conc then run_conc = conc end
           else
-            seg:SetColor(c.r, c.g, c.b, a)
+            flush_run()
+            run_x0, run_x1, run_conc = x0, x1, conc
           end
-          seg:SetHidden(false)
         end
       end
     end
+    flush_run()
   end
 
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
