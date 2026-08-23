@@ -111,6 +111,7 @@ function M.start_recording()
   state.recording = true
   log:info("start_recording")
   if Verdant.Triage then Verdant.Triage.on_session_start() end
+  if Verdant.SessionStore then Verdant.SessionStore.on_session_start() end
 end
 
 function M.stop_recording()

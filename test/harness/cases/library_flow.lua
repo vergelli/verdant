@@ -24,8 +24,21 @@ return function(H)
   H.advance(2600)
   H.effect(EFFECT_RESULT_FADED, 111, 602, 0)
   H.advance(1500)
+
+  H.unit_names = {}
+  H.state.grouped = false
+  H.state.group_size = 0
+  H.state.zone = "Elsweyr"
+  H.fire(EVENT_GROUP_MEMBER_LEFT)
+  H.advance(500)
+
   Verdant.Graph.on_stop_click()
   ok(SS.count() == 1, "session must autosave")
+  local saved = SS.get(1)
+  ok(#saved.roster == 3, "roster must survive mid-session disband, got " .. #saved.roster)
+  ok(saved.head.zone == "Direfrost Keep",
+     "zone must be captured at session start, got " .. tostring(saved.head.zone))
+  ok(saved.head.group_size >= 3, "group size must fall back to roster count")
 
   local live_tb  = Verdant.TemporalBuffer.summary()
   local live_tri = Verdant.Triage.summary()
