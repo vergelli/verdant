@@ -407,7 +407,7 @@ local r2_xs_top, r2_colh_top       = {}, {}
 local r2_xs_bot, r2_colh_bot       = {}, {}
 local r3_xs, r3_top_hs             = {}, {}
 
-local MIN_COL_PX = 2
+local MIN_COL_PX = 4
 local dec_cols   = {}
 
 local function decimate(cw)
