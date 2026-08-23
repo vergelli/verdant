@@ -299,6 +299,8 @@ function M.init()
   VerdantAssignPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantAssignPanelBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
 
+  VerdantAssignPanelFlyoutFill:SetTexture("EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds")
+  VerdantAssignPanelFlyoutFill:SetTextureCoords(0, 1, 0, 0.05)
   VerdantAssignPanelFlyoutFill:SetColor(0.062, 0.058, 0.050, 0.985)
   VerdantAssignPanelFlyoutBg:SetCenterColor(0.075, 0.070, 0.062, 0.98)
   VerdantAssignPanelFlyoutBg:SetEdgeColor(0.42, 1.00, 0.60, 0.85)

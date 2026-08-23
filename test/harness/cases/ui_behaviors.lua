@@ -70,7 +70,8 @@ return function(H)
   ok(fb._center_file == nil, "flyout must not use the translucent tooltip center texture")
   local ff = VerdantAssignPanelFlyoutFill
   ok(ff ~= nil, "flyout must have a solid fill texture as its floor")
-  ok(ff._tex == nil, "flyout fill must be a fileless texture (renders solid)")
+  ok(ff._tex ~= nil and ff._tex:find("attributeBar"),
+     "flyout fill must use the opaque-strip fill texture (fileless renders NOTHING in game)")
   ok(ff._a and ff._a >= 0.95, "flyout fill must be near-opaque, got " .. tostring(ff._a))
   ok(VerdantAssignPanelFlyout._draw_level == 100, "flyout must draw above the rows")
   ok(VerdantAssignConfirm._draw_tier == DT_HIGH, "confirm dialog must sit on the high draw tier")

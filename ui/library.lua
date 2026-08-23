@@ -55,6 +55,13 @@ local function fmt_k(v)
 end
 
 local WM = WINDOW_MANAGER
+local FILL_TEXTURE = "EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds"
+
+local function solidify(c)
+  c:SetTexture(FILL_TEXTURE)
+  c:SetTextureCoords(0, 1, 0, 0.05)
+  return c
+end
 
 local function make_row(i)
   local nm = "VerdantLibraryRow" .. i
@@ -68,27 +75,32 @@ local function make_row(i)
   row:SetHandler("OnMouseExit", function() ZO_Tooltips_HideTextTooltip() end)
 
   local bg = WM:CreateControl(nm .. "Bg", row, CT_TEXTURE)
+  solidify(bg)
   bg:SetAnchorFill(row)
   bg:SetColor(1, 1, 1, 0.02)
 
   local hl = WM:CreateControl(nm .. "Hl", row, CT_TEXTURE)
+  solidify(hl)
   hl:SetAnchor(TOPLEFT, row, TOPLEFT, 0, 0)
   hl:SetAnchor(TOPRIGHT, row, TOPRIGHT, 0, 0)
   hl:SetHeight(1)
   hl:SetColor(1, 1, 1, 0.05)
 
   local sh = WM:CreateControl(nm .. "Sh", row, CT_TEXTURE)
+  solidify(sh)
   sh:SetAnchor(BOTTOMLEFT, row, BOTTOMLEFT, 0, 0)
   sh:SetAnchor(BOTTOMRIGHT, row, BOTTOMRIGHT, 0, 0)
   sh:SetHeight(1)
   sh:SetColor(0, 0, 0, 0.40)
 
   local sel = WM:CreateControl(nm .. "Sel", row, CT_TEXTURE)
+  solidify(sel)
   sel:SetAnchorFill(row)
   sel:SetColor(C_SEL.r, C_SEL.g, C_SEL.b, 0.10)
   sel:SetHidden(true)
 
   local pip = WM:CreateControl(nm .. "Pip", row, CT_TEXTURE)
+  solidify(pip)
   pip:SetDimensions(3, ROW_H - 12)
   pip:SetAnchor(LEFT, row, LEFT, 4, 0)
 
@@ -309,7 +321,8 @@ function M.init()
   controls.delete_btn:SetText(GetString(VERDANT_LIB_DELETE))
   VerdantLibraryBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantLibraryBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
-  VerdantLibraryListBg:SetCenterColor(0.055, 0.052, 0.046, 0.92)
   VerdantLibraryListBg:SetEdgeColor(0.42, 1.00, 0.60, 0.55)
+  VerdantLibraryListFill:SetTextureCoords(0, 1, 0, 0.05)
+  VerdantLibraryListFill:SetColor(0.055, 0.052, 0.046, 0.92)
   set_buttons()
 end
