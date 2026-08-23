@@ -250,26 +250,38 @@ local function censor_tick()
   end
 end
 
-function M.refresh_names()
-  if not session_active then return end
+local function reset_roster()
   for k in pairs(name_slot) do name_slot[k] = nil end
   name_count = 0
   player_slot_i = 0
   for i = 1, MAX_SLOTS do
     slot_names[i] = nil
     slot_icons[i] = nil
+  end
+end
+
+function M.refresh_names()
+  if not session_active then return end
+  for i = 1, MAX_SLOTS do
     local nm = api.GetUnitName("group" .. i)
     if nm and nm ~= "" then
       local base = base_name(nm)
-      name_slot[base] = i
+      local old = slot_names[i]
+      if old and old ~= base and name_slot[old] == i then
+        name_slot[old] = nil
+      end
       slot_names[i] = base
-      name_count = name_count + 1
+      name_slot[base] = i
       local cid = api.GetUnitClassId("group" .. i)
       if cid and cid > 0 then
         slot_icons[i] = api.ZO_GetClassIcon(cid)
       end
     end
     if api.AreUnitsEqual("group" .. i, "player") then player_slot_i = i end
+  end
+  name_count = 0
+  for i = 1, MAX_SLOTS do
+    if slot_names[i] then name_count = name_count + 1 end
   end
 end
 
@@ -299,6 +311,7 @@ function M.theta() return THETA end
 function M.on_session_start()
   local sv = Verdant.SavedVars
   M.set_theta((sv and sv.settings and sv.settings.triage_theta) or 0.50)
+  reset_roster()
   session_active = true
   ep_log.n = 0
   ep_dropped = 0

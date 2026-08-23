@@ -77,10 +77,14 @@ return function(H)
   ok(card._text == "Ally2" or card._text == "Ally3",
      "triage hover must name the ally, got " .. tostring(card._text))
   local stat = VerdantHoverCardStat
-  ok(stat._text and (stat._text:find("brought them back", 1, true)
-     or stat._text:find("without a single heal", 1, true)
-     or stat._text:find("recovered without", 1, true)),
-     "triage hover must explain the outcome, got " .. tostring(stat._text))
+  ok(stat._text and stat._text:find("min HP", 1, true),
+     "triage hover stat must show min HP, got " .. tostring(stat._text))
+  local desc = VerdantHoverCardDesc
+  ok(desc and desc._hidden == false and desc._text and
+     (desc._text:find("brought them back", 1, true)
+      or desc._text:find("without a single heal", 1, true)
+      or desc._text:find("Got back up", 1, true)),
+     "triage hover must explain the outcome, got " .. tostring(desc and desc._text))
   H.state.mouse_x, H.state.mouse_y = 400, 300
 
   local chip = VerdantGraphSummaryLabel

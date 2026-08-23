@@ -503,6 +503,27 @@ local function build_hover_card()
   root:SetAlpha(0)
   root:SetHidden(true)
 
+  local base = WM:CreateControl("VerdantHoverCardBase", root, CT_TEXTURE)
+  base:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
+  base:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
+  base:SetColor(0.045, 0.05, 0.042, 0.97)
+
+  local border_top = WM:CreateControl("VerdantHoverCardBTop", root, CT_TEXTURE)
+  border_top:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
+  border_top:SetAnchor(TOPRIGHT, root, TOPRIGHT, 0, 0)
+  border_top:SetHeight(1)
+  border_top:SetColor(0.42, 1.00, 0.60, 0.30)
+  local border_bot = WM:CreateControl("VerdantHoverCardBBot", root, CT_TEXTURE)
+  border_bot:SetAnchor(BOTTOMLEFT, root, BOTTOMLEFT, 0, 0)
+  border_bot:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
+  border_bot:SetHeight(1)
+  border_bot:SetColor(0.42, 1.00, 0.60, 0.30)
+  local border_r = WM:CreateControl("VerdantHoverCardBR", root, CT_TEXTURE)
+  border_r:SetAnchor(TOPRIGHT, root, TOPRIGHT, 0, 0)
+  border_r:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
+  border_r:SetWidth(1)
+  border_r:SetColor(0.42, 1.00, 0.60, 0.30)
+
   local bg = WM:CreateControl("VerdantHoverCardBg", root, CT_TEXTURE)
   bg:SetTexture(FILL_TEXTURE)
   bg:SetTextureCoords(0, 1, 0, 0.05)
@@ -892,19 +913,30 @@ local function hover_poll()
       local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
       local who = T.slot_name(e.slot) or ("group" .. e.slot)
       local depth = math_floor(e.min_rho * 100 + 0.5)
-      local detail
+      local facts = string_format("|c%s%d%%|r %s",
+        hexc((e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH), depth,
+        GetString(VERDANT_TRI_TIP_MINHP))
       if e.rt >= 0 then
-        detail = string_format(GetString(VERDANT_TRI_TIP_RT), e.rt / 1000)
+        facts = facts .. string_format("  ·  |c%s%s|r",
+          hexc(tri_rt_color(e.rt)), string_format(GetString(VERDANT_TRI_TIP_RT), e.rt / 1000))
       elseif e.responded then
-        detail = GetString(VERDANT_TRI_TIP_VIA_HOTS)
-      else
-        detail = ""
+        facts = facts .. "  ·  |c" .. hexc(C_TRI_FAST) .. GetString(VERDANT_TRI_RT_HOTS) .. "|r"
       end
-      show_moment_card(c, who,
-        string_format("|c%s%d%%|r  %s%s",
-          hexc((e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH), depth,
-          GetString(rawget(_G, TRI_TIP_KEY[e.class] or TRI_TIP_KEY[5])), detail),
-        e.t_start - tri_hit.t0, mx, my)
+      show_moment_card(c, who, facts, e.t_start - tri_hit.t0, mx, my)
+      local card = controls.card
+      if card and card.desc then
+        local desc = card.desc
+        desc:ClearAnchors()
+        desc:SetAnchor(TOPLEFT, card.root, TOPLEFT, 12, CARD_H - 4)
+        desc:SetWidth(CARD_W - 20)
+        desc:SetHeight(400)
+        desc:SetText(GetString(rawget(_G, TRI_TIP_KEY[e.class] or TRI_TIP_KEY[5])))
+        desc:SetHidden(false)
+        local dh = desc:GetTextHeight()
+        if dh < 12 then dh = 12 end
+        desc:SetHeight(dh)
+        card.root:SetHeight(CARD_H - 4 + dh + 8)
+      end
     else
       fade_out(card_fader)
     end
@@ -1749,7 +1781,7 @@ local function render_view5()
       ic:ClearAnchors()
       ic:SetTexture(TEX_SKULL)
       ic:SetDimensions(10, 10)
-      ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y - 12)
+      ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, strip_y + 2)
       ic:SetColor(C_MARK_DEATH.r, C_MARK_DEATH.g, C_MARK_DEATH.b, m.who and 0.5 or 0.95)
       ic:SetHidden(false)
     end
@@ -2353,7 +2385,6 @@ function M.init()
   controls.btn_record:SetText(GetString(VERDANT_GRAPH_RECORD))
   controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))
   controls.btn_flush:SetText(GetString(VERDANT_GRAPH_FLUSH))
-  controls.btn_lib:SetText(GetString(VERDANT_GRAPH_LIB))
 
   local function tint_btn(btn, r, g, b)
     btn:SetNormalFontColor(r, g, b, 1)

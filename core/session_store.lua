@@ -50,6 +50,13 @@ M.DESC = DESC
 
 local log
 local api
+local start_zone  = ""
+local start_group = 0
+
+function M.on_session_start()
+  start_zone  = api.GetUnitZone("player") or ""
+  start_group = api.GetGroupSize() or 0
+end
 
 local function lib_root()
   local sv = Verdant.SavedVars
@@ -169,9 +176,9 @@ function M.capture()
     v = 1,
     head = {
       ts = api.GetTimeStamp(),
-      zone = api.GetUnitZone("player") or "",
+      zone = (start_zone ~= "") and start_zone or (api.GetUnitZone("player") or ""),
       dur_ms = t_end - t0,
-      group_size = api.GetGroupSize() or 0,
+      group_size = math.max(start_group, api.GetGroupSize() or 0, #roster),
       build = Verdant.Constants.BUILD,
       api = api.GetAPIVersion(),
       locked = false,
