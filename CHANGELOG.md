@@ -89,6 +89,7 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- TRIAGE at small heights switches to a compact tier: the chip folds into its report icon and the episode list steps aside so the donut and legend stay whole.
 - Long time windows decimate into whole-sample columns (min 6px), so large fights render as even columns.
 - SKILL view keeps both plots the same height when the ultimate band is present.
 - BUFFS and TRIAGE content starts below the summary chip instead of under it.
@@ -145,6 +146,7 @@
   ultimate rows instead of across them.
 
 ### Fixed
+- TRIAGE: the donut follows the summary chip inset instead of keeping its first position; the legend's meaning column measures the string, not the clipped label.
 - **Stop no longer hitches** — the session autosave used to run inside
   the Stop click's frame (a measured 104ms stutter on a 12-minute
   recording). The encoder is several times leaner and the capture now runs
