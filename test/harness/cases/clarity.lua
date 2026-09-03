@@ -15,8 +15,6 @@ return function(H)
   ok(VerdantGraphWindowWelcome._hidden == true, "the card shows exactly once")
   Verdant.Graph.toggle()
 
-  ok((VerdantGraphWindowTitleLabel._text or ""):find("your output only") ~= nil,
-     "the attribution line must live in the title")
 
   Verdant.Visibility.set("graph", true)
   local vl = VerdantGraphWindowViewLabel

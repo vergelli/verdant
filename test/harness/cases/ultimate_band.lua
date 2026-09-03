@@ -74,8 +74,8 @@ return function(H)
   local n_rows = 0
   for _ in pairs(rows) do n_rows = n_rows + 1 end
   ok(n_rows == 2, "two ultimates must draw two rows, got " .. n_rows)
-  ok(ready[3] == true, "the front bar row must show the bright ready state")
-  ok(ready[13] == true, "the back bar reaches its cost too and must show ready")
+  ok(ready[4] == true, "the front bar row must show the bright ready state")
+  ok(ready[18] == true, "the back bar reaches its cost too and must show ready")
   ok(charging, "charging segments must render in the viewport green")
   ok(tick, "the cast must render as a tick over its row")
   ok(#icons == 2 and icons[1] == "EsoUI/Art/Icons/ult_front.dds" and icons[2] == "EsoUI/Art/Icons/ult_back.dds",
@@ -90,7 +90,13 @@ return function(H)
       if ch - 18 - c._h < top_most then top_most = ch - 18 - c._h end
     end
   end
-  ok(top_most >= 22, "bars must stay below the ultimate area, top at " .. tostring(top_most))
+  ok(top_most >= 28, "bars must stay below the ultimate area, top at " .. tostring(top_most))
+  local icon_size = 0
+  for _, c in ipairs(H.controls) do
+    local name = c._name or ""
+    if c._hidden == false and name:find("^VerdantGraphUltIcon") and not name:find("Top") then icon_size = c._w or 0 end
+  end
+  ok(icon_size == 14, "ultimate icons are 14px, got " .. tostring(icon_size))
 
   local session = Verdant.SessionStore.capture()
   ok(session and session.streams.ult ~= nil and session.streams.ulta ~= nil, "session must persist the ultimate streams")

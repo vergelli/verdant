@@ -42,7 +42,8 @@ return function(H)
   ok(hp and dp and dp > hp, "direct overflow must outweigh HoT overflow here: " .. tostring(hp) .. " vs " .. tostring(dp))
   local landed = tonumber(stat:match("(%d+)%% landed"))
   ok(landed and math.abs(landed + hp + dp - 100) <= 2, "landed + hot + direct must add up to 100: " .. tostring(landed) .. "+" .. tostring(hp) .. "+" .. tostring(dp))
-  ok(VerdantHoverCardDesc._hidden == false and (VerdantHoverCardDesc._text or ""):find("HoT overflow is normal") ~= nil, "report must explain the split")
+  ok(VerdantHoverCardDesc._hidden == true, "the report carries no explanation paragraph")
+  ok(VerdantHoverCard._draw_tier == DT_HIGH and VerdantHoverCardBg._draw_layer == DL_OVERLAY, "the card draws above every label")
   ok(VerdantReportDonut._hidden == false and VerdantReportDonutSlice1._cd_pct > 0.3, "report card must draw its donut")
   ok(VerdantHoverCardRowName3._hidden == false and VerdantHoverCardRowName3._text == "Ultimate ready, unused",
      "row 3 is the unused ultimate time")
@@ -83,7 +84,7 @@ return function(H)
   end
   Verdant.Graph.on_stop_click()
   hit._onOnMouseEnter(hit)
-  ok((VerdantHoverCardDesc._text or ""):find("Nothing went to waste") ~= nil, "a clean recording says so")
+  ok(VerdantHoverCardName._text == "Healing report", "a clean recording still opens the report")
   hit._onOnMouseExit(hit)
 
   Verdant.Graph.on_flush_click()
