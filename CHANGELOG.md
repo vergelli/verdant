@@ -9,7 +9,8 @@
   not a score — it never becomes a headline number.
 - **Ultimate band** — a thin strip under the timeline markers on every
   graph view: green while the ultimate charges (brighter as it fills), gold
-  while it sits ready unspent, a white tick at each cast.
+  while it sits ready unspent, a white tick at each cast. Saved with the
+  session, so library sessions bring the band back.
 - **Light Mode** (Settings > Recording, off by default) — while recording,
   the window sheds its border, title and buttons and dims to a configurable
   opacity; hover restores it and reveals stop + view navigation. Stopping
@@ -31,6 +32,8 @@
   to run under the graph button on narrow widths), the graph and settings
   buttons move to their own row, and the brand logo replaces the clipped
   title text.
+- **Hover card widens to fit** — long ability names no longer truncate in
+  the per-skill breakdown.
 
 ### Fixed
 - Bars keep one uniform width in every graph view — the "one thicker bar
