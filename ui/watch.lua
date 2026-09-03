@@ -102,6 +102,11 @@ function M.render(alerts)
       local a = alerts[i]
       row.icon:SetTexture(SC.ability_icon(a.id))
       row.name:SetText(a.name)
+      if a.remaining <= 0 or a.remaining < 1.5 then
+        row.accent:SetColor(C_NOW.r, C_NOW.g, C_NOW.b, C_NOW.a)
+      else
+        row.accent:SetColor(C_ACCENT.r, C_ACCENT.g, C_ACCENT.b, C_ACCENT.a)
+      end
       if a.remaining > 0 then
         row.time:SetText(string_format("%.1fs", a.remaining))
         if a.remaining < 1.5 then
