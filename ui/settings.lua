@@ -86,6 +86,14 @@ for pct = 0, 100, 5 do
 end
 local VPALPHA_DEFAULT = 30
 
+local LIGHTA_PRESETS = {}
+local LIGHTA_LABELS  = {}
+for pct = 10, 90, 5 do
+  LIGHTA_PRESETS[#LIGHTA_PRESETS + 1] = pct
+  LIGHTA_LABELS[pct] = pct .. "%"
+end
+local LIGHTA_DEFAULT = 40
+
 local THETA_PRESETS = {}
 local THETA_LABELS  = {}
 for pct = 30, 75, 5 do
@@ -165,6 +173,7 @@ local current_sample  = SAMPLE_DEFAULT
 local current_twindow = TWINDOW_DEFAULT
 local current_vpalpha = VPALPHA_DEFAULT
 local current_theta   = THETA_DEFAULT
+local current_lighta  = LIGHTA_DEFAULT
 local current_profile = PROFILE_DEFAULT
 
 local function nearest_idx(presets, ms)
@@ -297,6 +306,7 @@ local function refresh_all_sliders()
   update_slider(c.track_twindow, c.fill_twindow, c.thumb_twindow, c.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
   update_slider(c.track_vpalpha, c.fill_vpalpha, c.thumb_vpalpha, c.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
   update_slider(c.track_triage,  c.fill_triage,  c.thumb_triage,  c.label_triage,  THETA_PRESETS,   THETA_LABELS,   current_theta)
+  update_slider(c.track_lighta,  c.fill_lighta,  c.thumb_lighta,  c.label_lighta,  LIGHTA_PRESETS,  LIGHTA_LABELS,  current_lighta)
 end
 
 function M.refresh_unknown_count()
@@ -361,6 +371,31 @@ function M.on_bars_click()
   Verdant.Visibility.set_bar_enabled(now)
   controls.bars_btn:SetText(now and GetString(VERDANT_SETTINGS_BARS_ON)
                                  or GetString(VERDANT_SETTINGS_BARS_OFF))
+end
+
+function M.on_light_click()
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  local now = not (sv.settings.light_mode == true)
+  sv.settings.light_mode = now
+  controls.light_btn:SetText(now and GetString(VERDANT_SETTINGS_LIGHT_ON)
+                                 or GetString(VERDANT_SETTINGS_LIGHT_OFF))
+  Verdant.Graph.set_light_enabled(now)
+end
+
+function M.on_lightalpha_track_click(control)
+  local cx      = GetUIMousePosition()
+  local track_w = control:GetWidth()
+  if track_w <= 0 then return end
+  local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
+  local idx = math_max(1, math_min(#LIGHTA_PRESETS, math_floor(pct * (#LIGHTA_PRESETS - 1) + 0.5) + 1))
+  current_lighta = LIGHTA_PRESETS[idx]
+  log:info("light_alpha ->", current_lighta, "%")
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  sv.settings.light_alpha_pct = current_lighta
+  Verdant.Graph.set_light_alpha(current_lighta / 100)
+  update_slider(controls.track_lighta, controls.fill_lighta, controls.thumb_lighta, controls.label_lighta, LIGHTA_PRESETS, LIGHTA_LABELS, current_lighta)
 end
 
 function M.on_autosave_click()
@@ -598,8 +633,13 @@ function M.on_reset_click()
     sv.settings.triage_theta = nil
     sv.settings.session_autosave = false
     controls.autosave_btn:SetText(GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
+    sv.settings.light_mode = false
+    sv.settings.light_alpha_pct = nil
+    controls.light_btn:SetText(GetString(VERDANT_SETTINGS_LIGHT_OFF))
+    Verdant.Graph.set_light_enabled(false)
   end
   current_theta = THETA_DEFAULT
+  current_lighta = LIGHTA_DEFAULT
 
   if profile_combo then
     profile_combo:SetSelectedItemText(profile_label_for(PROFILE_DEFAULT))
@@ -685,6 +725,10 @@ function M.init()
   controls.title_triage   = VerdantSettingsPanelTriageTitle
   controls.label_triage   = VerdantSettingsPanelTriageLabel
   controls.track_triage   = VerdantSettingsPanelSliderTrackTriage
+  controls.title_lighta   = VerdantSettingsPanelLightAlphaTitle
+  controls.label_lighta   = VerdantSettingsPanelLightAlphaLabel
+  controls.track_lighta   = VerdantSettingsPanelSliderTrackLightAlpha
+  controls.light_btn      = VerdantSettingsPanelLightBtn
   controls.window_title   = VerdantSettingsPanelWindowTitle
   controls.reset_btn      = VerdantSettingsPanelResetBtn
   controls.profile_label  = VerdantSettingsPanelProfileLabel
@@ -743,6 +787,9 @@ function M.init()
     and GetString(VERDANT_SETTINGS_GDM_ON) or GetString(VERDANT_SETTINGS_GDM_OFF))
   controls.autosave_btn:SetText((sv.settings.session_autosave == true)
     and GetString(VERDANT_SETTINGS_AUTOSAVE_ON) or GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
+  controls.light_btn:SetText((sv.settings.light_mode == true)
+    and GetString(VERDANT_SETTINGS_LIGHT_ON) or GetString(VERDANT_SETTINGS_LIGHT_OFF))
+  current_lighta = LIGHTA_PRESETS[nearest_idx(LIGHTA_PRESETS, sv.settings.light_alpha_pct or LIGHTA_DEFAULT)]
   Verdant.Graph.set_shield_down(shield_down)
 
   profile_combo = ZO_ComboBox_ObjectFromContainer(controls.profile_combo)
@@ -777,6 +824,10 @@ function M.init()
   controls.title_triage:SetColor(0.75, 0.75, 0.75, 1)
   controls.label_triage:SetColor(0.95, 0.80, 0.20, 1)
 
+  controls.title_lighta:SetText(GetString(VERDANT_SETTING_LIGHT_ALPHA))
+  controls.title_lighta:SetColor(0.75, 0.75, 0.75, 1)
+  controls.label_lighta:SetColor(0.95, 0.80, 0.20, 1)
+
   if sv.settings.triage_theta then
     current_theta = math_floor(sv.settings.triage_theta * 100 + 0.5)
   end
@@ -789,6 +840,7 @@ function M.init()
   c.fill_twindow, c.thumb_twindow = setup_slider_visuals(c.track_twindow, "VerdantSettingsTWindow")
   c.fill_vpalpha, c.thumb_vpalpha = setup_slider_visuals(c.track_vpalpha, "VerdantSettingsVPAlpha")
   c.fill_triage,  c.thumb_triage  = setup_slider_visuals(c.track_triage,  "VerdantSettingsTriage")
+  c.fill_lighta,  c.thumb_lighta  = setup_slider_visuals(c.track_lighta,  "VerdantSettingsLightA")
 
   if sv.settings.x and sv.settings.y then
     controls.window:ClearAnchors()

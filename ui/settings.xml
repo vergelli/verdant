@@ -7,7 +7,7 @@
                      movable="true"
                      mouseEnabled="true">
 
-      <Dimensions x="600" y="432"/>
+      <Dimensions x="600" y="460"/>
 
       <OnMoveStop>Verdant.Settings.on_move_stop()</OnMoveStop>
 
@@ -198,6 +198,35 @@
           <Dimensions x="272" y="22"/>
           <OnClicked>Verdant.Settings.on_autosave_click()</OnClicked>
         </Button>
+
+        <Button name="$(parent)LightBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="352"/>
+          <Dimensions x="272" y="22"/>
+          <OnClicked>Verdant.Settings.on_light_click()</OnClicked>
+        </Button>
+
+        <Label name="$(parent)LightAlphaTitle"
+               font="ZoFontGameSmall"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="380"/>
+          <Dimensions x="160" y="12"/>
+        </Label>
+        <Label name="$(parent)LightAlphaLabel"
+               font="ZoFontGameSmall"
+               horizontalAlignment="RIGHT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="206" offsetY="380"/>
+          <Dimensions x="80" y="12"/>
+        </Label>
+        <Control name="$(parent)SliderTrackLightAlpha" mouseEnabled="true">
+          <Anchor point="TOPLEFT" offsetX="14" offsetY="395"/>
+          <Dimensions x="272" y="14"/>
+          <OnMouseUp>Verdant.Settings.on_lightalpha_track_click(self)</OnMouseUp>
+        </Control>
 
         <Label name="$(parent)SecGraph" font="ZoFontGameSmall"
                horizontalAlignment="LEFT" verticalAlignment="CENTER">
