@@ -398,7 +398,7 @@ local function layout_skill_area()
   local mid_y = LABEL_H + top_h + 2
 
   controls.ehps_label:ClearAnchors()
-  controls.ehps_label:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, ULT_L.CHIP)
+  controls.ehps_label:SetAnchor(TOPLEFT, sa, TOPLEFT, 0, 0)
   controls.ehps_label:SetDimensions(sw, LABEL_H)
 
   controls.ehps_canvas:ClearAnchors()
