@@ -28,6 +28,8 @@ lua test/simlab/replay.lua . <SavedVars/Verdant.lua> [--svg]
                                             (then audit; the three traces under
                                             VerdantWorkingdir/traces/ are the
                                             pre-release corpus)
+bash test/gate.sh                           the merge gate: everything below plus
+                                            the trace replays, one exit code
 lua test/harness/run.lua . 1                unit cases, DEBUG on
 lua test/harness/perf.lua . 0 40 [VIEW]     render budget per view (docs/RENDER_BUDGET.md)
 ```

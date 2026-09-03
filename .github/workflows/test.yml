@@ -33,3 +33,6 @@ jobs:
 
       - name: Layout audit
         run: lua5.4 test/simlab/audit.lua .
+
+      - name: Merge gate (everything above, one exit code)
+        run: bash test/gate.sh
