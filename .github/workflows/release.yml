@@ -110,7 +110,7 @@ jobs:
         # Fail loudly if any XML-referenced texture is missing from staging.
         run: |
           missing=0
-          refs=$(grep -rhoE 'Verdant/assets/[A-Za-z0-9_./-]+\.dds' ui/ | sort -u)
+          refs=$(grep -rhoE 'Verdant/assets/[A-Za-z0-9_./-]+\.dds' ui/ lib/ core/ | sort -u)
           if [ -z "$refs" ]; then echo "::warning::no Verdant/assets textures referenced in ui/, lib/ or core/"; fi
           for ref in $refs; do
             rel="${ref#Verdant/}"
