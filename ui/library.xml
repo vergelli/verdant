@@ -70,7 +70,7 @@
         <Control name="$(parent)List" mouseEnabled="false">
           <Anchor point="TOPLEFT"  offsetX="20"  offsetY="50"/>
           <Anchor point="TOPRIGHT" offsetX="-20" offsetY="50"/>
-          <Dimensions y="352"/>
+          <Dimensions y="320"/>
           <Controls>
             <Label name="$(parent)Empty"
                    font="ZoFontGameSmall"
@@ -80,6 +80,25 @@
             </Label>
           </Controls>
         </Control>
+
+        <Backdrop name="$(parent)LabelBox" inherits="ZO_EditBackdrop">
+          <Anchor point="BOTTOMLEFT" offsetX="14" offsetY="-44"/>
+          <Dimensions x="296" y="24"/>
+          <Controls>
+            <EditBox name="$(parent)Edit" inherits="ZO_DefaultEditForBackdrop" maxInputCharacters="32">
+              <OnEnter>Verdant.Library.on_label_save()</OnEnter>
+            </EditBox>
+          </Controls>
+        </Backdrop>
+
+        <Button name="$(parent)LabelBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-44"/>
+          <Dimensions x="110" y="24"/>
+          <OnClicked>Verdant.Library.on_label_save()</OnClicked>
+        </Button>
 
         <Button name="$(parent)OpenBtn"
                 mouseEnabled="true"

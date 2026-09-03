@@ -61,6 +61,16 @@ return function(H)
   else
     ok(VerdantLibraryRow1Ring._hidden == true, "a session without output hides its ring")
   end
+  Verdant.Library.on_row_click(1)
+  H.sounds = {}
+  VerdantLibraryLabelBoxEdit:SetText("  Sunday HM run  ")
+  Verdant.Library.on_label_save()
+  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "naming confirms with the accept sound")
+  ok(SS.get(1).head.label == "Sunday HM run", "the label is trimmed and persisted on the session head")
+  ok(VerdantLibraryRow1Name._text == "Sunday HM run", "the row shows the name instead of the zone")
+  VerdantLibraryLabelBoxEdit:SetText("")
+  Verdant.Library.on_label_save()
+  ok(SS.get(1).head.label == nil and VerdantLibraryRow1Name._text == "Direfrost Keep", "an empty name goes back to the zone")
   ok(type(VerdantLibraryRow1._onOnMouseDoubleClick) == "function", "rows open on double click")
   VerdantLibraryRow1._onOnMouseDoubleClick(VerdantLibraryRow1)
   ok(VerdantLibrary._hidden == true, "library must hide after open")
@@ -125,7 +135,7 @@ return function(H)
   end
   Verdant.Library.show()
   ok(VerdantLibraryRow1Name._text == "Scroll14", "top row must be newest")
-  ok(VerdantLibraryCountLabel._text:find("v3", 1, true),
+  ok(VerdantLibraryCountLabel._text:find("v4", 1, true),
      "count must show hidden-below indicator, got " .. tostring(VerdantLibraryCountLabel._text))
   Verdant.Library.on_scroll(-1)
   Verdant.Library.on_scroll(-1)

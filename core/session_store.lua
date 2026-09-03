@@ -354,6 +354,15 @@ function M.finish_autosave()
   end
 end
 
+function M.set_label(idx, text)
+  local lib = lib_root()
+  local s = lib and lib.sessions[idx]
+  if not s or not s.head then return false end
+  text = tostring(text or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  if text == "" then s.head.label = nil else s.head.label = text end
+  return true
+end
+
 function M.count()
   local lib = lib_root()
   return lib and #lib.sessions or 0

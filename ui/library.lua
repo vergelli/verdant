@@ -12,7 +12,7 @@ local PlaySound     = zui.PlaySound
 
 local ROW_H   = 30
 local ROW_GAP = 2
-local MAX_ROWS = 11
+local MAX_ROWS = 10
 
 local C_PIP_SAVE  = { r = 0.55, g = 0.92, b = 0.62 }
 local C_PIP_OTHER = { r = 0.55, g = 0.66, b = 0.82 }
@@ -196,7 +196,7 @@ function M.refresh()
     row.bg:SetColor(1, 1, 1, (shown % 2 == 0) and 0.04 or 0.02)
     row.sel:SetHidden(shown ~= selected)
     row.pip:SetColor(pc.r, pc.g, pc.b, 1)
-    row.name:SetText(h.zone or "?")
+    row.name:SetText(h.label or h.zone or "?")
     row.name:SetColor(C_NAME.r, C_NAME.g, C_NAME.b, 1)
     local sum = h.sum or {}
     local denom = (sum.saves or 0) + (sum.o or 0) + (sum.l or 0) + (sum.m or 0)
@@ -241,6 +241,14 @@ function M.on_row_enter(i)
   ZO_Tooltips_ShowTextTooltip(rows[i].root, TOP, text)
 end
 
+local function sync_label_box()
+  local edit = controls.label_edit
+  if not edit then return end
+  local s = selected and Verdant.SessionStore.get(row_session[selected])
+  edit:SetText((s and s.head and s.head.label) or "")
+  controls.label_btn:SetEnabled(selected ~= nil)
+end
+
 function M.on_row_click(i)
   if not row_session[i] then return end
   selected = i
@@ -249,6 +257,25 @@ function M.on_row_click(i)
     rows[k].sel:SetHidden(k ~= i)
   end
   set_buttons()
+  sync_label_box()
+end
+
+function M.on_label_save()
+  if not selected then
+    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    return
+  end
+  local idx = row_session[selected]
+  local text = controls.label_edit:GetText() or ""
+  if Verdant.SessionStore.set_label(idx, text) then
+    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    local keep = selected
+    M.refresh()
+    selected = keep
+    for k = 1, #rows do rows[k].sel:SetHidden(k ~= keep) end
+    set_buttons()
+    sync_label_box()
+  end
 end
 
 function M.on_open_click()
@@ -318,6 +345,7 @@ function M.show()
   scroll_off = 0
   dock_window()
   M.refresh()
+  sync_label_box()
   controls.window:SetHidden(false)
   PlaySound(SOUNDS.ARMORY_OPEN)
 end
@@ -341,6 +369,12 @@ function M.init()
   controls.open_btn   = VerdantLibraryOpenBtn
   controls.lock_btn   = VerdantLibraryLockBtn
   controls.delete_btn = VerdantLibraryDeleteBtn
+  controls.label_edit = VerdantLibraryLabelBoxEdit
+  controls.label_btn  = VerdantLibraryLabelBtn
+  controls.label_edit:SetDefaultText(GetString(VERDANT_LIB_LABEL_HINT))
+  controls.label_btn:SetText(GetString(VERDANT_LIB_LABEL_SAVE))
+  controls.label_btn:SetEnabled(false)
+  zui.tooltip(controls.label_btn, VERDANT_TIP_LIB_LABEL, TOP)
   zui.tooltip(controls.open_btn,   VERDANT_TIP_LIB_OPEN,   TOP)
   zui.tooltip(controls.lock_btn,   VERDANT_TIP_LIB_LOCK,   TOP)
   zui.tooltip(controls.delete_btn, VERDANT_TIP_LIB_DELETE, TOP)

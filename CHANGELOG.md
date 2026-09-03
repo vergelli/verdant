@@ -6,6 +6,9 @@
 - **The summary chip lives inside the viewport** now, top right, and the
   plot makes room below it while it is up, so it no longer straddles the
   viewport border.
+- **Name your sessions** — select a saved session in the library, type
+  a name in the box below the list and press Name (or Enter). The row
+  shows the name instead of the zone; an empty name puts the zone back.
 - **Buff watch chimes** — a soft note when a starred buff enters its
   warning window, a sharper one when it drops mid-combat, each once.
 - **The library says when it saved** — after a recording lands in the
