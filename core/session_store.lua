@@ -58,6 +58,10 @@ local DESC = {
   ultu = {
     { name = "t", width = 4 },
   },
+  ulta = {
+    { name = "t",  width = 4 },
+    { name = "id", width = 4 },
+  },
 }
 
 M.DESC = DESC
@@ -191,6 +195,13 @@ function M.capture()
   for i = 1, uun do
     ultu_recs[i] = { t = uut[i] - t0 }
   end
+  local uat, uai, uan = Verdant.Ultimate.abilities()
+  local ulta_recs = {}
+  for i = 1, uan do
+    local rel = uat[i] - t0
+    if rel < 0 then rel = 0 end
+    ulta_recs[i] = { t = rel, id = uai[i] }
+  end
 
   local ms, mn = TB.markers()
   local mk_recs = {}
@@ -252,6 +263,7 @@ function M.capture()
       abilities = vsf.pack(ability_recs, DESC.abilities),
       ult       = vsf.pack(ult_recs, DESC.ult),
       ultu      = vsf.pack(ultu_recs, DESC.ultu),
+      ulta      = vsf.pack(ulta_recs, DESC.ulta),
     },
   }
   return session

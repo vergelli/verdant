@@ -413,7 +413,9 @@ function GetZoneNameByIndex() return "Mock Zone" end
 function GetSlotName() return "" end
 function GetSlotBoundId(slot, cat)
   local bars = H.slotted
-  local bar = bars and bars[cat]
+  if not bars then return 0 end
+  if cat == nil then cat = H.state.active_bar or HOTBAR_CATEGORY_PRIMARY end
+  local bar = bars[cat]
   return (bar and bar[slot]) or 0
 end
 function GetSlotAbilityCost(slot, mechanic, cat)

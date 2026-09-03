@@ -22,6 +22,11 @@ local step_p    = {}
 local n_used    = 0
 local used_t    = {}
 local saw_power = false
+local ABIL_CAP  = 64
+local n_abil    = 0
+local abil_t    = {}
+local abil_id   = {}
+local cur_abil  = 0
 
 local function bump(key) Verdant.Diagnostics.bump(key) end
 
@@ -49,7 +54,26 @@ local function push_step(t)
   step_p[n_steps] = p
 end
 
+local function push_ability(t, id)
+  if n_abil >= ABIL_CAP then return end
+  n_abil = n_abil + 1
+  abil_t[n_abil]  = t
+  abil_id[n_abil] = id
+end
+
+function M.refresh_slot()
+  local api = Verdant.zenimax.api
+  local zc  = Verdant.zenimax.constants
+  if not (api.GetSlotBoundId and zc.ACTION_BAR_ULTIMATE_SLOT_INDEX) then return end
+  local id = api.GetSlotBoundId(zc.ACTION_BAR_ULTIMATE_SLOT_INDEX + 1)
+  if not id or id <= 0 or id == cur_abil then return end
+  cur_abil = id
+  bump("ult.slot_refresh")
+  if recording then push_ability(now_ms(), id) end
+end
+
 function M.refresh_cost()
+  M.refresh_slot()
   local api = Verdant.zenimax.api
   local zc  = Verdant.zenimax.constants
   if not (api.GetSlotAbilityCost and zc.ACTION_BAR_ULTIMATE_SLOT_INDEX
@@ -88,6 +112,7 @@ function M.start_session(t)
   t_end     = 0
   n_steps   = 0
   n_used    = 0
+  n_abil    = 0
   saw_power = false
   local api = Verdant.zenimax.api
   local zc  = Verdant.zenimax.constants
@@ -95,7 +120,9 @@ function M.start_session(t)
     local v = api.GetUnitPower("player", zc.COMBAT_MECHANIC_FLAGS_ULTIMATE)
     if v then cur_value = v end
   end
+  cur_abil = 0
   M.refresh_cost()
+  if cur_abil > 0 and n_abil == 0 then push_ability(t, cur_abil) end
   push_step(t)
 end
 
@@ -112,16 +139,18 @@ function M.reset()
   t_end     = 0
   n_steps   = 0
   n_used    = 0
+  n_abil    = 0
   saw_power = false
 end
 
-function M.steps()    return step_t, step_p, n_steps end
-function M.used()     return used_t, n_used end
+function M.steps()     return step_t, step_p, n_steps end
+function M.used()      return used_t, n_used end
+function M.abilities() return abil_t, abil_id, n_abil end
 function M.has_data() return saw_power and n_steps > 0 end
 function M.cost()     return cost end
 function M.is_recording() return recording end
 
-function M.load_session(steps, used)
+function M.load_session(steps, used, abilities)
   M.reset()
   for i = 1, #steps do
     step_t[i] = steps[i].t
@@ -132,8 +161,14 @@ function M.load_session(steps, used)
     used_t[i] = used[i].t
   end
   n_used = #used
+  abilities = abilities or {}
+  for i = 1, #abilities do
+    abil_t[i]  = abilities[i].t
+    abil_id[i] = abilities[i].id or 0
+  end
+  n_abil = #abilities
   saw_power = n_steps > 0
-  log:info("session loaded: steps=", n_steps, "used=", n_used)
+  log:info("session loaded: steps=", n_steps, "used=", n_used, "abilities=", n_abil)
 end
 
 function M.pct_at(t)
@@ -150,7 +185,8 @@ end
 function M.snapshot()
   return {
     recording = recording, cost = cost, value = cur_value, max = cur_max,
-    steps = n_steps, used = n_used, t_start = t_start, t_end = t_end,
+    steps = n_steps, used = n_used, abilities = n_abil, ability = cur_abil,
+    t_start = t_start, t_end = t_end,
   }
 end
 

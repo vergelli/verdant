@@ -361,6 +361,8 @@ local function release_all_pools()
   if controls.pool_ult then
     controls.pool_ult:ReleaseAllObjects()
     controls.pool_ult_top:ReleaseAllObjects()
+    controls.pool_ult_icon:ReleaseAllObjects()
+    controls.pool_ult_icon_top:ReleaseAllObjects()
   end
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -1213,8 +1215,9 @@ local function draw_markers(pool_line, pool_icon, canvas, t0, span, lane_x, lane
   end
 end
 
-local function draw_ult_band(pool, canvas, t0, span, t_data_hi)
+local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
   pool:ReleaseAllObjects()
+  ipool:ReleaseAllObjects()
   if span <= 0 then return end
   local U = Verdant.Ultimate
   if not U.has_data() then return end
@@ -1282,6 +1285,37 @@ local function draw_ult_band(pool, canvas, t0, span, t_data_hi)
       tick:SetHeight(11)
       tick:SetColor(1, 1, 1, 0.85)
       tick:SetHidden(false)
+    end
+  end
+  if not min_x then return end
+  local at, ai, an = U.abilities()
+  local t_hi = t0 + span
+  local last_x = nil
+  for i = 1, an do
+    local t = at[i]
+    local visible = (i == an) or (at[i + 1] > t0)
+    if visible and t <= t_hi then
+      local x = math_floor((t - t0) / span * cw + 0.5)
+      if x < min_x then x = min_x end
+      if x > cw - 15 then x = cw - 15 end
+      if not last_x or x - last_x >= 16 then
+        local back = pool:AcquireObject()
+        back:ClearAnchors()
+        back:SetDrawLevel(7)
+        back:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - 1, 16)
+        back:SetWidth(16)
+        back:SetHeight(16)
+        back:SetColor(0.04, 0.04, 0.035, 0.88)
+        back:SetHidden(false)
+        local icon = ipool:AcquireObject()
+        icon:ClearAnchors()
+        icon:SetTexture(Verdant.SkillColors.ability_icon(ai[i]))
+        icon:SetDimensions(14, 14)
+        icon:SetColor(1, 1, 1, 0.95)
+        icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, 17)
+        icon:SetHidden(false)
+        last_x = x
+      end
     end
   end
 end
@@ -1414,7 +1448,7 @@ local function render_view1()
 
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
                canvas, t0x, span, 0, cw)
-  draw_ult_band(controls.pool_ult, canvas, t0x, span, t_last)
+  draw_ult_band(controls.pool_ult, controls.pool_ult_icon, canvas, t0x, span, t_last)
 end
 
 local function render_view2()
@@ -1600,7 +1634,7 @@ local function render_view2()
   end
   draw_markers(controls.pool_marker_line_top, controls.pool_marker_icon_top,
                ec, t0x, span_ms, 0, cw)
-  draw_ult_band(controls.pool_ult_top, ec, t0x, span_ms, t_last)
+  draw_ult_band(controls.pool_ult_top, controls.pool_ult_icon_top, ec, t0x, span_ms, t_last)
 end
 
 local function render_view3()
@@ -1693,7 +1727,7 @@ local function render_view3()
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
                canvas, t0x, span, 0, cw)
-  draw_ult_band(controls.pool_ult, canvas, t0x, span, t_last)
+  draw_ult_band(controls.pool_ult, controls.pool_ult_icon, canvas, t0x, span, t_last)
 end
 
 local function render_view_oh()
@@ -1785,7 +1819,7 @@ local function render_view_oh()
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
                canvas, t0x, span, 0, cw)
-  draw_ult_band(controls.pool_ult, canvas, t0x, span, t_last)
+  draw_ult_band(controls.pool_ult, controls.pool_ult_icon, canvas, t0x, span, t_last)
 end
 
 local BUFF_MAX_ROW_H = 26
@@ -2578,7 +2612,9 @@ function M.load_session(sess)
     local ult_steps = vsf.unpack(sess.streams.ult, sess.desc.ult)
     local ult_used  = (sess.streams.ultu and sess.desc.ultu)
                       and vsf.unpack(sess.streams.ultu, sess.desc.ultu) or nil
-    Verdant.Ultimate.load_session(ult_steps or {}, ult_used or {})
+    local ult_abil  = (sess.streams.ulta and sess.desc.ulta)
+                      and vsf.unpack(sess.streams.ulta, sess.desc.ulta) or nil
+    Verdant.Ultimate.load_session(ult_steps or {}, ult_used or {}, ult_abil or {})
   else
     Verdant.Ultimate.reset()
   end
@@ -2806,6 +2842,18 @@ function M.init()
       fill_factory(c)
       c:SetDrawLevel(6)
     end, fill_reset)
+  controls.pool_ult_icon = Pool.new("VerdantGraphUltIcon", controls.canvas, CT_TEXTURE,
+    function(c)
+      c:SetPixelRoundingEnabled(false)
+      c:SetDrawLevel(8)
+    end,
+    function(c) c:SetHidden(true) end)
+  controls.pool_ult_icon_top = Pool.new("VerdantGraphUltIconTop", controls.ehps_canvas, CT_TEXTURE,
+    function(c)
+      c:SetPixelRoundingEnabled(false)
+      c:SetDrawLevel(8)
+    end,
+    function(c) c:SetHidden(true) end)
 
   controls.pool_buff_seg = make_fill_pool("VerdantBuffSeg")
   controls.pool_buff_icon = Pool.new("VerdantBuffIcon", controls.canvas, CT_TEXTURE,
