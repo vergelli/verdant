@@ -652,16 +652,28 @@ end
 local function position_card(mx, my)
   local card = controls.card
   local sw, sh = GuiRoot:GetDimensions()
+  local w = card.root:GetWidth()
   local h = card.root:GetHeight()
   local x = mx + 16
   local y = my + 18
-  if x + CARD_W > sw - 4 then x = mx - CARD_W - 16 end
+  if x + w > sw - 4 then x = mx - w - 16 end
   if x < 4 then x = 4 end
   if y + h > sh - 4 then y = my - h - 18 end
   if y < 4 then y = 4 end
   card.root:ClearAnchors()
   card.root:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, x, y)
   fade_in(card_fader)
+end
+
+local function size_card(w)
+  local card = controls.card
+  card.root:SetWidth(w)
+  card.name:SetWidth(w - 36)
+  card.stat:SetWidth(w - 20)
+  card.time:SetWidth(w - 20)
+  for i = 1, CARD_MAX_ROWS do
+    card.rows[i].name:SetWidth(w - 102)
+  end
 end
 
 local function show_card(band, col, unit, mx, my, elapsed_ms)
@@ -717,6 +729,13 @@ local function show_card(band, col, unit, mx, my, elapsed_ms)
       end
     end
   end
+  local want = CARD_W
+  for a = 1, shown do
+    local nw = card.rows[a].name:GetTextWidth() + 102
+    if nw > want then want = nw end
+  end
+  if want > 300 then want = 300 end
+  size_card(want)
   card.root:SetHeight((shown > 0) and (CARD_ROWS_Y0 + shown * CARD_ROW_H + 4) or CARD_H)
 
   position_card(mx, my)
@@ -783,6 +802,7 @@ local TRI_GLYPH_GAP = 6
 local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, my)
   local card = controls.card
   if not card then return end
+  size_card(CARD_W)
   card.swatch:SetColor(swatch_c.r, swatch_c.g, swatch_c.b, 1.0)
   card.name:SetColor(C_CARD_NAME.r, C_CARD_NAME.g, C_CARD_NAME.b, 1.0)
   card.name:SetText(name_text)
@@ -834,6 +854,7 @@ end
 local function show_buff_card(rec, t_at, conc_at, mx, my)
   local card = controls.card
   if not card then return end
+  size_card(CARD_W)
   local BT  = Verdant.BuffTracker
   local c   = buff_color(rec)
   local dur = BT.session_end() - BT.session_start()

@@ -1,9 +1,11 @@
 # Verdant — Backlog
 
-> Status 2026-08-21: items 1–3 landed on develop (PRs #20–#26, issues
-> #9–#16 and #18 closed). Pending in-game validation — see
-> VerdantWorkingdir/tasks/TEST_PLAN_2026-08-21.md. Session history (#17)
-> stays open until auto-record is validated.
+> Status 2026-09-03: the whole 2.5.0 cycle landed on develop (issues
+> #79–#84 → PRs #85–#95): grow-to-fill with right-anchored growth, the
+> OHEAL view, the ultimate band, two-column settings, light mode, the
+> buff-watch POC, plus the SVG layout auditor and the offline CI suite.
+> Pending in-game validation before tagging v2.5.0. Items 1–3 below
+> shipped back in 2.3/2.4 and stay for reference.
 
 Engineering backlog for Verdant. Items here are committed intent, not
 speculation; ideas that have not earned a slot yet live in
@@ -106,8 +108,9 @@ user never has to reach for the Record button mid-pull.
 
 ## Carried over / cross-addon
 
-- Sub-pixel moiré on bar rendering ("thicker bar every N") — shared
-  with Vermilion and Verditer.
-- Zero-alloc render pass (hoist scratch arrays; the closure removal is
-  the risky 10%).
-- User-savable settings profiles (issue #9).
+- Sub-pixel moiré on bar rendering — RESOLVED here (uniform bar width
+  per render, fractional slack absorbed by the gaps, PR #93). Still
+  pending the same one-line port in Vermilion, Verditer and bgmeter.
+- Zero-alloc render pass — scratch arrays now live in one table (SCR);
+  the iterate-closure removal remains the risky 10%. The sample-path
+  budget has an offline tripwire in the harness since PR #94.
