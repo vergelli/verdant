@@ -1061,6 +1061,79 @@ local function update_hover_gate()
   end
 end
 
+local light = { active = false, hover = false }
+
+function light.alpha_pct()
+  local sv = Verdant.SavedVars
+  return (sv and sv.settings and sv.settings.light_alpha_pct) or 40
+end
+
+function light.enabled()
+  local sv = Verdant.SavedVars
+  return (sv and sv.settings and sv.settings.light_mode) == true
+end
+
+function light.chrome(hidden)
+  VerdantGraphWindowBg:SetHidden(hidden)
+  VerdantGraphWindowChromeTop:SetHidden(hidden)
+  VerdantGraphWindowChromeBottom:SetHidden(hidden)
+  VerdantGraphWindowChromeLeft:SetHidden(hidden)
+  VerdantGraphWindowChromeRight:SetHidden(hidden)
+  VerdantGraphWindowBrandLogo:SetHidden(hidden)
+  VerdantGraphWindowSettingsBtn:SetHidden(hidden)
+  VerdantGraphWindowCloseBtn:SetHidden(hidden)
+  controls.title:SetHidden(hidden)
+  controls.btn_record:SetHidden(hidden)
+  controls.btn_flush:SetHidden(hidden)
+  controls.btn_lib:SetHidden(hidden)
+  VerdantGraphWindowBarBtn:SetHidden(hidden or not Verdant.Visibility.is_bar_enabled())
+end
+
+function light.minimal(hidden)
+  controls.btn_stop:SetHidden(hidden)
+  controls.btn_prev_view:SetHidden(hidden)
+  controls.btn_next_view:SetHidden(hidden)
+  controls.view_label:SetHidden(hidden)
+  controls.status:SetHidden(hidden)
+end
+
+function light.apply_hover(hover)
+  light.hover = hover
+  if hover then
+    controls.window:SetAlpha(1)
+    light.minimal(false)
+  else
+    controls.window:SetAlpha(light.alpha_pct() / 100)
+    light.minimal(true)
+  end
+end
+
+function light.poll()
+  local mx, my = GetUIMousePosition()
+  local w = controls.window
+  local inside = mx >= w:GetLeft() and mx <= w:GetRight()
+             and my >= w:GetTop() and my <= w:GetBottom()
+  if inside ~= light.hover then light.apply_hover(inside) end
+end
+
+function light.enter()
+  if light.active then return end
+  light.active = true
+  Verdant.Diagnostics.bump("graph.light.enter")
+  light.chrome(true)
+  light.apply_hover(false)
+  zev.register_update("VerdantLightPoll", 150, light.poll)
+end
+
+function light.exit()
+  if not light.active then return end
+  light.active = false
+  zev.unregister_update("VerdantLightPoll")
+  controls.window:SetAlpha(1)
+  light.chrome(false)
+  light.minimal(false)
+end
+
 local function draw_one_marker(pool_line, pool_icon, canvas, m, x, is_group)
   local c
   if m.death then
@@ -2324,11 +2397,13 @@ function M.on_record_click()
   zev.register_update(Verdant.Constants.TEMPORAL.UPDATE_NAME, interval, on_sample_update)
   refresh_button_colors()
   controls.status:SetText("0:00")
+  if light.enabled() then light.enter() end
 end
 
 function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
   log:info("stop click")
+  light.exit()
   Verdant.AutoRecord.notify_manual_stop()
   Verdant.TemporalBuffer.stop_recording()
   zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
@@ -2439,6 +2514,7 @@ function M.load_session(sess)
 end
 
 function M.on_flush_click()
+  light.exit()
   if Verdant.TemporalBuffer.is_recording() then
     zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
     Verdant.TemporalBuffer.stop_recording()
@@ -2455,6 +2531,7 @@ function M.on_flush_click()
 end
 
 function M.on_close_click()
+  light.exit()
   Verdant.Visibility.set("graph", false)
   stop_hover_poll(); hide_hover_ui(); hover_key = nil
   release_all_pools()
@@ -2500,6 +2577,22 @@ function M.set_viewport_alpha(a)
   VerdantGraphWindowViewportBg:SetCenterColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, a)
 end
 
+function M.set_light_enabled(on)
+  if not on then
+    light.exit()
+  elseif Verdant.TemporalBuffer.is_recording() and not controls.window:IsHidden() then
+    light.enter()
+  end
+end
+
+function M.set_light_alpha(a)
+  if light.active and not light.hover then
+    controls.window:SetAlpha(a)
+  end
+end
+
+function M.is_light_active() return light.active end
+
 function M.set_shield_down(on)
   shield_down = on and true or false
   if current_view == VIEW_SKILL and controls.window and not controls.window:IsHidden() then
@@ -2519,6 +2612,7 @@ function M.toggle()
     controls.skill_area:SetHidden(use_main_canvas)
     render_current_view()
     update_hover_gate()
+    if Verdant.TemporalBuffer.is_recording() and light.enabled() then light.enter() end
   else
     stop_hover_poll(); hide_hover_ui(); hover_key = nil
     release_all_pools()

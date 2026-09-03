@@ -36,6 +36,7 @@ local CASES = {
   "overheal_view",
   "ultimate_band",
   "settings_columns",
+  "light_mode",
 }
 
 local passed, failed = 0, 0

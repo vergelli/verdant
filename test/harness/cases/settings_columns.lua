@@ -5,8 +5,8 @@ return function(H)
   svg.apply_xml(HARNESS_ROOT .. "/ui/settings.xml")
 
   local panel = H.layout(VerdantSettingsPanel)
-  ok(panel.w == 600 and panel.h == 432,
-     string.format("panel must be 600x432, got %dx%d", panel.w, panel.h))
+  ok(panel.w == 600 and panel.h == 460,
+     string.format("panel must be 600x460, got %dx%d", panel.w, panel.h))
 
   local left_col = {
     VerdantSettingsPanelSliderTrack,
@@ -14,6 +14,8 @@ return function(H)
     VerdantSettingsPanelSliderTrackShield,
     VerdantSettingsPanelAutoRecBtn,
     VerdantSettingsPanelAutosaveBtn,
+    VerdantSettingsPanelLightBtn,
+    VerdantSettingsPanelSliderTrackLightAlpha,
   }
   local right_col = {
     VerdantSettingsPanelSliderTrackSample,
