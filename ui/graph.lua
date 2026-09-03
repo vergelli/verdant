@@ -763,15 +763,17 @@ local C_TRI_CLASS = {
   { r = 0.55, g = 0.55, b = 0.55 },
   { r = 0.50, g = 0.38, b = 0.38 },
 }
-local C_TRI_NAME   = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 }
-local C_TRI_DIM    = { r = 0.60, g = 0.64, b = 0.61, a = 0.95 }
-local C_TRI_TIME   = { r = 0.48, g = 0.46, b = 0.42, a = 1.0 }
-local C_TRI_DEPTH  = { r = 0.91, g = 0.72, b = 0.29, a = 1.0 }
-local C_TRI_DEEP   = { r = 0.95, g = 0.42, b = 0.34, a = 1.0 }
-local C_TRI_STRIP  = { r = 0.16, g = 0.15, b = 0.13, a = 0.90 }
-local C_TRI_FAST   = { r = 0.58, g = 0.85, b = 0.92 }
-local C_TRI_MID    = { r = 0.92, g = 0.95, b = 0.93 }
-local C_TRI_SLOW   = { r = 0.91, g = 0.58, b = 0.42 }
+local C_TRI = {
+  NAME = { r = 0.86, g = 0.92, b = 0.88, a = 1.0 },
+  DIM = { r = 0.60, g = 0.64, b = 0.61, a = 0.95 },
+  TIME = { r = 0.48, g = 0.46, b = 0.42, a = 1.0 },
+  DEPTH = { r = 0.91, g = 0.72, b = 0.29, a = 1.0 },
+  DEEP = { r = 0.95, g = 0.42, b = 0.34, a = 1.0 },
+  STRIP = { r = 0.16, g = 0.15, b = 0.13, a = 0.90 },
+  FAST = { r = 0.58, g = 0.85, b = 0.92 },
+  MID = { r = 0.92, g = 0.95, b = 0.93 },
+  SLOW = { r = 0.91, g = 0.58, b = 0.42 },
+}
 local TRI_L = { HEADER_H = 20, STRIP_H = 14, STRIP_GAP = 10, ROW_H = 24, ROW_GAP = 2,
                 DONUT = 68, LEG_H = 14, LIST_ROW_H = 18 }
 local TRI_LEGEND = {
@@ -803,9 +805,9 @@ local TRI_TIP_KEY = {
 }
 
 local function tri_rt_color(rt)
-  if rt < TRI_RT_FAST_MS then return C_TRI_FAST end
-  if rt > TRI_RT_SLOW_MS then return C_TRI_SLOW end
-  return C_TRI_MID
+  if rt < TRI_RT_FAST_MS then return C_TRI.FAST end
+  if rt > TRI_RT_SLOW_MS then return C_TRI.SLOW end
+  return C_TRI.MID
 end
 
 local function tri_time_str(off_ms)
@@ -865,7 +867,7 @@ local function show_report_card()
     controls.card_donut:control():SetAnchor(TOPRIGHT, card.root, TOPRIGHT, -10, 8)
     controls.card_donut:control():SetDrawLevel(21)
     report.vals = {}
-    report.cols = { C_EHPS, C_OVERHEAL, C_TRI_SLOW }
+    report.cols = { C_EHPS, C_OVERHEAL, C_TRI.SLOW }
   end
   report.vals[1] = landed
   report.vals[2] = hot_pct
@@ -882,7 +884,7 @@ local function show_report_card()
   r1.val:SetHidden(false)
   local r2 = rows[2]
   r2.name:SetText(GetString(VERDANT_REPORT_DIRECT))
-  r2.name:SetColor(C_TRI_SLOW.r, C_TRI_SLOW.g, C_TRI_SLOW.b, 1.0)
+  r2.name:SetColor(C_TRI.SLOW.r, C_TRI.SLOW.g, C_TRI.SLOW.b, 1.0)
   r2.name:SetHidden(false)
   r2.val:SetText(string_format("%d%%", math_floor(direct_pct * 100 + 0.5)))
   r2.val:SetHidden(false)
@@ -1067,13 +1069,13 @@ local function hover_poll()
       local who = T.slot_name(e.slot) or ("group" .. e.slot)
       local depth = math_floor(e.min_rho * 100 + 0.5)
       local facts = string_format("|c%s%d%%|r %s",
-        hexc((e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH), depth,
+        hexc((e.min_rho < 0.15) and C_TRI.DEEP or C_TRI.DEPTH), depth,
         GetString(VERDANT_TRI_TIP_MINHP))
       if e.rt >= 0 then
         facts = facts .. string_format("  ·  |c%s%s|r",
           hexc(tri_rt_color(e.rt)), string_format(GetString(VERDANT_TRI_TIP_RT), e.rt / 1000))
       elseif e.responded then
-        facts = facts .. "  ·  |c" .. hexc(C_TRI_FAST) .. GetString(VERDANT_TRI_RT_HOTS) .. "|r"
+        facts = facts .. "  ·  |c" .. hexc(C_TRI.FAST) .. GetString(VERDANT_TRI_RT_HOTS) .. "|r"
       end
       show_moment_card(c, who, facts, e.t_start - tri_hit.t0, mx, my)
       local card = controls.card
@@ -2175,7 +2177,7 @@ local function render_view5()
   end
   head:SetText(head_text)
   head:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-  head:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, C_TRI_DIM.a)
+  head:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, C_TRI.DIM.a)
   head:SetDimensions(cw, TRI_L.HEADER_H)
   head:SetAnchor(TOPLEFT, canvas, TOPLEFT, 2, 0)
   head:SetHidden(false)
@@ -2186,7 +2188,7 @@ local function render_view5()
   strip:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y)
   strip:SetWidth(cw)
   strip:SetHeight(TRI_L.STRIP_H)
-  strip:SetColor(C_TRI_STRIP.r, C_TRI_STRIP.g, C_TRI_STRIP.b, C_TRI_STRIP.a)
+  strip:SetColor(C_TRI.STRIP.r, C_TRI.STRIP.g, C_TRI.STRIP.b, C_TRI.STRIP.a)
   strip:SetHidden(false)
 
   local s_top = controls.pool_buff_seg:AcquireObject()
@@ -2235,7 +2237,7 @@ local function render_view5()
   tl:ClearAnchors()
   tl:SetText("0:00")
   tl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-  tl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.75)
+  tl:SetColor(C_TRI.TIME.r, C_TRI.TIME.g, C_TRI.TIME.b, 0.75)
   tl:SetDimensions(50, TRI_L.STRIP_H)
   tl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 3, strip_y)
   tl:SetHidden(false)
@@ -2243,7 +2245,7 @@ local function render_view5()
   tr:ClearAnchors()
   tr:SetText(tri_time_str(span))
   tr:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-  tr:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.75)
+  tr:SetColor(C_TRI.TIME.r, C_TRI.TIME.g, C_TRI.TIME.b, 0.75)
   tr:SetDimensions(50, TRI_L.STRIP_H)
   tr:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 53, strip_y)
   tr:SetHidden(false)
@@ -2291,7 +2293,7 @@ local function render_view5()
   pct:ClearAnchors()
   pct:SetText(string_format("%d%%", math_floor(cov * 100 + 0.5)))
   pct:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
-  pct:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, 1)
+  pct:SetColor(C_TRI.NAME.r, C_TRI.NAME.g, C_TRI.NAME.b, 1)
   pct:SetDimensions(TRI_L.DONUT, 14)
   pct:SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, dcy - 13)
   pct:SetHidden(false)
@@ -2299,7 +2301,7 @@ local function render_view5()
   sub:ClearAnchors()
   sub:SetText(GetString(VERDANT_TRI_SAVED))
   sub:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
-  sub:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.9)
+  sub:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, 0.9)
   sub:SetDimensions(TRI_L.DONUT, 12)
   sub:SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, dcy + 1)
   sub:SetHidden(false)
@@ -2337,9 +2339,9 @@ local function render_view5()
     nl_:SetText(string_format("|c%s%d|r %s", hexc(c), cnt, GetString(rawget(_G, L.name))))
     nl_:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     if cnt > 0 then
-      nl_:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, selected and 1 or 0.85)
+      nl_:SetColor(C_TRI.NAME.r, C_TRI.NAME.g, C_TRI.NAME.b, selected and 1 or 0.85)
     else
-      nl_:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.6)
+      nl_:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, 0.6)
     end
     nl_:SetDimensions(80, TRI_L.LEG_H)
     nl_:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx + 14, y)
@@ -2377,7 +2379,7 @@ local function render_view5()
       ml:ClearAnchors()
       ml:SetText(GetString(rawget(_G, L.mean)))
       ml:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-      ml:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.7)
+      ml:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, 0.7)
       ml:SetDimensions(mw, TRI_L.LEG_H)
       ml:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx + 150, y)
       ml:SetHidden(ml:GetTextWidth() > mw)
@@ -2403,7 +2405,7 @@ local function render_view5()
   cap:ClearAnchors()
   cap:SetText(string_format(GetString(VERDANT_TRI_LIST_CAPTION), hexc(fcol), string.upper(fname)))
   cap:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-  cap:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.9)
+  cap:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, 0.9)
   cap:SetDimensions(cw - 8, 14)
   cap:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, cap_y)
   cap:SetHidden(false)
@@ -2426,7 +2428,7 @@ local function render_view5()
     none:ClearAnchors()
     none:SetText(GetString(VERDANT_TRI_LIST_EMPTY))
     none:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-    none:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.6)
+    none:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, 0.6)
     none:SetDimensions(cw - 12, TRI_L.LIST_ROW_H)
     none:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, rows_y)
     none:SetHidden(false)
@@ -2461,7 +2463,7 @@ local function render_view5()
         tlbl:ClearAnchors()
         tlbl:SetText(tri_time_str(e.t_start - t0))
         tlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-        tlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, C_TRI_TIME.a)
+        tlbl:SetColor(C_TRI.TIME.r, C_TRI.TIME.g, C_TRI.TIME.b, C_TRI.TIME.a)
         tlbl:SetDimensions(38, TRI_L.LIST_ROW_H)
         tlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, y)
         tlbl:SetHidden(false)
@@ -2483,13 +2485,13 @@ local function render_view5()
         nlbl:ClearAnchors()
         nlbl:SetText(pname)
         nlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-        nlbl:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, C_TRI_NAME.a)
+        nlbl:SetColor(C_TRI.NAME.r, C_TRI.NAME.g, C_TRI.NAME.b, C_TRI.NAME.a)
         nlbl:SetDimensions(math_max(60, cw - 64 - 130), TRI_L.LIST_ROW_H)
         nlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 64, y)
         nlbl:SetHidden(false)
 
         local depth = math_floor(e.min_rho * 100 + 0.5)
-        local dc = (e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH
+        local dc = (e.min_rho < 0.15) and C_TRI.DEEP or C_TRI.DEPTH
         local dlbl = controls.pool_buff_lbl:AcquireObject()
         dlbl:ClearAnchors()
         dlbl:SetText(string_format("%d%%", depth))
@@ -2507,10 +2509,10 @@ local function render_view5()
           rl:SetColor(rc.r, rc.g, rc.b, 1)
         elseif e.responded then
           rl:SetText(GetString(VERDANT_TRI_RT_HOTS))
-          rl:SetColor(C_TRI_FAST.r, C_TRI_FAST.g, C_TRI_FAST.b, 0.55)
+          rl:SetColor(C_TRI.FAST.r, C_TRI.FAST.g, C_TRI.FAST.b, 0.55)
         else
           rl:SetText("RT -")
-          rl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.8)
+          rl:SetColor(C_TRI.TIME.r, C_TRI.TIME.g, C_TRI.TIME.b, 0.8)
         end
         rl:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
         rl:SetDimensions(70, TRI_L.LIST_ROW_H)
@@ -2526,7 +2528,7 @@ local function render_view5()
     more:ClearAnchors()
     more:SetText(string_format(GetString(VERDANT_TRI_LIST_MORE), rest))
     more:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-    more:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.9)
+    more:SetColor(C_TRI.TIME.r, C_TRI.TIME.g, C_TRI.TIME.b, 0.9)
     more:SetDimensions(200, TRI_L.HEADER_H)
     more:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 204, 0)
     more:SetHidden(false)
@@ -2726,6 +2728,7 @@ function M.on_record_click()
   end
   summary_text = nil
   Verdant.TemporalBuffer.clear()
+  Verdant.Metrics.reset()
   Verdant.Metrics.session_mark()
   report.hot, report.direct = 0, 0
   release_all_pools()
