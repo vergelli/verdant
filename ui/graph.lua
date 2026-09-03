@@ -129,11 +129,11 @@ local CARD_W, CARD_H = 210, 56
 local CARD_ROW_H     = 16
 local CARD_MAX_ROWS  = 7
 local CARD_ROWS_Y0   = 54
-local C_CARD_BG     = { r = 0.05, g = 0.11, b = 0.07, a = 0.96 }
-local C_CARD_ACCENT = { r = 0.40, g = 0.85, b = 0.52, a = 1.0 }
-local C_CARD_STAT   = { r = 0.84, g = 0.92, b = 0.86, a = 1.0 }
-local C_CARD_NAME   = { r = 0.90, g = 1.00, b = 0.92, a = 1.0 }
-local C_CARD_TIME   = { r = 0.64, g = 0.72, b = 0.66, a = 1.0 }
+local C_CARD_BG     = { r = 0.075, g = 0.068, b = 0.060, a = 1.0 }
+local C_CARD_ACCENT = { r = 0.86, g = 0.70, b = 0.36, a = 1.0 }
+local C_CARD_STAT   = { r = 0.87, g = 0.87, b = 0.83, a = 1.0 }
+local C_CARD_NAME   = { r = 0.97, g = 0.95, b = 0.89, a = 1.0 }
+local C_CARD_TIME   = { r = 0.70, g = 0.68, b = 0.62, a = 1.0 }
 local C_CROSSHAIR   = { r = 0.50, g = 1.00, b = 0.62, a = 0.50 }
 
 local function fmt_val(v)
@@ -549,7 +549,7 @@ local function build_hover_card()
   base:SetTextureCoords(0, 1, 0, 0.05)
   base:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
   base:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
-  base:SetColor(0.045, 0.05, 0.042, 1.0)
+  base:SetColor(0.05, 0.046, 0.040, 1.0)
 
   local border_top = WM:CreateControl("VerdantHoverCardBTop", root, CT_TEXTURE)
   border_top:SetTexture(FILL_TEXTURE)
@@ -557,28 +557,28 @@ local function build_hover_card()
   border_top:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
   border_top:SetAnchor(TOPRIGHT, root, TOPRIGHT, 0, 0)
   border_top:SetHeight(1)
-  border_top:SetColor(0.42, 1.00, 0.60, 0.55)
+  border_top:SetColor(0.86, 0.70, 0.36, 0.45)
   local border_bot = WM:CreateControl("VerdantHoverCardBBot", root, CT_TEXTURE)
   border_bot:SetTexture(FILL_TEXTURE)
   border_bot:SetTextureCoords(0, 1, 0, 0.05)
   border_bot:SetAnchor(BOTTOMLEFT, root, BOTTOMLEFT, 0, 0)
   border_bot:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
   border_bot:SetHeight(1)
-  border_bot:SetColor(0.42, 1.00, 0.60, 0.55)
+  border_bot:SetColor(0.86, 0.70, 0.36, 0.45)
   local border_r = WM:CreateControl("VerdantHoverCardBR", root, CT_TEXTURE)
   border_r:SetTexture(FILL_TEXTURE)
   border_r:SetTextureCoords(0, 1, 0, 0.05)
   border_r:SetAnchor(TOPRIGHT, root, TOPRIGHT, 0, 0)
   border_r:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
   border_r:SetWidth(1)
-  border_r:SetColor(0.42, 1.00, 0.60, 0.55)
+  border_r:SetColor(0.86, 0.70, 0.36, 0.45)
   local border_l = WM:CreateControl("VerdantHoverCardBL", root, CT_TEXTURE)
   border_l:SetTexture(FILL_TEXTURE)
   border_l:SetTextureCoords(0, 1, 0, 0.05)
   border_l:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
   border_l:SetAnchor(BOTTOMLEFT, root, BOTTOMLEFT, 0, 0)
   border_l:SetWidth(1)
-  border_l:SetColor(0.42, 1.00, 0.60, 0.55)
+  border_l:SetColor(0.86, 0.70, 0.36, 0.45)
 
   local bg = WM:CreateControl("VerdantHoverCardBg", root, CT_TEXTURE)
   bg:SetTexture(FILL_TEXTURE)
