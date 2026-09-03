@@ -69,6 +69,9 @@
   the per-skill breakdown.
 
 ### Fixed
+- **A new recording no longer inherits the previous one** — rates from
+  heals that landed before you pressed Record leaked into the first
+  samples (and into PEAK / ACTIVE / WASTED). Record now starts from zero.
 - Bars keep one uniform width in every graph view — the "one thicker bar
   every few" artifact is gone.
 - Closing the bar with its X no longer resurrects it after visiting any

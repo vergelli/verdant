@@ -35,6 +35,7 @@ local CASES = {
   "donut_widget",
   "button_manners",
   "report_card",
+  "record_isolation",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",
