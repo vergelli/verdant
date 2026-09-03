@@ -104,6 +104,23 @@ return function(H)
   end
   ok(icon_size == 14, "ultimate icons are 14px, got " .. tostring(icon_size))
 
+  H.ability_names = H.ability_names or {}
+  H.ability_names[41001] = "Aggressive Horn"
+  H.ability_names[41002] = "Light's Champion"
+  local hit_main = VerdantGraphHitMain
+  H.state.mouse_x = canvas:GetLeft() + canvas:GetWidth() - 30
+  H.state.mouse_y = canvas:GetTop() + (VerdantGraphSummaryBg._h + 8) + 4 + 2
+  hit_main._onOnMouseEnter(hit_main)
+  H.advance(200)
+  ok(VerdantHoverCardName._text == "Aggressive Horn", "hovering the front row names its ultimate, got " .. tostring(VerdantHoverCardName._text))
+  ok((VerdantHoverCardStat._text or ""):find("ready to cast") ~= nil or (VerdantHoverCardStat._text or ""):find("charged") ~= nil,
+     "the ultimate card says charged or ready, got " .. tostring(VerdantHoverCardStat._text))
+  H.state.mouse_y = canvas:GetTop() + (VerdantGraphSummaryBg._h + 8) + 4 + 5 + 9 + 2
+  H.advance(200)
+  ok(VerdantHoverCardName._text == "Light's Champion", "hovering the back row names the other ultimate, got " .. tostring(VerdantHoverCardName._text))
+  hit_main._onOnMouseExit(hit_main)
+  H.state.mouse_x, H.state.mouse_y = 400, 300
+
   local session = Verdant.SessionStore.capture()
   ok(session and session.streams.ult ~= nil and session.streams.ulta ~= nil, "session must persist the ultimate streams")
   ok(Verdant.Graph.load_session(session), "captured session must reload")

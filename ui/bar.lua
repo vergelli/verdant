@@ -444,6 +444,9 @@ local function refresh()
 
     render_peak_line(controls.peak_line, controls.bar_area, area_w, area_h, peaks[m].frac)
   end
+  if controls.rec_dot then
+    controls.rec_dot:SetHidden(not Verdant.TemporalBuffer.is_recording())
+  end
   prof_exit("bar.refresh")
 end
 
@@ -534,6 +537,18 @@ function M.init()
   controls.prev_btn      = VerdantBarWindowPrevBtn
   controls.next_btn      = VerdantBarWindowNextBtn
   controls.settings_btn  = VerdantBarWindowSettingsBtn
+  controls.metric_label:SetMouseEnabled(true)
+  controls.metric_label:SetHandler("OnMouseUp", function(_, _, upInside)
+    if upInside ~= false then M.next_metric() end
+  end)
+  zui.tooltip(controls.metric_label, VERDANT_TIP_BAR_METRIC)
+  local rec_dot = zui.WINDOW_MANAGER:CreateControl("VerdantBarWindowRecDot", VerdantBarWindow, CT_TEXTURE)
+  rec_dot:SetTexture("Verdant/assets/rec.dds")
+  rec_dot:SetDimensions(8, 8)
+  rec_dot:SetAnchor(TOPRIGHT, VerdantBarWindow, TOPRIGHT, -6, 6)
+  rec_dot:SetDrawLevel(6)
+  rec_dot:SetHidden(true)
+  controls.rec_dot = rec_dot
   zui.tooltip(controls.prev_btn,     VERDANT_TIP_BAR_PREV)
   zui.tooltip(controls.next_btn,     VERDANT_TIP_BAR_NEXT)
   zui.tooltip(controls.mode_btn,     VERDANT_TIP_BAR_MODE)

@@ -1161,6 +1161,31 @@ local function hover_poll()
     buff_hover_poll(mx, my)
     return
   end
+  if current_view ~= VIEW_SKILL and current_view ~= VIEW_TRIAGE
+     and Verdant.Ultimate.has_data() and ULT_L.span and ULT_L.span > 0 then
+    local canvas = controls.canvas
+    local rel_x  = mx - canvas:GetLeft()
+    local rel_y  = my - canvas:GetTop() - ULT_L.CHIP
+    if rel_x >= 0 and rel_x <= canvas:GetWidth() and rel_y >= 0 and rel_y < ULT_L.AREA then
+      local U = Verdant.Ultimate
+      local b = (rel_y < ULT_L.PAD + ULT_L.ROW_H + ULT_L.GAP / 2) and 1 or 2
+      local t = ULT_L.t0 + (rel_x - ULT_L.xl) / ULT_L.bw * ULT_L.span
+      if t < ULT_L.t0 then t = ULT_L.t0 end
+      if t > ULT_L.t0 + ULT_L.span then t = ULT_L.t0 + ULT_L.span end
+      local id = U.id_at(b, t)
+      if id == 0 then b = 1; id = U.id_at(1, t) end
+      if id > 0 then
+        local pct = U.pct_at(t, b)
+        local ready = pct >= 1
+        local stat = ready and ("|c" .. hexc(C_ULT_READY) .. GetString(VERDANT_ULT_CARD_READY) .. "|r")
+                     or string_format(GetString(VERDANT_ULT_CARD_CHARGED), math_floor(pct * 100 + 0.5))
+        show_moment_card(ready and C_ULT_READY or C_VIEWPORT,
+          Verdant.SkillColors.ability_name(id), stat,
+          t - Verdant.BuffTracker.session_start(), mx, my)
+        return
+      end
+    end
+  end
   if current_view == VIEW_TRIAGE then
     local canvas = controls.canvas
     local rel_y  = my - canvas:GetTop()
@@ -1439,6 +1464,9 @@ local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
   local ut, ub, un = U.used()
   local at, ab, ai, ac, an = U.abilities()
   local t_hi = t0 + span
+  if canvas == controls.canvas then
+    ULT_L.t0, ULT_L.span, ULT_L.xl, ULT_L.bw = t0, span, x_left, bw
+  end
   for b = 1, 2 do
     local id = U.id_at(b, t_hi)
     if id > 0 or b == 1 then
