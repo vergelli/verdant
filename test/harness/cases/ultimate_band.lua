@@ -49,6 +49,14 @@ return function(H)
   ok(gold, "the available window must render gold")
   ok(tick, "the cast must render as a tick over the band")
 
+  local session = Verdant.SessionStore.capture()
+  ok(session and session.streams.ult ~= nil, "session must persist the ultimate stream")
+  ok(Verdant.Graph.load_session(session), "captured session must reload")
+  local snap2 = Verdant.Ultimate.snapshot()
+  ok(snap2.steps == snap.steps, "reloaded session must keep the charge curve")
+  ok(snap2.used == 1, "reloaded session must keep the cast")
+  ok(Verdant.Ultimate.has_data(), "the band must render for the loaded session")
+
   Verdant.Graph.on_flush_click()
   ok(not Verdant.Ultimate.has_data(), "flush must clear the ultimate session")
 

@@ -51,6 +51,13 @@ local DESC = {
     { name = "id", width = 4 },
     { name = "sh", width = 2, scale = 1000 },
   },
+  ult = {
+    { name = "t", width = 4 },
+    { name = "p", width = 1, scale = 100 },
+  },
+  ultu = {
+    { name = "t", width = 4 },
+  },
 }
 
 M.DESC = DESC
@@ -171,6 +178,20 @@ function M.capture()
     }
   end
 
+  local ust, usp, usn = Verdant.Ultimate.steps()
+  local ult_recs = {}
+  for i = 1, usn do
+    local p = usp[i]
+    if p > 1 then p = 1 end
+    if p < 0 then p = 0 end
+    ult_recs[i] = { t = ust[i] - t0, p = p }
+  end
+  local uut, uun = Verdant.Ultimate.used()
+  local ultu_recs = {}
+  for i = 1, uun do
+    ultu_recs[i] = { t = uut[i] - t0 }
+  end
+
   local ms, mn = TB.markers()
   local mk_recs = {}
   for i = 1, mn do
@@ -229,6 +250,8 @@ function M.capture()
       markers   = vsf.pack(mk_recs, DESC.markers),
       shares    = vsf.pack(share_recs, DESC.shares),
       abilities = vsf.pack(ability_recs, DESC.abilities),
+      ult       = vsf.pack(ult_recs, DESC.ult),
+      ultu      = vsf.pack(ultu_recs, DESC.ultu),
     },
   }
   return session
