@@ -8,6 +8,7 @@ Verdant.Constants = {
   SLASH_COMMAND = "/verdant",
 
   DEBUG         = false,
+  PIXEL_GRID    = true,
 
   SV_TABLE   = "VerdantSavedVars",
   SV_VERSION = 1,

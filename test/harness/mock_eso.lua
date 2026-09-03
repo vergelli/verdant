@@ -459,6 +459,7 @@ function GetSlotAbilityCost(slot, mechanic, cat)
   return H.state.ult_cost or 250
 end
 DUNGEON_DIFFICULTY_NONE = 0 DUNGEON_DIFFICULTY_NORMAL = 1 DUNGEON_DIFFICULTY_VETERAN = 2
+function GetUIGlobalScale() return H.state.ui_scale or 1 end
 function GetCurrentZoneDungeonDifficulty() return H.state.difficulty or 0 end
 function GetDateStringFromTimestamp(ts) return "2026-09-03" end
 function GetActiveHotbarCategory()

@@ -159,6 +159,12 @@ local function on_slash(input)
     Verdant.Library.toggle() ; return
   end
 
+  if cmd == "grid" then
+    local on = not Verdant.Graph.pixel_grid()
+    Verdant.Graph.set_pixel_grid(on)
+    d("[V] pixel grid: " .. (on and "on" or "off"))
+    return
+  end
   if cmd == "hitch" then
     local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
     if sub == "reset" then Verdant.Hitch.reset(); d("[V] hitch log cleared") return end
@@ -173,7 +179,8 @@ local function on_slash(input)
     d(GetString(VERDANT_HELP_TOGGLE))
     d(GetString(VERDANT_HELP_GRAPH))
     d(GetString(VERDANT_HELP_LIB))
-    d(GetString(VERDANT_HELP_HITCH))
+    d(GetString(VERDANT_HELP_HITCH))
+    d(GetString(VERDANT_HELP_GRID))
     d(GetString(VERDANT_HELP_HELP))
     return
   end

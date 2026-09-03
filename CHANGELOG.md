@@ -89,6 +89,7 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- Graph columns sit on a physical-pixel grid: whole-pixel pitch and bar width at any window width and UI scale, the remainder (under one pitch) left blank at the old-data edge. Behind `PIXEL_GRID` in constants and `/verdant grid` for in-game A/B.
 - TRIAGE at small heights switches to a compact tier: the chip folds into its report icon and the episode list steps aside so the donut and legend stay whole.
 - Long time windows decimate into whole-sample columns (min 6px), so large fights render as even columns.
 - SKILL view keeps both plots the same height when the ultimate band is present.

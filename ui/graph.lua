@@ -436,6 +436,20 @@ local SCR = {
 local MIN_COL_PX = 6
 local dec_cols   = { denom = 1 }
 
+local function grid_geometry(cw, denom, sc, base)
+  local cw_p = math_floor(cw * sc)
+  local minp = math_floor(MIN_COL_PX * sc + 0.5)
+  if minp < 2 then minp = 2 end
+  local n = math_floor(cw_p / minp)
+  if n < 1 then n = 1 end
+  if n > denom then n = denom end
+  local P = math_floor(cw_p / n)
+  if P < 1 then P = 1 end
+  local x0 = cw_p - n * P
+  local gap = (P > 3) and 1 or 0
+  return n, P, x0, (P - gap) / sc, math_floor(base * sc + 0.5)
+end
+
 local function decimate(cw)
   local TB       = Verdant.TemporalBuffer
   local capacity = TB.capacity()
@@ -446,12 +460,31 @@ local function decimate(cw)
     if h >= n and h >= 15 then denom = h else break end
   end
   dec_cols.denom = denom
-  local max_cols = math_floor(cw / MIN_COL_PX)
-  if max_cols < 1 then max_cols = 1 end
-  local per = math.ceil(denom / max_cols)
-  if per < 1 then per = 1 end
-  local num_cols = math.ceil(denom / per)
-  if num_cols < 1 then num_cols = 1 end
+  local grid = dec_cols.grid
+  if grid == nil then grid = (Verdant.Constants.PIXEL_GRID ~= false) end
+  local num_cols
+  if grid then
+    local sc   = api.GetUIGlobalScale and api.GetUIGlobalScale() or 1
+    if not sc or sc <= 0 then sc = 1 end
+    local base = controls.canvas and controls.canvas:GetLeft() or 0
+    local n, P, x0, bw, base_p = grid_geometry(cw, denom, sc, base)
+    num_cols = n
+    dec_cols.pitch  = P
+    dec_cols.x0     = x0
+    dec_cols.scale  = sc
+    dec_cols.base   = base
+    dec_cols.base_p = base_p
+    dec_cols.bw     = bw
+  else
+    local max_cols = math_floor(cw / MIN_COL_PX)
+    if max_cols < 1 then max_cols = 1 end
+    local per = math.ceil(denom / max_cols)
+    if per < 1 then per = 1 end
+    num_cols = math.ceil(denom / per)
+    if num_cols < 1 then num_cols = 1 end
+    dec_cols.pitch = nil
+    dec_cols.bw    = nil
+  end
   local offset   = denom - n
   local m, cur_c = 0, -1
   local col
@@ -481,12 +514,19 @@ local function decimate(cw)
       col.t = s.t
     end
   end
-  local col_w   = cw / num_cols
+  local col_w   = dec_cols.pitch and (dec_cols.pitch / dec_cols.scale) or (cw / num_cols)
   local bar_gap = (col_w > 3) and 1 or 0
   return m, num_cols, col_w, bar_gap
 end
 
 local function dec_rect(c, num_cols, cw)
+  local P = dec_cols.pitch
+  if P then
+    local sc     = dec_cols.scale
+    local left_p = dec_cols.base_p + dec_cols.x0 + c * P
+    local left   = left_p / sc - dec_cols.base
+    return left, left + P / sc
+  end
   local left  = math_floor(c       * cw / num_cols + 0.5)
   local right = math_floor((c + 1) * cw / num_cols + 0.5)
   return left, right
@@ -1625,7 +1665,7 @@ local function render_view1()
   local xs          = SCR.r1_xs
   local ehps_hs     = SCR.r1_ehps_hs
   local ems_hs      = SCR.r1_ems_hs
-  local bw          = math_max(1, math_floor(col_w) - bar_gap)
+  local bw          = (dec_cols.bw or math_max(1, math_floor(col_w) - bar_gap))
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -1746,7 +1786,7 @@ local function render_view2()
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span_ms = axis_span(t_last - t_first, n)
   local t0x     = t_last - span_ms
-  local bwu     = math_max(1, math_floor(col_w) - bar_gap)
+  local bwu     = (dec_cols.bw or math_max(1, math_floor(col_w) - bar_gap))
   draw_grid(controls.grid_top, ec, max_ehps, 0, nil, nil, ult_inset())
   draw_grid(controls.grid_bot, mc, max_mps, span_ms, shield_down, true)
   local capture = not Verdant.TemporalBuffer.is_recording()
@@ -1941,7 +1981,7 @@ local function render_view3()
 
   local xs          = SCR.r3_xs
   local top_hs      = SCR.r3_top_hs
-  local bw          = math_max(1, math_floor(col_w) - bar_gap)
+  local bw          = (dec_cols.bw or math_max(1, math_floor(col_w) - bar_gap))
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -2041,7 +2081,7 @@ local function render_view_oh()
 
   local xs     = SCR.r3_xs
   local eff_hs = SCR.r3_top_hs
-  local bw     = math_max(1, math_floor(col_w) - bar_gap)
+  local bw     = (dec_cols.bw or math_max(1, math_floor(col_w) - bar_gap))
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -3190,6 +3230,21 @@ function M.on_move_stop()
   local x, y = controls.window:GetCenter()
   sv.temporal.graph_x = x
   sv.temporal.graph_y = y
+end
+
+function M.pixel_grid()
+  local g = dec_cols.grid
+  if g == nil then g = (Verdant.Constants.PIXEL_GRID ~= false) end
+  return g
+end
+
+function M.set_pixel_grid(on)
+  dec_cols.grid = on and true or false
+  M.on_resize_stop()
+end
+
+function M.column_geometry(cw, denom, sc, base)
+  return grid_geometry(cw, denom, sc or 1, base or 0)
 end
 
 function M.on_resize_stop()

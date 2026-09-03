@@ -22,6 +22,7 @@ M.GetUnitClassId          = GetUnitClassId
 M.ZO_GetClassIcon         = ZO_GetClassIcon
 M.GetUnitZone             = GetUnitZone
 M.GetTimeStamp            = GetTimeStamp
+M.GetUIGlobalScale        = GetUIGlobalScale
 M.GetDateStringFromTimestamp = GetDateStringFromTimestamp
 M.GetCurrentZoneDungeonDifficulty = GetCurrentZoneDungeonDifficulty
 M.GetLatency              = GetLatency
