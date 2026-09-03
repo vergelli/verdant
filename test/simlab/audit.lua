@@ -3,9 +3,15 @@ local OUT  = ROOT .. "/test/simlab/out"
 
 local function list_svgs()
   local files = {}
-  local p = io.popen('dir /b "' .. OUT:gsub("/", "\\") .. '\\*.svg" 2>nul')
+  local windows = package.config:sub(1, 1) == "\\"
+  local cmd = windows
+    and ('dir /b "' .. OUT:gsub("/", "\\") .. '\\*.svg" 2>nul')
+    or  ('ls "' .. OUT .. '" 2>/dev/null')
+  local p = io.popen(cmd)
   if p then
-    for line in p:lines() do files[#files + 1] = line end
+    for line in p:lines() do
+      if line:find("%.svg$") then files[#files + 1] = line end
+    end
     p:close()
   end
   table.sort(files)
