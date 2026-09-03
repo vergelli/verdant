@@ -61,8 +61,8 @@ return function(H)
   else
     ok(VerdantLibraryRow1Ring._hidden == true, "a session without output hides its ring")
   end
-  Verdant.Library.on_row_click(1)
-  Verdant.Library.on_open_click()
+  ok(type(VerdantLibraryRow1._onOnMouseDoubleClick) == "function", "rows open on double click")
+  VerdantLibraryRow1._onOnMouseDoubleClick(VerdantLibraryRow1)
   ok(VerdantLibrary._hidden == true, "library must hide after open")
 
   local tb2  = Verdant.TemporalBuffer.summary()

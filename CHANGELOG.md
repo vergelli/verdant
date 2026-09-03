@@ -6,6 +6,9 @@
 - **The summary chip lives inside the viewport** now, top right, and the
   plot makes room below it while it is up, so it no longer straddles the
   viewport border.
+- **Keybinds** for the graph window and for start / stop recording, next
+  to the existing bar toggle in Controls > Keybindings.
+- **Double-click a library row** to open it.
 - **Hover the ultimate rows** — after a recording, hovering a row names
   the ultimate and says how charged it was at that moment, or that it
   was ready to cast.
@@ -90,6 +93,9 @@
   buttons across the graph, bar, library and settings, and the same sound
   vocabulary everywhere: windows open and close with their sounds, record
   and stop confirm, flush and delete decline.
+- **BUFFS view stops allocating while recording** — a per-row closure
+  cost 2.4 KB per tick; the tripwire now feeds buffs and triage so it
+  would catch that again.
 - **Render pass allocates nothing per tick** — the bar views no longer
   create closures on every sample, so long recordings put less pressure
   on the garbage collector. Offline tripwire keeps it that way.

@@ -71,12 +71,7 @@ local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
 local controls           = {}
 local recording_start_ms = 0
 
-local VIEW_EMS      = 1
-local VIEW_SKILL    = 2
-local VIEW_CRIT     = 3
-local VIEW_OVERHEAL = 4
-local VIEW_BUFFS    = 5
-local VIEW_TRIAGE   = 6
+local VIEW = { EMS = 1, SKILL = 2, CRIT = 3, OVERHEAL = 4, BUFFS = 5, TRIAGE = 6 }
 local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE" }
 local VIEW_TIPS
 local function view_tips()
@@ -86,7 +81,7 @@ local function view_tips()
   end
   return VIEW_TIPS
 end
-local current_view = VIEW_EMS
+local current_view = VIEW.EMS
 
 -- SKILL view shield orientation: false = shields grow UP from the subplot floor
 -- (default); true = shields hang DOWN from the ceiling, mirroring the healing bars
@@ -94,7 +89,7 @@ local current_view = VIEW_EMS
 local shield_down = false
 
 -- ── Hover (Datadog-style, ported from Verditer) ───────────────────────────────
--- Verdant has THREE canvases: the main one (VIEW_EMS / VIEW_CRIT) and the SKILL
+-- Verdant has THREE canvases: the main one (VIEW.EMS / VIEW.CRIT) and the SKILL
 -- view's split top (eHPS) + bottom (MPS). Each gets its own hit index. Frozen-session
 -- only. hover_key (a group-key string) is applied to BOTH skill stacks.
 local GetUIMousePosition = api.GetUIMousePosition
@@ -758,7 +753,7 @@ local function show_card(band, col, unit, mx, my, elapsed_ms)
   clear_card_rows(card)
   local shown = 0
   local list = nil
-  if current_view == VIEW_SKILL and col then
+  if current_view == VIEW.SKILL and col then
     list = (unit == "MPS") and col.mps_abilities or col.ehps_abilities
   end
   if list and (list.count or 0) > 0 then
@@ -1157,11 +1152,11 @@ local function hover_poll()
     return
   end
   local mx, my = GetUIMousePosition()
-  if current_view == VIEW_BUFFS then
+  if current_view == VIEW.BUFFS then
     buff_hover_poll(mx, my)
     return
   end
-  if current_view ~= VIEW_SKILL and current_view ~= VIEW_TRIAGE
+  if current_view ~= VIEW.SKILL and current_view ~= VIEW.TRIAGE
      and Verdant.Ultimate.has_data() and ULT_L.span and ULT_L.span > 0 then
     local canvas = controls.canvas
     local rel_x  = mx - canvas:GetLeft()
@@ -1186,7 +1181,7 @@ local function hover_poll()
       end
     end
   end
-  if current_view == VIEW_TRIAGE then
+  if current_view == VIEW.TRIAGE then
     local canvas = controls.canvas
     local rel_y  = my - canvas:GetTop()
     local rel_x  = mx - canvas:GetLeft()
@@ -1234,7 +1229,7 @@ local function hover_poll()
     return
   end
   local band, col, canvas, H, unit
-  if current_view == VIEW_SKILL then
+  if current_view == VIEW.SKILL then
     local inside, b, c = probe(controls.ehps_canvas, hit_top, mx, my)
     if inside then band, col, canvas, H, unit = b, c, controls.ehps_canvas, hit_top, "HPS" end
     if not inside then
@@ -1262,7 +1257,7 @@ local function hover_poll()
   local elapsed = (col.t and H.t0) and (col.t - H.t0) or 0
   if band then
     show_card(band, col, unit or "HPS", mx, my, elapsed)
-  elseif current_view == VIEW_EMS then
+  elseif current_view == VIEW.EMS then
     local dmg_part = ""
     if (col.d or 0) > 0 then
       dmg_part = string_format("  ·  |c%s%s dmg|r", hexc(C_LINE_DMG), fmt_val(col.d))
@@ -1271,13 +1266,13 @@ local function hover_poll()
       string_format("|c%s%s HPS|r  ·  |c%s%s MPS|r%s",
         hexc(C_EHPS), fmt_val(col.ehps or 0), hexc(C_MPS), fmt_val(col.mps or 0), dmg_part),
       elapsed, mx, my)
-  elseif current_view == VIEW_CRIT then
+  elseif current_view == VIEW.CRIT then
     local tot = (col.crit or 0) + (col.noncrit or 0)
     local cp  = (tot > 0) and math_floor((col.crit or 0) / tot * 100 + 0.5) or 0
     show_moment_card(C_CRIT, "Crit",
       string_format("|c%s%d%% crit|r  ·  %s HPS", hexc(C_CRIT), cp, fmt_val(tot)),
       elapsed, mx, my)
-  elseif current_view == VIEW_OVERHEAL then
+  elseif current_view == VIEW.OVERHEAL then
     local tot = (col.eh or 0) + (col.oh or 0)
     local op  = (tot > 0) and math_floor((col.oh or 0) / tot * 100 + 0.5) or 0
     show_moment_card(C_OVERHEAL, "Overheal",
@@ -1290,8 +1285,8 @@ end
 
 local function update_hover_gate()
   local on    = hover_allowed()
-  local skill = (current_view == VIEW_SKILL)
-  local main  = (current_view ~= VIEW_SKILL)
+  local skill = (current_view == VIEW.SKILL)
+  local main  = (current_view ~= VIEW.SKILL)
   if controls.hit_main then
     controls.hit_main:SetMouseEnabled(on and main)
     controls.hit_main:SetHidden(not (on and main))
@@ -2068,6 +2063,21 @@ local function seg_alpha(conc, max_conc)
   return 0.40 + 0.55 * (conc / max_conc)
 end
 
+local function buff_seg(canvas, x0, x1, y, row_h, conc, rec, c, dim)
+  local seg = controls.pool_buff_seg:AcquireObject()
+  seg:ClearAnchors()
+  seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y)
+  seg:SetWidth(math_max(1, x1 - x0))
+  seg:SetHeight(row_h)
+  if dim then
+    seg:SetColor(c.r * 0.30 + C_DIM_BIAS, c.g * 0.30 + C_DIM_BIAS,
+                 c.b * 0.30 + C_DIM_BIAS, 0.25)
+  else
+    seg:SetColor(c.r, c.g, c.b, seg_alpha(conc, rec.max_conc))
+  end
+  seg:SetHidden(false)
+end
+
 
 
 
@@ -2210,23 +2220,7 @@ local function render_view4()
 
     local n_steps = rec.n_steps
     local run_x0, run_x1, run_conc
-    local function flush_run()
-      if not run_x0 then return end
-      local seg = controls.pool_buff_seg:AcquireObject()
-      seg:ClearAnchors()
-      seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, run_x0, y)
-      seg:SetWidth(math_max(1, run_x1 - run_x0))
-      seg:SetHeight(row_h)
-      local a = seg_alpha(run_conc, rec.max_conc)
-      if hk ~= nil and rec.id ~= hk then
-        seg:SetColor(c.r * 0.30 + C_DIM_BIAS, c.g * 0.30 + C_DIM_BIAS,
-                     c.b * 0.30 + C_DIM_BIAS, 0.25)
-      else
-        seg:SetColor(c.r, c.g, c.b, a)
-      end
-      seg:SetHidden(false)
-      run_x0 = nil
-    end
+    local dim = (hk ~= nil and rec.id ~= hk)
     for k = 1, n_steps do
       local conc = rec.step_c[k]
       if conc > 0 then
@@ -2241,13 +2235,13 @@ local function render_view4()
             if x1 > run_x1 then run_x1 = x1 end
             if conc > run_conc then run_conc = conc end
           else
-            flush_run()
+            if run_x0 then buff_seg(canvas, run_x0, run_x1, y, row_h, run_conc, rec, c, dim) end
             run_x0, run_x1, run_conc = x0, x1, conc
           end
         end
       end
     end
-    flush_run()
+    if run_x0 then buff_seg(canvas, run_x0, run_x1, y, row_h, run_conc, rec, c, dim) end
   end
 
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
@@ -2679,15 +2673,15 @@ function render_current_view()
     controls.pool_marker_line_top:ReleaseAllObjects()
     controls.pool_marker_icon_top:ReleaseAllObjects()
   end
-  if current_view == VIEW_EMS then
+  if current_view == VIEW.EMS then
     render_view1()
-  elseif current_view == VIEW_CRIT then
+  elseif current_view == VIEW.CRIT then
     render_view3()
-  elseif current_view == VIEW_OVERHEAL then
+  elseif current_view == VIEW.OVERHEAL then
     render_view_oh()
-  elseif current_view == VIEW_BUFFS then
+  elseif current_view == VIEW.BUFFS then
     render_view4()
-  elseif current_view == VIEW_TRIAGE then
+  elseif current_view == VIEW.TRIAGE then
     render_view5()
   else
     layout_skill_area()
@@ -2859,17 +2853,17 @@ local function set_view(v)
   style_tabs()
   hover_key = nil
   if controls.oh_legend then
-    controls.oh_legend:SetHidden(v ~= VIEW_OVERHEAL or Verdant.TemporalBuffer.count() == 0)
+    controls.oh_legend:SetHidden(v ~= VIEW.OVERHEAL or Verdant.TemporalBuffer.count() == 0)
   end
-  if v == VIEW_BUFFS then
+  if v == VIEW.BUFFS then
     controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_BUFFS))
-  elseif v == VIEW_TRIAGE then
+  elseif v == VIEW.TRIAGE then
     controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_TRIAGE))
   else
     controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_DATA))
   end
 
-  local use_main_canvas = (v ~= VIEW_SKILL)
+  local use_main_canvas = (v ~= VIEW.SKILL)
   controls.canvas:SetHidden(not use_main_canvas)
   controls.skill_area:SetHidden(use_main_canvas)
 
@@ -3130,16 +3124,24 @@ function M.on_resize_stop()
   end
 end
 
+function M.toggle_record()
+  if Verdant.TemporalBuffer.is_recording() then
+    M.on_stop_click()
+  else
+    M.on_record_click()
+  end
+end
+
 function M.prev_view()
   local v = current_view - 1
-  if v < VIEW_EMS then v = VIEW_TRIAGE end
+  if v < VIEW.EMS then v = VIEW.TRIAGE end
   release_all_pools()
   set_view(v)
 end
 
 function M.next_view()
   local v = current_view + 1
-  if v > VIEW_TRIAGE then v = VIEW_EMS end
+  if v > VIEW.TRIAGE then v = VIEW.EMS end
   release_all_pools()
   set_view(v)
 end
@@ -3166,7 +3168,7 @@ function M.is_light_active() return light.active end
 
 function M.set_shield_down(on)
   shield_down = on and true or false
-  if current_view == VIEW_SKILL and controls.window and not controls.window:IsHidden() then
+  if current_view == VIEW.SKILL and controls.window and not controls.window:IsHidden() then
     render_current_view()
   end
 end
@@ -3191,7 +3193,7 @@ function M.toggle()
     if controls.welcome and not (sv.settings and sv.settings.welcomed) then
       controls.welcome:SetHidden(false)
     end
-    local use_main_canvas = (current_view ~= VIEW_SKILL)
+    local use_main_canvas = (current_view ~= VIEW.SKILL)
     controls.canvas:SetHidden(not use_main_canvas)
     controls.skill_area:SetHidden(use_main_canvas)
     render_current_view()
@@ -3518,7 +3520,7 @@ function M.init()
   controls.hit_bot  = make_hit("VerdantGraphHitBot",  controls.mps_canvas)
 
   controls.hit_main:SetHandler("OnMouseWheel", function(_, delta)
-    if current_view ~= VIEW_TRIAGE then return end
+    if current_view ~= VIEW.TRIAGE then return end
     local dir = (delta and delta < 0) and 1 or -1
     local max_scroll = tri_hit.matches - tri_hit.fit
     if max_scroll < 0 then max_scroll = 0 end
@@ -3534,7 +3536,7 @@ function M.init()
 
   controls.hit_main:SetHandler("OnMouseUp", function(_, _, upInside)
     if upInside == false then return end
-    if current_view == VIEW_TRIAGE then
+    if current_view == VIEW.TRIAGE then
       local mx, my = GetUIMousePosition()
       local rel_y = my - controls.canvas:GetTop()
       for i = 1, tri_hit.leg_n do
@@ -3552,7 +3554,7 @@ function M.init()
       end
       return
     end
-    if current_view ~= VIEW_BUFFS then return end
+    if current_view ~= VIEW.BUFFS then return end
     local mx, my = GetUIMousePosition()
     local rel_x = mx - controls.canvas:GetLeft()
     local rel_y = my - controls.canvas:GetTop()

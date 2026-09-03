@@ -11,10 +11,16 @@ H.fire(EVENT_ADD_ON_LOADED, "Verdant")
 
 H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [8] = 40223 } }
 Verdant.Ultimate.refresh_cost()
+H.state.grouped = true
+H.state.group_size = 4
+H.state.player_group_tag = "group1"
+H.unit_names = { group1 = "Me", group2 = "Ally2", group3 = "Ally3", group4 = "Ally4" }
+H.fire(EVENT_GROUP_UPDATE)
 Verdant.Visibility.set("graph", true)
 Verdant.Graph.on_record_click()
 
 local ult = 0
+local tick_n = 0
 local function fight_tick()
   for i = 1, 8 do
     H.damage({ hit = 900 + i * 37, target_unit_id = 600 + i })
@@ -26,6 +32,11 @@ local function fight_tick()
   H.shield({ hit = 500, target_unit_id = 601 })
   ult = (ult + 6) % 260
   H.ult_power(ult)
+  tick_n = (tick_n or 0) + 1
+  local b = tick_n % 6
+  H.effect(EFFECT_RESULT_GAINED, 61700 + b, 600 + (b % 4), (H.now() + 9000) / 1000, nil, "group" .. (1 + b % 4))
+  if tick_n % 4 == 0 then H.power("group2", 12000, 40000) end
+  if tick_n % 4 == 2 then H.power("group2", 30000, 40000) end
 end
 
 for _ = 1, 60 do

@@ -2,6 +2,8 @@ Verdant = Verdant or {}
 
 -- Keybinding label shown in ESO Controls settings
 ZO_CreateStringId("SI_BINDING_NAME_VERDANT_TOGGLE", "Toggle Verdant Bar")
+ZO_CreateStringId("SI_BINDING_NAME_VERDANT_GRAPH",  "Toggle Graph Window")
+ZO_CreateStringId("SI_BINDING_NAME_VERDANT_RECORD", "Start / Stop Recording")
 
 -- Debug / status strings
 ZO_CreateStringId("VERDANT_PROBE_ON",       "Probe ON. Logging events to chat (rate-limited).")
