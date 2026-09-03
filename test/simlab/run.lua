@@ -106,6 +106,16 @@ for _, name in ipairs(SCENARIOS) do
         print("      svg -> " .. out)
         Verdant.Graph.next_view()
       end
+      VerdantGraphWindow:SetDimensions(360, 240)
+      Verdant.Graph.on_resize_stop()
+      for _ = 1, 6 do
+        local view = tostring(VerdantGraphWindowViewLabel._text or "view")
+        local out = SIMLAB_ROOT .. "/test/simlab/out/" .. spec.name .. "_min_" .. view:lower() .. ".svg"
+        svg.snapshot(H, VerdantGraphWindow, out)
+        Verdant.Graph.next_view()
+      end
+      VerdantGraphWindow:SetDimensions(420, 312)
+      Verdant.Graph.on_resize_stop()
     end
   end
 end
