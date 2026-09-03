@@ -52,4 +52,13 @@ Verdant.Graph.on_stop_click()
 Verdant.Library.show()
 print(svg.snapshot(H, VerdantLibrary, OUT .. "library_window.svg"))
 Verdant.Library.hide()
+
+local canvas = VerdantGraphWindowViewportCanvas
+H.state.mouse_x = canvas:GetLeft() + canvas:GetWidth() - 30
+H.state.mouse_y = canvas:GetTop() + 120
+local hit = VerdantGraphHitMain
+hit._onOnMouseEnter(hit)
+H.advance(200)
+print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_hover.svg"))
+hit._onOnMouseExit(hit)
 Verdant.Graph.on_flush_click()
