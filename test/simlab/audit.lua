@@ -61,6 +61,16 @@ local function parse(path)
   return box, els
 end
 
+local FLOATING = { "VerdantHoverCard", "VerdantGraphCrosshair" }
+
+local function floating(name)
+  if not name then return false end
+  for _, p in ipairs(FLOATING) do
+    if name:find("^" .. p) then return true end
+  end
+  return false
+end
+
 local function overlaps(a, b)
   local m = 2
   return a.x + m < b.x + b.w and b.x < a.x + a.w - m
@@ -73,7 +83,7 @@ for _, name in ipairs(list_svgs()) do
   if box and box.x then
     local finds = {}
     for _, e in ipairs(els) do
-      if e.op > 0.05 then
+      if e.op > 0.05 and not floating(e.name) then
         if e.x < box.x - 0.5 or e.y < box.y - 0.5
            or e.x + e.w > box.x + box.w + 0.5
            or e.y + e.h > box.y + box.h + 0.5 then
@@ -85,10 +95,11 @@ for _, name in ipairs(list_svgs()) do
     end
     for i = 1, #els do
       local a = els[i]
-      if a.kind == "text" then
+      if a.kind == "text" and not floating(a.name) then
         for j = 1, #els do
           local b = els[j]
-          if j > i and b.kind == "text" and overlaps(a, b) then
+          if floating(b.name) then
+          elseif j > i and b.kind == "text" and overlaps(a, b) then
             finds[#finds + 1] = string.format(
               '  TEXT-OVERLAP "%s" vs "%s" at (%.0f,%.0f)', a.text, b.text, a.x, a.y)
           end

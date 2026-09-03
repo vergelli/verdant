@@ -38,6 +38,7 @@ local CASES = {
   "settings_columns",
   "light_mode",
   "buff_watch",
+  "zero_alloc",
 }
 
 local passed, failed = 0, 0

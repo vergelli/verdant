@@ -21,11 +21,24 @@
 
 ### Changed
 - **The graph grows into its window** — a fresh recording no longer starts
-  as tiny bars on a huge empty axis: the chart fills the available width
-  and expands its time span in steps until it reaches the configured
-  window, then slides as before.
+  as tiny bars on a huge empty axis: the live bar stays pinned to the right
+  edge as always, but the axis starts short and expands in steps until it
+  reaches the configured window, then slides as before. Time ticks read as
+  a lookback ("-30s ... now").
 - **Settings panel in two columns** (600 wide) — no more tower taller than
   the window it docks to.
+- **Compact bar layout** — the value gets its own full-width row (it used
+  to run under the graph button on narrow widths), the graph and settings
+  buttons move to their own row, and the brand logo replaces the clipped
+  title text.
+
+### Fixed
+- Bars keep one uniform width in every graph view — the "one thicker bar
+  every few" artifact is gone.
+- Closing the bar with its X no longer resurrects it after visiting any
+  menu.
+- The y-axis max label steps aside on short canvases instead of colliding
+  with the 75% label.
 
 ## [2.4.0] - 2026-08-23
 
