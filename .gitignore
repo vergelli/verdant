@@ -43,6 +43,7 @@ specs/
 test/*
 !test/harness/
 !test/simlab/
+!test/gate.sh
 test/simlab/out/
 
 ESOUI_GUIDELINES.md
