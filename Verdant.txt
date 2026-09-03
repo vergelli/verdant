@@ -29,6 +29,7 @@ zenimax/scene.lua
 lib/plot/style.lua
 lib/plot/primitives.lua
 lib/plot/pool.lua
+lib/plot/donut.lua
 lib/plot/plot_stacked_bar.lua
 observability/copybox.lua
 observability/log.lua
@@ -68,6 +69,7 @@ ui/library.xml
 ui/library.lua
 ui/assign.xml
 ui/assign.lua
+ui/donut_probe.lua
 ui/logo.xml
 ui/logo.lua
 Verdant.lua

@@ -32,6 +32,7 @@ local CASES = {
   "session_store",
   "library_flow",
   "render_bounds",
+  "donut_widget",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",

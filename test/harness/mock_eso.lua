@@ -70,7 +70,9 @@ ABILITY_TYPE_HEAL       = 2
 
 TOPLEFT = 41 TOP = 42 TOPRIGHT = 43 LEFT = 44 CENTER = 45 RIGHT = 46
 BOTTOMLEFT = 47 BOTTOM = 48 BOTTOMRIGHT = 49
-CT_CONTROL = 51 CT_LABEL = 52 CT_TEXTURE = 53 CT_BACKDROP = 54
+CT_CONTROL = 51 CT_LABEL = 52 CT_TEXTURE = 53 CT_BACKDROP = 54 CT_COOLDOWN = 55
+CD_TYPE_RADIAL = 1 CD_TYPE_VERTICAL = 2
+CD_TIME_TYPE_TIME_UNTIL = 0 CD_TIME_TYPE_TIME_REMAINING = 1
 TEXT_ALIGN_LEFT = 61 TEXT_ALIGN_CENTER = 62 TEXT_ALIGN_RIGHT = 63
 TEXT_ALIGN_TOP = 64 TEXT_ALIGN_BOTTOM = 65
 SCENE_SHOWN = "shown" SCENE_HIDDEN = "hidden"
@@ -195,6 +197,15 @@ local MOCKC = {
     elseif k == "SetColor" then fn = function(s, r, g, b, a) s._r, s._g, s._b, s._a = r, g, b, a end
     elseif k == "SetAlpha" then fn = function(s, a) s._alpha = a end
     elseif k == "SetTexture" then fn = function(s, path) s._tex = path end
+    elseif k == "StartFixedCooldown" then
+      fn = function(s, pct, ctype, ttype, edge)
+        s._cd_pct, s._cd_type, s._cd_time_type, s._cd_edge = pct, ctype, ttype, edge
+      end
+    elseif k == "SetPercentCompleteFixed" then fn = function(s, pct) s._cd_pct = pct end
+    elseif k == "ResetCooldown" then fn = function(s) s._cd_pct = 0 end
+    elseif k == "SetFillColor" then fn = function(s, r, g, b, a) s._fr, s._fg, s._fb, s._fa = r, g, b, a end
+    elseif k == "SetRadialCooldownOriginAngle" then fn = function(s, a) s._cd_origin = a end
+    elseif k == "SetRadialCooldownClockwise" then fn = function(s, cw) s._cd_cw = cw end
     elseif k == "GetTextureFileName" then fn = function(s) return s._tex or "" end
     elseif k == "SetDrawLevel" then fn = function(s, lv) s._draw_level = lv end
     elseif k == "SetDrawLayer" then fn = function(s, ly) s._draw_layer = ly end

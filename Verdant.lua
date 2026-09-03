@@ -136,6 +136,8 @@ local function on_slash(input)
       return
     elseif cmd == "skills" then
       Verdant.SkillColors.print_unknown() ; return
+    elseif cmd == "donut" then
+      Verdant.DonutProbe.toggle() ; return
     elseif cmd == "clear" then
       Verdant.Probe.clear()
       Verdant.Metrics.reset()

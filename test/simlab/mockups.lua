@@ -62,6 +62,10 @@ H.advance(200)
 print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_hover.svg"))
 hit._onOnMouseExit(hit)
 
+Verdant.DonutProbe.toggle()
+print(svg.snapshot(H, VerdantDonutProbe, OUT .. "donut_probe.svg"))
+Verdant.DonutProbe.toggle()
+
 Verdant.SavedVars.settings.welcomed = nil
 Verdant.Visibility.set("graph", false)
 Verdant.Graph.toggle()
