@@ -235,6 +235,12 @@ local MOCKC = {
     elseif k:find("^Is") == 1 or k:find("^Does") == 1 then fn = function() return false end
     elseif k:find("^Get") == 1 then fn = function() return 0 end
     else fn = function() end end
+    local raw = fn
+    fn = function(...)
+      local calls = H.calls
+      if calls then calls[k] = (calls[k] or 0) + 1 end
+      return raw(...)
+    end
     rawset(self, k, fn)
     return fn
   end,
@@ -613,6 +619,59 @@ function H.advance(ms)
 end
 
 function H.update_registered(name) return updates[name] ~= nil end
+
+function H.addon_alloc(fn)
+  local by_fn = {}
+  local stack = {}
+  local last = collectgarbage("count")
+  local function key(info)
+    local src = info.short_src or "?"
+    if src:find("mock_eso") or src:find("loader") or src:find("/test/") or src:find("harness") then
+      return "harness"
+    end
+    return src .. ":" .. tostring(info.linedefined or 0)
+  end
+  local keys = {}
+  local function hook(ev)
+    local now = collectgarbage("count")
+    local top
+    for i = #stack, 1, -1 do
+      if stack[i] then top = stack[i] break end
+    end
+    if top then by_fn[top] = (by_fn[top] or 0) + (now - last) end
+    if ev == "call" or ev == "tail call" then
+      local info = debug.getinfo(2, "Sf")
+      local k = false
+      if info.what ~= "C" then
+        k = keys[info.func]
+        if not k then k = key(info); keys[info.func] = k end
+      end
+      if ev == "tail call" then stack[#stack] = k else stack[#stack + 1] = k end
+    else
+      stack[#stack] = nil
+    end
+    last = collectgarbage("count")
+  end
+  local cg = collectgarbage
+  cg("collect")
+  cg("stop")
+  collectgarbage = function(opt, ...)
+    if opt == "step" or opt == "collect" or opt == "restart" then return false end
+    return cg(opt, ...)
+  end
+  last = cg("count")
+  debug.sethook(hook, "cr")
+  fn()
+  debug.sethook()
+  collectgarbage = cg
+  cg("restart")
+  local total = 0
+  by_fn.harness = nil
+  for k, v in pairs(by_fn) do
+    if v > 0 then total = total + v end
+  end
+  return total * 1024, by_fn
+end
 
 local next_unit_id = 1000
 

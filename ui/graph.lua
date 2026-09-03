@@ -446,7 +446,8 @@ local function decimate(cw)
   local offset   = denom - n
   local m, cur_c = 0, -1
   local col
-  TB.iterate(function(i, s)
+  for i = 1, n do
+    local s   = TB.at(i)
     local c   = math_floor((offset + i - 1) * num_cols / denom)
     local ems = s.eHPS + s.MPS
     if c ~= cur_c then
@@ -470,7 +471,7 @@ local function decimate(cw)
       if (s.d or 0) > col.d then col.d = s.d end
       col.t = s.t
     end
-  end)
+  end
   local col_w   = cw / num_cols
   local bar_gap = (col_w > 3) and 1 or 0
   return m, num_cols, col_w, bar_gap
@@ -768,11 +769,7 @@ local C_TRI_STRIP  = { r = 0.16, g = 0.15, b = 0.13, a = 0.90 }
 local C_TRI_FAST   = { r = 0.58, g = 0.85, b = 0.92 }
 local C_TRI_MID    = { r = 0.92, g = 0.95, b = 0.93 }
 local C_TRI_SLOW   = { r = 0.91, g = 0.58, b = 0.42 }
-local TRI_HEADER_H = 20
-local TRI_STRIP_H  = 14
-local TRI_STRIP_GAP = 10
-local TRI_ROW_H    = 24
-local TRI_ROW_GAP  = 2
+local TRI_L = { HEADER_H = 20, STRIP_H = 14, STRIP_GAP = 10, ROW_H = 24, ROW_GAP = 2 }
 local TRI_RT_FAST_MS = 1000
 local TRI_RT_SLOW_MS = 2500
 
@@ -1215,6 +1212,25 @@ local function draw_markers(pool_line, pool_icon, canvas, t0, span, lane_x, lane
   end
 end
 
+local function ult_seg(pool, canvas, x0, x1, lv, avail, min_x, max_x)
+  if x1 <= x0 then return min_x, max_x end
+  local seg = pool:AcquireObject()
+  seg:ClearAnchors()
+  seg:SetDrawLevel(6)
+  seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, 22)
+  seg:SetWidth(x1 - x0)
+  seg:SetHeight(5)
+  if avail then
+    seg:SetColor(C_CRIT.r, C_CRIT.g, C_CRIT.b, 0.78)
+  else
+    seg:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.10 + 0.045 * lv)
+  end
+  seg:SetHidden(false)
+  if not min_x or x0 < min_x then min_x = x0 end
+  if not max_x or x1 > max_x then max_x = x1 end
+  return min_x, max_x
+end
+
 local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
   pool:ReleaseAllObjects()
   ipool:ReleaseAllObjects()
@@ -1229,24 +1245,6 @@ local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
   local k = 1
   local min_x, max_x
   local run_x0, run_lv, run_avail = nil, -1, false
-  local function flush(x1)
-    if not run_x0 or x1 <= run_x0 then run_x0 = nil return end
-    if not min_x or run_x0 < min_x then min_x = run_x0 end
-    if not max_x or x1 > max_x then max_x = x1 end
-    local seg = pool:AcquireObject()
-    seg:ClearAnchors()
-    seg:SetDrawLevel(6)
-    seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, run_x0, 22)
-    seg:SetWidth(x1 - run_x0)
-    seg:SetHeight(5)
-    if run_avail then
-      seg:SetColor(C_CRIT.r, C_CRIT.g, C_CRIT.b, 0.78)
-    else
-      seg:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.10 + 0.045 * run_lv)
-    end
-    seg:SetHidden(false)
-    run_x0 = nil
-  end
   for b = 1, nb do
     local x0 = math_floor((b - 1) * cw / nb + 0.5)
     local bt = t0 + (b - 1) / nb * span
@@ -1254,15 +1252,23 @@ local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
     local p = -1
     if bt >= st[1] and bt <= t_data_hi then p = sp[k] end
     if p < 0 then
-      flush(x0)
+      if run_x0 then
+        min_x, max_x = ult_seg(pool, canvas, run_x0, x0, run_lv, run_avail, min_x, max_x)
+        run_x0 = nil
+      end
     else
       local avail = p >= 1
       local lv = avail and 8 or math_floor(p * 8)
-      if run_x0 and (avail ~= run_avail or lv ~= run_lv) then flush(x0) end
+      if run_x0 and (avail ~= run_avail or lv ~= run_lv) then
+        min_x, max_x = ult_seg(pool, canvas, run_x0, x0, run_lv, run_avail, min_x, max_x)
+        run_x0 = nil
+      end
       if not run_x0 then run_x0, run_lv, run_avail = x0, lv, avail end
     end
   end
-  flush(cw)
+  if run_x0 then
+    min_x, max_x = ult_seg(pool, canvas, run_x0, cw, run_lv, run_avail, min_x, max_x)
+  end
   if min_x then
     local rim = pool:AcquireObject()
     rim:ClearAnchors()
@@ -1346,13 +1352,14 @@ local function render_view1()
   local max_ems = 0
   local max_d   = 0
   local t_first, t_last = 0, 0
-  Verdant.TemporalBuffer.iterate(function(i, s)
+  for i = 1, n do
+    local s = Verdant.TemporalBuffer.at(i)
     local ems = s.eHPS + s.MPS
     if ems > max_ems then max_ems = ems end
     if (s.d or 0) > max_d then max_d = s.d end
     if i == 1 then t_first = s.t end
     t_last = s.t
-  end)
+  end
   if max_ems <= 0 then return end
 
   local m, num_cols, col_w, bar_gap = decimate(cw)
@@ -1473,12 +1480,13 @@ local function render_view2()
 
   local max_ehps, max_mps = 0, 0
   local t_first, t_last   = 0, 0
-  Verdant.TemporalBuffer.iterate(function(i, s)
+  for i = 1, n do
+    local s = Verdant.TemporalBuffer.at(i)
     if s.eHPS > max_ehps then max_ehps = s.eHPS end
     if s.MPS  > max_mps  then max_mps  = s.MPS  end
     if i == 1 then t_first = s.t end
     t_last = s.t
-  end)
+  end
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span_ms = axis_span(t_last - t_first, n)
   local t0x     = t_last - span_ms
@@ -1659,11 +1667,12 @@ local function render_view3()
 
   local max_ehps = 0
   local t_first, t_last = 0, 0
-  Verdant.TemporalBuffer.iterate(function(i, s)
+  for i = 1, n do
+    local s = Verdant.TemporalBuffer.at(i)
     if s.eHPS > max_ehps then max_ehps = s.eHPS end
     if i == 1 then t_first = s.t end
     t_last = s.t
-  end)
+  end
   if max_ehps <= 0 then
     hide_grid(controls.grid_ems)
     return
@@ -1752,12 +1761,13 @@ local function render_view_oh()
 
   local max_tot = 0
   local t_first, t_last = 0, 0
-  Verdant.TemporalBuffer.iterate(function(i, s)
+  for i = 1, n do
+    local s = Verdant.TemporalBuffer.at(i)
     local tot = s.eHPS + (s.o or 0)
     if tot > max_tot then max_tot = tot end
     if i == 1 then t_first = s.t end
     t_last = s.t
-  end)
+  end
   if max_tot <= 0 then
     hide_grid(controls.grid_ems)
     return
@@ -2051,7 +2061,7 @@ local function render_view5()
 
   local canvas = controls.canvas
   local cw, ch = canvas:GetWidth(), canvas:GetHeight()
-  if cw <= 180 or ch <= TRI_HEADER_H + TRI_STRIP_H + TRI_ROW_H then return end
+  if cw <= 180 or ch <= TRI_L.HEADER_H + TRI_L.STRIP_H + TRI_L.ROW_H then return end
 
   local BT = Verdant.BuffTracker
   local recording = Verdant.TemporalBuffer.is_recording()
@@ -2084,16 +2094,16 @@ local function render_view5()
   head:SetText(head_text)
   head:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
   head:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, C_TRI_DIM.a)
-  head:SetDimensions(cw, TRI_HEADER_H)
+  head:SetDimensions(cw, TRI_L.HEADER_H)
   head:SetAnchor(TOPLEFT, canvas, TOPLEFT, 2, 0)
   head:SetHidden(false)
 
-  local strip_y = TRI_HEADER_H
+  local strip_y = TRI_L.HEADER_H
   local strip = controls.pool_buff_seg:AcquireObject()
   strip:ClearAnchors()
   strip:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y)
   strip:SetWidth(cw)
-  strip:SetHeight(TRI_STRIP_H)
+  strip:SetHeight(TRI_L.STRIP_H)
   strip:SetColor(C_TRI_STRIP.r, C_TRI_STRIP.g, C_TRI_STRIP.b, C_TRI_STRIP.a)
   strip:SetHidden(false)
 
@@ -2106,7 +2116,7 @@ local function render_view5()
   s_top:SetHidden(false)
   local s_bot = controls.pool_buff_seg:AcquireObject()
   s_bot:ClearAnchors()
-  s_bot:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y + TRI_STRIP_H)
+  s_bot:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y + TRI_L.STRIP_H)
   s_bot:SetWidth(cw)
   s_bot:SetHeight(1)
   s_bot:SetColor(1, 1, 1, 0.05)
@@ -2144,7 +2154,7 @@ local function render_view5()
   tl:SetText("0:00")
   tl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
   tl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.75)
-  tl:SetDimensions(50, TRI_STRIP_H)
+  tl:SetDimensions(50, TRI_L.STRIP_H)
   tl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 3, strip_y)
   tl:SetHidden(false)
   local tr = controls.pool_buff_lbl:AcquireObject()
@@ -2152,7 +2162,7 @@ local function render_view5()
   tr:SetText(tri_time_str(span))
   tr:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
   tr:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.75)
-  tr:SetDimensions(50, TRI_STRIP_H)
+  tr:SetDimensions(50, TRI_L.STRIP_H)
   tr:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 53, strip_y)
   tr:SetHidden(false)
 
@@ -2177,8 +2187,8 @@ local function render_view5()
     end
   end
 
-  local list_y = strip_y + TRI_STRIP_H + TRI_STRIP_GAP
-  local fit = math_floor((ch - list_y) / (TRI_ROW_H + TRI_ROW_GAP))
+  local list_y = strip_y + TRI_L.STRIP_H + TRI_L.STRIP_GAP
+  local fit = math_floor((ch - list_y) / (TRI_L.ROW_H + TRI_L.ROW_GAP))
   if fit < 1 then return end
   local first = (n_eps > fit) and (n_eps - fit + 1) or 1
   local pslot = T.player_slot()
@@ -2189,7 +2199,7 @@ local function render_view5()
     more:SetText(string_format(GetString(VERDANT_TRI_MORE), first - 1))
     more:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
     more:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.9)
-    more:SetDimensions(160, TRI_HEADER_H)
+    more:SetDimensions(160, TRI_L.HEADER_H)
     more:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 164, 0)
     more:SetHidden(false)
   end
@@ -2197,14 +2207,14 @@ local function render_view5()
   local row_i = 0
   for i = first, n_eps do
     local e = eps[i]
-    local y = list_y + row_i * (TRI_ROW_H + TRI_ROW_GAP)
+    local y = list_y + row_i * (TRI_L.ROW_H + TRI_L.ROW_GAP)
     row_i = row_i + 1
     local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
 
     if capture then
       tri_hit.n = tri_hit.n + 1
       tri_hit.y0[tri_hit.n] = y
-      tri_hit.y1[tri_hit.n] = y + TRI_ROW_H
+      tri_hit.y1[tri_hit.n] = y + TRI_L.ROW_H
       tri_hit.ep[tri_hit.n] = e
     end
 
@@ -2212,7 +2222,7 @@ local function render_view5()
     bg:ClearAnchors()
     bg:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y)
     bg:SetWidth(cw)
-    bg:SetHeight(TRI_ROW_H)
+    bg:SetHeight(TRI_L.ROW_H)
     bg:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.03 or 0.07)
     bg:SetHidden(false)
 
@@ -2226,7 +2236,7 @@ local function render_view5()
 
     local sep = controls.pool_buff_seg:AcquireObject()
     sep:ClearAnchors()
-    sep:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + TRI_ROW_H)
+    sep:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + TRI_L.ROW_H)
     sep:SetWidth(cw)
     sep:SetHeight(1)
     sep:SetColor(0, 0, 0, 0.40)
@@ -2237,7 +2247,7 @@ local function render_view5()
     tlbl:SetText(tri_time_str(e.t_start - t0))
     tlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     tlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, C_TRI_TIME.a)
-    tlbl:SetDimensions(38, TRI_ROW_H)
+    tlbl:SetDimensions(38, TRI_L.ROW_H)
     tlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, y)
     tlbl:SetHidden(false)
 
@@ -2264,14 +2274,14 @@ local function render_view5()
       nlbl:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, C_TRI_NAME.a)
     end
     local name_w = math_max(60, cw - 320)
-    nlbl:SetDimensions(name_w, TRI_ROW_H)
+    nlbl:SetDimensions(name_w, TRI_L.ROW_H)
     nlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 66, y)
     nlbl:SetHidden(false)
 
     local dx = 66 + name_w
     local depth = math_floor(e.min_rho * 100 + 0.5)
     local dc = (e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH
-    local bar_y = y + math_floor((TRI_ROW_H - 8) / 2)
+    local bar_y = y + math_floor((TRI_L.ROW_H - 8) / 2)
     local bbg = controls.pool_buff_seg:AcquireObject()
     bbg:ClearAnchors()
     bbg:SetAnchor(TOPLEFT, canvas, TOPLEFT, dx, bar_y)
@@ -2293,7 +2303,7 @@ local function render_view5()
     dlbl:SetText(string_format("%d%%", depth))
     dlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     dlbl:SetColor(dc.r, dc.g, dc.b, 0.95)
-    dlbl:SetDimensions(34, TRI_ROW_H)
+    dlbl:SetDimensions(34, TRI_L.ROW_H)
     dlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, dx + 40, y)
     dlbl:SetHidden(false)
 
@@ -2304,14 +2314,14 @@ local function render_view5()
     frame:ClearAnchors()
     frame:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x, y + 3)
     frame:SetWidth(chip_w)
-    frame:SetHeight(TRI_ROW_H - 6)
+    frame:SetHeight(TRI_L.ROW_H - 6)
     frame:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.30 or 0.60)
     frame:SetHidden(false)
     local chip = controls.pool_buff_seg:AcquireObject()
     chip:ClearAnchors()
     chip:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x + 1, y + 4)
     chip:SetWidth(chip_w - 2)
-    chip:SetHeight(TRI_ROW_H - 8)
+    chip:SetHeight(TRI_L.ROW_H - 8)
     chip:SetColor(0.09, 0.085, 0.075, 0.92)
     chip:SetHidden(false)
     local clbl = controls.pool_buff_lbl:AcquireObject()
@@ -2319,7 +2329,7 @@ local function render_view5()
     clbl:SetText(chip_text)
     clbl:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
     clbl:SetColor(c.r, c.g, c.b, 1)
-    clbl:SetDimensions(chip_w, TRI_ROW_H)
+    clbl:SetDimensions(chip_w, TRI_L.ROW_H)
     clbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x, y)
     clbl:SetHidden(false)
 
@@ -2337,7 +2347,7 @@ local function render_view5()
       rlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.8)
     end
     rlbl:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-    rlbl:SetDimensions(70, TRI_ROW_H)
+    rlbl:SetDimensions(70, TRI_L.ROW_H)
     rlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 76, y)
     rlbl:SetHidden(false)
   end
@@ -2368,22 +2378,23 @@ end
 
 local summary_text = nil
 
-local C_SUM_AVG  = C_LINE_EHPS
-local C_SUM_PEAK = C_LINE_EMS
-local C_SUM_CRIT = C_CRIT
-local C_SUM_VAL  = { r = 0.92, g = 0.95, b = 0.93 }
-
-local C_SUM_RT = { r = 0.58, g = 0.85, b = 0.92 }
+local C_SUM = {
+  AVG  = C_LINE_EHPS,
+  PEAK = C_LINE_EMS,
+  CRIT = C_CRIT,
+  VAL  = { r = 0.92, g = 0.95, b = 0.93 },
+  RT   = { r = 0.58, g = 0.85, b = 0.92 },
+}
 
 local function build_summary_text()
   local s = Verdant.TemporalBuffer.summary()
   if s.count == 0 then return nil end
-  local vc = hexc(C_SUM_VAL)
+  local vc = hexc(C_SUM.VAL)
   local crit_pct = math_floor(s.crit_pct * 100 + 0.5)
   local parts = {
-    string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM_AVG),  GetString(VERDANT_SUMMARY_AVG),  vc, fmt_val(s.avg_ems)),
-    string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM_PEAK), GetString(VERDANT_SUMMARY_PEAK), vc, fmt_val(s.peak_ems)),
-    string_format("|c%s%s|r |c%s%d%%|r", hexc(C_SUM_CRIT), GetString(VERDANT_SUMMARY_CRIT), vc, crit_pct),
+    string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM.AVG),  GetString(VERDANT_SUMMARY_AVG),  vc, fmt_val(s.avg_ems)),
+    string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM.PEAK), GetString(VERDANT_SUMMARY_PEAK), vc, fmt_val(s.peak_ems)),
+    string_format("|c%s%s|r |c%s%d%%|r", hexc(C_SUM.CRIT), GetString(VERDANT_SUMMARY_CRIT), vc, crit_pct),
   }
   if s.total_overheal > 0 then
     parts[#parts + 1] = string_format("|c%s%s|r |c%s%d%%|r",
@@ -2393,7 +2404,7 @@ local function build_summary_text()
   local ts = Verdant.Triage.summary()
   if ts.rt_n > 0 then
     parts[#parts + 1] = string.format("|c%s%s|r |c%s%.1fs|r",
-      hexc(C_SUM_RT), GetString(VERDANT_SUMMARY_RT), vc, ts.rt50 / 1000)
+      hexc(C_SUM.RT), GetString(VERDANT_SUMMARY_RT), vc, ts.rt50 / 1000)
   end
   return parts
 end

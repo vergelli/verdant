@@ -26,6 +26,7 @@ lua test/simlab/mockups.lua .               window mockups (settings, bar, watch
 lua test/simlab/audit.lua .                 layout audit over out/*.svg
 lua test/simlab/replay.lua . <SavedVars/Verdant.lua> [--svg]
 lua test/harness/run.lua . 1                unit cases, DEBUG on
+lua test/harness/perf.lua . 0 40 [VIEW]     render budget per view (docs/RENDER_BUDGET.md)
 ```
 
 The audit parses every snapshot in `out/` and flags controls drawn outside

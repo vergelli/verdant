@@ -32,6 +32,9 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- **Render pass allocates nothing per tick** — the bar views no longer
+  create closures on every sample, so long recordings put less pressure
+  on the garbage collector. Offline tripwire keeps it that way.
 - **The graph grows into its window** — a fresh recording no longer starts
   as tiny bars on a huge empty axis: the live bar stays pinned to the right
   edge as always, but the axis starts short and expands in steps until it
