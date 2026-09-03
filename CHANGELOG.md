@@ -6,6 +6,8 @@
 - **The summary chip lives inside the viewport** now, top right, and the
   plot makes room below it while it is up, so it no longer straddles the
   viewport border.
+- **Sounds toggle** — Settings > General: Verdant's own clicks, chimes
+  and window sounds can be switched off in one place.
 - **Name your sessions** — select a saved session in the library, type
   a name in the box below the list and press Name (or Enter). The row
   shows the name instead of the zone; an empty name puts the zone back.

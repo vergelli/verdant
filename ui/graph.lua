@@ -1156,17 +1156,20 @@ local function hover_poll()
     buff_hover_poll(mx, my)
     return
   end
-  if current_view ~= VIEW.SKILL and current_view ~= VIEW.TRIAGE
-     and Verdant.Ultimate.has_data() and ULT_L.span and ULT_L.span > 0 then
-    local canvas = controls.canvas
+  if current_view ~= VIEW.TRIAGE and Verdant.Ultimate.has_data() then
+    local skill = (current_view == VIEW.SKILL)
+    local canvas = skill and controls.ehps_canvas or controls.canvas
+    local g_t0, g_span, g_xl, g_bw
+    if skill then g_t0, g_span, g_xl, g_bw = ULT_L.tt0, ULT_L.tspan, ULT_L.txl, ULT_L.tbw
+    else g_t0, g_span, g_xl, g_bw = ULT_L.t0, ULT_L.span, ULT_L.xl, ULT_L.bw end
     local rel_x  = mx - canvas:GetLeft()
     local rel_y  = my - canvas:GetTop() - ULT_L.CHIP
-    if rel_x >= 0 and rel_x <= canvas:GetWidth() and rel_y >= 0 and rel_y < ULT_L.AREA then
+    if g_span and g_span > 0 and rel_x >= 0 and rel_x <= canvas:GetWidth() and rel_y >= 0 and rel_y < ULT_L.AREA then
       local U = Verdant.Ultimate
       local b = (rel_y < ULT_L.PAD + ULT_L.ROW_H + ULT_L.GAP / 2) and 1 or 2
-      local t = ULT_L.t0 + (rel_x - ULT_L.xl) / ULT_L.bw * ULT_L.span
-      if t < ULT_L.t0 then t = ULT_L.t0 end
-      if t > ULT_L.t0 + ULT_L.span then t = ULT_L.t0 + ULT_L.span end
+      local t = g_t0 + (rel_x - g_xl) / g_bw * g_span
+      if t < g_t0 then t = g_t0 end
+      if t > g_t0 + g_span then t = g_t0 + g_span end
       local id = U.id_at(b, t)
       if id == 0 then b = 1; id = U.id_at(1, t) end
       if id > 0 then
@@ -1461,6 +1464,8 @@ local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
   local t_hi = t0 + span
   if canvas == controls.canvas then
     ULT_L.t0, ULT_L.span, ULT_L.xl, ULT_L.bw = t0, span, x_left, bw
+  else
+    ULT_L.tt0, ULT_L.tspan, ULT_L.txl, ULT_L.tbw = t0, span, x_left, bw
   end
   for b = 1, 2 do
     local id = U.id_at(b, t_hi)

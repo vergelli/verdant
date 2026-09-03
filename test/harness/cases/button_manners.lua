@@ -12,7 +12,7 @@ return function(H)
     "VerdantSettingsPanelPSaveBtn", "VerdantSettingsPanelPDeleteBtn", "VerdantSettingsPanelAutoRecBtn",
     "VerdantSettingsPanelAutosaveBtn", "VerdantSettingsPanelLightBtn", "VerdantSettingsPanelShieldDirBtn",
     "VerdantSettingsPanelGdmBtn", "VerdantSettingsPanelUnknownBtn", "VerdantSettingsPanelLogoBtn",
-    "VerdantSettingsPanelBarsBtn", "VerdantSettingsPanelResetBtn", "VerdantSettingsPanelCloseBtn",
+    "VerdantSettingsPanelBarsBtn", "VerdantSettingsPanelResetBtn", "VerdantSettingsPanelCloseBtn", "VerdantSettingsPanelSoundsBtn",
     "VerdantAssignPanelAssignBtn", "VerdantAssignPanelCloseBtn", "VerdantAssignConfirmYesBtn", "VerdantAssignConfirmNoBtn",
     "VerdantAssignPanelNewCatCreateBtn", "VerdantAssignPanelNewCatCancelBtn",
   }
@@ -66,6 +66,19 @@ return function(H)
   clear()
   Verdant.Library.hide()
   ok(last_sound() == nil, "hiding an already hidden library stays silent")
+
+  Verdant.Settings.on_sounds_click()
+  ok(Verdant.SavedVars.settings.sounds == false, "the toggle turns sounds off")
+  ok(VerdantSettingsPanelSoundsBtn._text == "Sounds: Off", "the button says so")
+  clear()
+  Verdant.Bar.next_metric()
+  ok(last_sound() == nil, "with sounds off, Verdant's own sounds stay silent")
+  Verdant.Settings.on_sounds_click()
+  ok(Verdant.SavedVars.settings.sounds == true, "the toggle turns sounds back on")
+  ok(last_sound() == "sound:DIALOG_ACCEPT", "turning sounds on confirms audibly")
+  clear()
+  Verdant.Bar.next_metric()
+  ok(last_sound() == "sound:DIALOG_ACCEPT", "sounds are back")
 
   Verdant.Metrics.reset()
 end

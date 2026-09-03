@@ -389,6 +389,15 @@
           <Dimensions x="1" y="374"/>
         </Texture>
 
+        <Button name="$(parent)SoundsBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="TOPLEFT" offsetX="314" offsetY="396"/>
+          <Dimensions x="272" y="22"/>
+          <OnClicked>Verdant.Settings.on_sounds_click()</OnClicked>
+        </Button>
+
         <Button name="$(parent)ResetBtn"
                 mouseEnabled="true"
                 font="ZoFontGameSmall"
