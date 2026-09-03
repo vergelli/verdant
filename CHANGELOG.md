@@ -15,6 +15,10 @@
   the window sheds its border, title and buttons and dims to a configurable
   opacity; hover restores it and reveals stop + view navigation. Stopping
   brings the normal window back.
+- **The addon introduces itself** — a one-time welcome card on the first
+  open of the graph window, a one-sentence tooltip on the view label
+  explaining each view in plain words, and the title now says it outright:
+  Verdant counts your output only.
 - **Buff watch** — star any buff in the BUFFS view to get a recast banner:
   click the star to arm it and cycle the warning threshold (3s / 5s / 8s /
   off). A small movable banner counts down when a watched buff is about to
