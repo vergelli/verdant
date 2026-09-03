@@ -22,6 +22,8 @@ EVENT_UNIT_DEATH_STATE_CHANGED = 12
 EVENT_ACTIVE_WEAPON_PAIR_CHANGED = 13
 EVENT_POWER_UPDATE               = 14
 POWERTYPE_HEALTH                 = 32
+COMBAT_MECHANIC_FLAGS_ULTIMATE   = 10
+ACTION_BAR_ULTIMATE_SLOT_INDEX   = 7
 REGISTER_FILTER_POWER_TYPE       = 107
 NUMBER_ABBREVIATION_PRECISION_TENTHS = 1
 
@@ -413,6 +415,9 @@ function GetSlotBoundId(slot, cat)
   local bar = bars and bars[cat]
   return (bar and bar[slot]) or 0
 end
+function GetSlotAbilityCost(slot, mechanic, cat)
+  return H.state.ult_cost or 250
+end
 function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
 function GetAbilityIcon(id)
   return (H.ability_icons and H.ability_icons[id]) or "EsoUI/Art/Icons/ability_mock.dds"
@@ -633,6 +638,14 @@ end
 
 function H.power(tag, value, max)
   return H.fire(EVENT_POWER_UPDATE, tag, 0, POWERTYPE_HEALTH, value, max, max)
+end
+
+function H.ult_power(value)
+  return H.fire(EVENT_POWER_UPDATE, "player", 0, COMBAT_MECHANIC_FLAGS_ULTIMATE, value, 500, 500)
+end
+
+function H.ult_used()
+  return H.fire(EVENT_ACTION_SLOT_ABILITY_USED, ACTION_BAR_ULTIMATE_SLOT_INDEX + 1)
 end
 
 function H.combat_state(in_combat)

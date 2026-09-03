@@ -35,6 +35,7 @@ M.GetZoneNameByIndex      = GetZoneNameByIndex
 
 M.GetSlotName                            = GetSlotName
 M.GetSlotBoundId                         = GetSlotBoundId
+M.GetSlotAbilityCost                     = GetSlotAbilityCost
 M.GetAbilityName                         = GetAbilityName
 M.GetAbilityIcon                         = GetAbilityIcon
 M.GetAbilityDescription                  = GetAbilityDescription

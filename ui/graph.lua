@@ -346,6 +346,10 @@ local function release_all_pools()
     controls.pool_buff_icon:ReleaseAllObjects()
     controls.pool_buff_lbl:ReleaseAllObjects()
   end
+  if controls.pool_ult then
+    controls.pool_ult:ReleaseAllObjects()
+    controls.pool_ult_top:ReleaseAllObjects()
+  end
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
   controls.pool_line_ehps:ReleaseAllObjects()
@@ -1102,6 +1106,64 @@ local function draw_markers(pool_line, pool_icon, canvas, t0, span, lane_x, lane
   end
 end
 
+local function draw_ult_band(pool, canvas, t0, span, t_data_hi)
+  pool:ReleaseAllObjects()
+  if span <= 0 then return end
+  local U = Verdant.Ultimate
+  if not U.has_data() then return end
+  local cw = canvas:GetWidth()
+  local nb = math_floor(cw / 4)
+  if nb < 1 then return end
+  local st, sp, n = U.steps()
+  local ut, un = U.used()
+  local k = 1
+  local run_x0, run_lv, run_avail = nil, -1, false
+  local function flush(x1)
+    if not run_x0 or x1 <= run_x0 then run_x0 = nil return end
+    local seg = pool:AcquireObject()
+    seg:ClearAnchors()
+    seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, run_x0, 22)
+    seg:SetWidth(x1 - run_x0)
+    seg:SetHeight(5)
+    if run_avail then
+      seg:SetColor(C_CRIT.r, C_CRIT.g, C_CRIT.b, 0.78)
+    else
+      seg:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.08 + 0.045 * run_lv)
+    end
+    seg:SetHidden(false)
+    run_x0 = nil
+  end
+  for b = 1, nb do
+    local x0 = math_floor((b - 1) * cw / nb + 0.5)
+    local bt = t0 + (b - 1) / nb * span
+    while k < n and st[k + 1] <= bt do k = k + 1 end
+    local p = -1
+    if bt >= st[1] and bt <= t_data_hi then p = sp[k] end
+    if p < 0 then
+      flush(x0)
+    else
+      local avail = p >= 1
+      local lv = avail and 8 or math_floor(p * 8)
+      if run_x0 and (avail ~= run_avail or lv ~= run_lv) then flush(x0) end
+      if not run_x0 then run_x0, run_lv, run_avail = x0, lv, avail end
+    end
+  end
+  flush(cw)
+  for i = 1, un do
+    local t = ut[i]
+    if t >= t0 and t <= t0 + span then
+      local x = math_floor((t - t0) / span * cw + 0.5)
+      local tick = pool:AcquireObject()
+      tick:ClearAnchors()
+      tick:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - 1, 19)
+      tick:SetWidth(2)
+      tick:SetHeight(11)
+      tick:SetColor(1, 1, 1, 0.85)
+      tick:SetHidden(false)
+    end
+  end
+end
+
 local function render_view1()
   controls.pool_ehps:ReleaseAllObjects()
   controls.pool_mps:ReleaseAllObjects()
@@ -1229,6 +1291,7 @@ local function render_view1()
 
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
                canvas, t_first, span, 0, cw)
+  draw_ult_band(controls.pool_ult, canvas, t_first, span, t_last)
 end
 
 local function render_view2()
@@ -1412,6 +1475,7 @@ local function render_view2()
   end
   draw_markers(controls.pool_marker_line_top, controls.pool_marker_icon_top,
                ec, t_first, span_ms, 0, cw)
+  draw_ult_band(controls.pool_ult_top, ec, t_first, span_ms, t_last)
 end
 
 local function render_view3()
@@ -1503,6 +1567,7 @@ local function render_view3()
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
                canvas, t_first, span, 0, cw)
+  draw_ult_band(controls.pool_ult, canvas, t_first, span, t_last)
 end
 
 local function render_view_oh()
@@ -1592,6 +1657,7 @@ local function render_view_oh()
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
                canvas, t_first, span, 0, cw)
+  draw_ult_band(controls.pool_ult, canvas, t_first, span, t_last)
 end
 
 local BUFF_MAX_ROW_H = 26
@@ -2251,6 +2317,7 @@ function M.on_record_click()
   Verdant.TemporalBuffer.start_recording()
   recording_start_ms = GetGameTimeMilliseconds()
   Verdant.BuffTracker.start_session(recording_start_ms)
+  Verdant.Ultimate.start_session(recording_start_ms)
   local sv       = Verdant.SavedVars
   local interval = (sv and sv.temporal and sv.temporal.sample_rate_ms)
                    or Verdant.Constants.TEMPORAL.SAMPLE_RATE_DEFAULT
@@ -2266,6 +2333,7 @@ function M.on_stop_click()
   Verdant.TemporalBuffer.stop_recording()
   zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
   Verdant.BuffTracker.finalize(GetGameTimeMilliseconds())
+  Verdant.Ultimate.finalize(GetGameTimeMilliseconds())
   Verdant.SessionStore.on_session_stop()
   summary_text = build_summary_text()
   local s = Verdant.TemporalBuffer.summary()
@@ -2357,6 +2425,7 @@ function M.load_session(sess)
   end
   Verdant.TemporalBuffer.load_session(series, markers)
   Verdant.BuffTracker.load_session(sess.buffs or {}, steps, 0, sess.head.dur_ms or 0)
+  Verdant.Ultimate.reset()
   Verdant.Triage.load_session(eps, sess.roster, sess.head.player_slot)
 
   summary_text = build_summary_text()
@@ -2375,6 +2444,7 @@ function M.on_flush_click()
     Verdant.TemporalBuffer.stop_recording()
   end
   Verdant.BuffTracker.reset()
+  Verdant.Ultimate.reset()
   summary_text = nil
   Verdant.TemporalBuffer.clear()
   release_all_pools()
@@ -2539,6 +2609,17 @@ function M.init()
   controls.pool_skill_bot      = make_skill_fill_pool("VerdantSkillFillBot", "mps_canvas")
   controls.pool_line_skill_top = make_skill_line_pool("VerdantSkillLineTop", "ehps_canvas")
   controls.pool_line_skill_bot = make_skill_line_pool("VerdantSkillLineBot", "mps_canvas")
+
+  controls.pool_ult = Pool.new("VerdantGraphUlt", controls.canvas, CT_TEXTURE,
+    function(c)
+      fill_factory(c)
+      c:SetDrawLevel(6)
+    end, fill_reset)
+  controls.pool_ult_top = Pool.new("VerdantGraphUltTop", controls.ehps_canvas, CT_TEXTURE,
+    function(c)
+      fill_factory(c)
+      c:SetDrawLevel(6)
+    end, fill_reset)
 
   controls.pool_buff_seg = make_fill_pool("VerdantBuffSeg")
   controls.pool_buff_icon = Pool.new("VerdantBuffIcon", controls.canvas, CT_TEXTURE,

@@ -52,6 +52,7 @@ pipeline/presentation.lua
 pipeline/pipeline.lua
 core/probe.lua
 core/temporal_buffer.lua
+core/ultimate.lua
 core/auto_record.lua
 core/visibility.lua
 ui/bar.xml
