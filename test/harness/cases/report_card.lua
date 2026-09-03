@@ -50,7 +50,19 @@ return function(H)
   ok(rp and rp > 50, "unused ultimate time must show as a percentage: " .. tostring(VerdantHoverCardRowVal3._text))
   ok(VerdantHoverCardRowName4._text == "Ultimate casts" and VerdantHoverCardRowVal4._text == "0", "row 4 counts the casts")
   ok(VerdantHoverCardRowName5._text == "Peak at" and (VerdantHoverCardRowVal5._text or ""):find("s") ~= nil, "row 5 says when the peak was")
+  ok((VerdantHoverCardTime._text or ""):find("copy") ~= nil, "the card must tell the user the chip is clickable")
   hit._onOnMouseExit(hit)
+
+  H.sounds = {}
+  hit._onOnMouseUp(hit, nil, true)
+  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "clicking the chip must confirm with a sound")
+  ok(Verdant.CopyBox.is_visible(), "clicking the chip must open the copy box")
+  local eb = rawget(_G, "VerdantCopyBoxEdit")
+  local txt = eb and eb._text or ""
+  ok(txt:find("Healing report", 1, true) ~= nil and txt:find("landed", 1, true) ~= nil
+     and txt:find("HoT overflow:", 1, true) ~= nil and txt:find("|c", 1, true) == nil,
+     "copy text must carry the report in plain text: " .. txt)
+  Verdant.CopyBox.hide()
 
   local session = Verdant.SessionStore.capture()
   ok(session.head.sum.oh_hot == 1200 and session.head.sum.oh_direct == 3600, "session head must persist the split")

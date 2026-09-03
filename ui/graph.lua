@@ -924,7 +924,7 @@ local function show_report_card()
   local landed = 1 - wasted
   card.stat:SetText(string_format(GetString(VERDANT_REPORT_LANDED),
     hexc(C_EHPS), math_floor(landed * 100 + 0.5), math_floor(wasted * 100 + 0.5)))
-  card.time:SetText("")
+  card.time:SetText(GetString(VERDANT_REPORT_COPY_HINT))
 
   local split_total = report.hot + report.direct
   local hot_share = (split_total > 0) and (report.hot / split_total) or 0
@@ -2711,6 +2711,24 @@ local function compose_summary(label, parts, avail)
   return line, w, 1
 end
 
+local function report_text()
+  local card = controls.card
+  local function plain(t)
+    return (tostring(t or ""):gsub("|c%x%x%x%x%x%x", ""):gsub("|r", ""))
+  end
+  local lines = { GetString(VERDANT_REPORT_TITLE) }
+  if summary_text then lines[#lines + 1] = plain(table.concat(summary_text, "   ")) end
+  lines[#lines + 1] = plain(card.stat:GetText())
+  for i = 1, CARD_MAX_ROWS do
+    local r = card.rows[i]
+    if not r.name:IsHidden() then
+      lines[#lines + 1] = plain(r.name:GetText()) .. ": " .. plain(r.val:GetText())
+    end
+  end
+  lines[#lines + 1] = plain(card.desc:GetText())
+  return table.concat(lines, "\n")
+end
+
 local function update_summary_chip()
   local chip = controls.summary
   if not chip then return end
@@ -3303,6 +3321,12 @@ function M.init()
   end)
   sum_hit:SetHandler("OnMouseExit", function()
     fade_out(card_fader)
+  end)
+  sum_hit:SetHandler("OnMouseUp", function(_, _, upInside)
+    if upInside == false then return end
+    show_report_card()
+    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    Verdant.CopyBox.show(GetString(VERDANT_REPORT_COPY_TITLE), report_text())
   end)
 
   controls.summary = { bg = sum_bg, label = sum_label, help = sum_help, hit = sum_hit }
