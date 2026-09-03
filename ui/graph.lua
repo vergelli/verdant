@@ -2899,6 +2899,7 @@ function M.on_record_click()
     Verdant.AutoRecord.notify_manual_record()
   end
   summary_text = nil
+  Verdant.SessionStore.finish_autosave()
   Verdant.TemporalBuffer.clear()
   Verdant.Metrics.reset()
   Verdant.Metrics.session_mark()
@@ -2948,6 +2949,7 @@ function M.load_session(sess)
     d("[V] " .. GetString(VERDANT_LIB_BUSY))
     return false
   end
+  Verdant.SessionStore.finish_autosave()
   if not (sess and sess.streams and sess.desc and sess.head) then
     d("[V] " .. string_format(GetString(VERDANT_LIB_CORRUPT), "missing structure"))
     return false
@@ -3049,6 +3051,7 @@ end
 
 function M.on_flush_click()
   PlaySound(SOUNDS.DIALOG_DECLINE)
+  Verdant.SessionStore.finish_autosave()
   light.exit()
   if Verdant.TemporalBuffer.is_recording() then
     zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)

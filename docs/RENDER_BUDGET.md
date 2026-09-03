@@ -70,3 +70,23 @@ Adding any module-level `local` fails with "too many local variables".
 This pass grouped the triage layout constants into `TRI_L` and the summary
 colours into `C_SUM` to buy headroom (now 193). When the file needs more,
 group another family the same way rather than fighting the limit.
+
+## The stop path
+
+The in-game hitch log blamed one 104ms frame on Stop: finalize, summary,
+session capture and autosave all ran in the click's frame. Measured in the
+harness on a 60-sample, 20-buff, 4-member session:
+
+| step | before | after |
+|------|-------:|------:|
+| stop click frame | 50 ms · 533 KB | 34 KB (finalize + summary + render) |
+| session capture + store | in the click | next frames, cooperative, ~11 KB per resume |
+
+What changed: `vsf.pack` writes digits into a reused buffer and checksums as
+it goes instead of building a string per field; the series stream is packed
+straight from the ring buffer through an accessor instead of a table per
+sample; and `SessionStore.capture(true)` yields every 40 records so the
+autosave runs as a coroutine driven by a per-frame update. Record, New and
+library loads call `finish_autosave()` first, so a capture never reads a
+buffer being cleared under it. `/verdant hitch` tags those frames as `stop`.
+

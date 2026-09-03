@@ -87,7 +87,11 @@ local function lib_root()
   return sv.library
 end
 
-function M.capture()
+local YIELD_EVERY = 40
+
+function M.capture(cooperative)
+  local ye = cooperative and YIELD_EVERY or nil
+  local coroutine_yield = coroutine.yield
   local TB = Verdant.TemporalBuffer
   local BT = Verdant.BuffTracker
   local T  = Verdant.Triage
@@ -100,7 +104,6 @@ function M.capture()
   local tri = T.summary()
   local oh_hot, oh_direct = Verdant.Metrics.overheal_split()
 
-  local series = {}
   local share_recs = {}
   local gkeys = {}
   local gkey_idx = {}
@@ -134,16 +137,21 @@ function M.capture()
       }
     end
   end
-  TB.iterate(function(i, s)
-    series[#series + 1] = {
-      t = s.t - t0, eHPS = s.eHPS, MPS = s.MPS,
-      crit = s.crit, noncrit = s.noncrit, d = s.d, o = s.o or 0,
-    }
-    harvest(#series, 0, s.ehps_groups)
-    harvest(#series, 1, s.mps_groups)
-    harvest_abilities(#series, 0, s.ehps_abilities)
-    harvest_abilities(#series, 1, s.mps_abilities)
-  end)
+  local n_series = TB.count()
+  for i = 1, n_series do
+    local s = TB.at(i)
+    harvest(i, 0, s.ehps_groups)
+    harvest(i, 1, s.mps_groups)
+    harvest_abilities(i, 0, s.ehps_abilities)
+    harvest_abilities(i, 1, s.mps_abilities)
+    if ye and i % ye == 0 then coroutine_yield() end
+  end
+  local function series_get(r, name)
+    local s = TB.at(r)
+    if name == "t" then return s.t - t0 end
+    if name == "o" then return s.o or 0 end
+    return s[name]
+  end
 
   local buffs_meta = {}
   local steps = {}
@@ -263,15 +271,15 @@ function M.capture()
     gkeys = gkeys,
     desc = DESC,
     streams = {
-      series    = vsf.pack(series, DESC.series),
-      steps     = vsf.pack(steps, DESC.steps),
-      episodes  = vsf.pack(ep_recs, DESC.episodes),
-      markers   = vsf.pack(mk_recs, DESC.markers),
-      shares    = vsf.pack(share_recs, DESC.shares),
-      abilities = vsf.pack(ability_recs, DESC.abilities),
-      ult       = vsf.pack(ult_recs, DESC.ult),
-      ultu      = vsf.pack(ultu_recs, DESC.ultu),
-      ulta      = vsf.pack(ulta_recs, DESC.ulta),
+      series    = vsf.pack(series_get, DESC.series, n_series, ye),
+      steps     = vsf.pack(steps, DESC.steps, nil, ye),
+      episodes  = vsf.pack(ep_recs, DESC.episodes, nil, ye),
+      markers   = vsf.pack(mk_recs, DESC.markers, nil, ye),
+      shares    = vsf.pack(share_recs, DESC.shares, nil, ye),
+      abilities = vsf.pack(ability_recs, DESC.abilities, nil, ye),
+      ult       = vsf.pack(ult_recs, DESC.ult, nil, ye),
+      ultu      = vsf.pack(ultu_recs, DESC.ultu, nil, ye),
+      ulta      = vsf.pack(ulta_recs, DESC.ulta, nil, ye),
     },
   }
   return session
@@ -294,16 +302,54 @@ function M.store(session)
   return true
 end
 
-function M.on_session_stop()
-  local sv = Verdant.SavedVars
-  if not (sv and sv.settings and sv.settings.session_autosave) then return end
-  local session = M.capture()
+local autosave_co = nil
+local autosave_frames = 0
+
+local function autosave_finish(session)
+  Verdant.zenimax.events.unregister_update("VerdantAutosave")
+  autosave_co = nil
   if session then
     M.store(session)
     if log then
       log:info("session autosaved: zone=", session.head.zone,
-               "dur=", session.head.dur_ms, "ms")
+               "dur=", session.head.dur_ms, "ms", "frames=", autosave_frames)
     end
+  end
+end
+
+local function autosave_step()
+  if not autosave_co then return end
+  if Verdant.Hitch then Verdant.Hitch.mark("stop") end
+  autosave_frames = autosave_frames + 1
+  local ok, res = coroutine.resume(autosave_co)
+  if not ok then
+    if log then log:warn("autosave failed:", tostring(res)) end
+    autosave_finish(nil)
+    return
+  end
+  if coroutine.status(autosave_co) == "dead" then
+    autosave_finish(res)
+  end
+end
+
+function M.on_session_stop()
+  local sv = Verdant.SavedVars
+  if not (sv and sv.settings and sv.settings.session_autosave) then return end
+  M.finish_autosave()
+  autosave_frames = 0
+  autosave_co = coroutine.create(function() return M.capture(true) end)
+  Verdant.zenimax.events.register_update("VerdantAutosave", 1, autosave_step)
+end
+
+function M.autosave_pending()
+  return autosave_co ~= nil
+end
+
+function M.finish_autosave()
+  local guard = 0
+  while autosave_co and guard < 10000 do
+    autosave_step()
+    guard = guard + 1
   end
 end
 
