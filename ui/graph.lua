@@ -37,6 +37,7 @@ local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink
 
 local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green base
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
+local C_OVERHEAL  = { r = 0.58, g = 0.64, b = 0.72, a = 0.82 }
 local C_LINE_DMG  = { r = 0.93, g = 0.44, b = 0.38, a = 0.60 }
 local C_FILL_DMG  = { r = 0.90, g = 0.38, b = 0.32, a = 0.10 }
 local C_MARK_DEATH     = { r = 0.92, g = 0.88, b = 0.84, a = 0.55 }
@@ -64,12 +65,13 @@ local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
 local controls           = {}
 local recording_start_ms = 0
 
-local VIEW_EMS    = 1
-local VIEW_SKILL  = 2
-local VIEW_CRIT   = 3
-local VIEW_BUFFS  = 4
-local VIEW_TRIAGE = 5
-local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "BUFFS", "TRIAGE" }
+local VIEW_EMS      = 1
+local VIEW_SKILL    = 2
+local VIEW_CRIT     = 3
+local VIEW_OVERHEAL = 4
+local VIEW_BUFFS    = 5
+local VIEW_TRIAGE   = 6
+local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE" }
 local current_view = VIEW_EMS
 
 -- SKILL view shield orientation: false = shields grow UP from the subplot floor
@@ -401,11 +403,11 @@ local function layout_skill_area()
   end
 end
 
-local r1_xs, r1_ehps_hs, r1_ems_hs = {}, {}, {}
-local r1_d_hs = {}
-local r2_xs_top, r2_colh_top       = {}, {}
-local r2_xs_bot, r2_colh_bot       = {}, {}
-local r3_xs, r3_top_hs             = {}, {}
+local SCR = {
+  r1_xs = {}, r1_ehps_hs = {}, r1_ems_hs = {}, r1_d_hs = {},
+  r2_xs_top = {}, r2_colh_top = {}, r2_xs_bot = {}, r2_colh_bot = {},
+  r3_xs = {}, r3_top_hs = {},
+}
 
 local MIN_COL_PX = 4
 local dec_cols   = { denom = 1 }
@@ -435,7 +437,7 @@ local function decimate(cw)
       col.c = c; col.t = s.t
       col.ems_peak = ems; col.e1 = s.eHPS; col.m1 = s.MPS
       col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.ehps_abilities = s.ehps_abilities
-      col.noncrit = s.noncrit; col.crit = s.crit
+      col.noncrit = s.noncrit; col.crit = s.crit; col.oh = s.o or 0
       col.MPS = s.MPS; col.mps_groups = s.mps_groups; col.mps_abilities = s.mps_abilities
       col.d = s.d or 0
       cur_c = c
@@ -443,7 +445,7 @@ local function decimate(cw)
       if ems > col.ems_peak then col.ems_peak = ems; col.e1 = s.eHPS; col.m1 = s.MPS end
       if s.eHPS > col.eHPS then    -- eHPS-peak: drives VIEW2-top stack + VIEW3 crit split
         col.eHPS = s.eHPS; col.ehps_groups = s.ehps_groups; col.ehps_abilities = s.ehps_abilities
-        col.noncrit = s.noncrit; col.crit = s.crit
+        col.noncrit = s.noncrit; col.crit = s.crit; col.oh = s.o or 0
       end
       if s.MPS > col.MPS then col.MPS = s.MPS; col.mps_groups = s.mps_groups; col.mps_abilities = s.mps_abilities end  -- MPS-peak
       if (s.d or 0) > col.d then col.d = s.d end
@@ -790,7 +792,7 @@ local function hit_col(H, i, x, bw, s)
   if not col then col = { bands = {} }; H.cols[i] = col end
   col.x0 = x; col.x1 = x + bw; col.nb = 0; col.t = s.t
   col.ehps = s.e1; col.mps = s.m1; col.crit = s.crit; col.noncrit = s.noncrit
-  col.d = s.d or 0
+  col.d = s.d or 0; col.oh = s.oh or 0; col.eh = s.eHPS or 0
   col.ehps_abilities = s.ehps_abilities; col.mps_abilities = s.mps_abilities
   return col
 end
@@ -1018,6 +1020,12 @@ local function hover_poll()
     show_moment_card(C_CRIT, "Crit",
       string_format("|c%s%d%% crit|r  ·  %s HPS", hexc(C_CRIT), cp, fmt_val(tot)),
       elapsed, mx, my)
+  elseif current_view == VIEW_OVERHEAL then
+    local tot = (col.eh or 0) + (col.oh or 0)
+    local op  = (tot > 0) and math_floor((col.oh or 0) / tot * 100 + 0.5) or 0
+    show_moment_card(C_OVERHEAL, "Overheal",
+      string_format("|c%s%d%% wasted|r  ·  %s HPS", hexc(C_OVERHEAL), op, fmt_val(col.eh or 0)),
+      elapsed, mx, my)
   else
     fade_out(card_fader)
   end
@@ -1132,9 +1140,9 @@ local function render_view1()
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span = axis_span(t_last - t_first, n)
   draw_grid(controls.grid_ems, canvas, max_ems, span)
-  local xs          = r1_xs
-  local ehps_hs     = r1_ehps_hs
-  local ems_hs      = r1_ems_hs
+  local xs          = SCR.r1_xs
+  local ehps_hs     = SCR.r1_ehps_hs
+  local ems_hs      = SCR.r1_ems_hs
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -1152,14 +1160,14 @@ local function render_view1()
     xs[i]      = xc
     ehps_hs[i] = ehps_h
     ems_hs[i]  = ehps_h + mps_h
-    r1_d_hs[i] = (max_d > 0) and math_floor(ch_plot * 0.92 * (s.d / max_d) + 0.5) or 0
+    SCR.r1_d_hs[i] = (max_d > 0) and math_floor(ch_plot * 0.92 * (s.d / max_d) + 0.5) or 0
 
-    if r1_d_hs[i] > 0 then
+    if SCR.r1_d_hs[i] > 0 then
       local df = controls.pool_dmg_fill:AcquireObject()
       df:ClearAnchors()
       df:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -TIME_STRIP_H)
       df:SetWidth(bw)
-      df:SetHeight(r1_d_hs[i])
+      df:SetHeight(SCR.r1_d_hs[i])
       df:SetColor(C_FILL_DMG.r, C_FILL_DMG.g, C_FILL_DMG.b, C_FILL_DMG.a)
       df:SetHidden(false)
     end
@@ -1189,8 +1197,8 @@ local function render_view1()
     for i = 2, m do
       local ld = controls.pool_line_dmg:AcquireObject()
       ld:ClearAnchors()
-      ld:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, xs[i-1], -(r1_d_hs[i-1] + TIME_STRIP_H))
-      ld:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, xs[i],   -(r1_d_hs[i]   + TIME_STRIP_H))
+      ld:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, xs[i-1], -(SCR.r1_d_hs[i-1] + TIME_STRIP_H))
+      ld:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, xs[i],   -(SCR.r1_d_hs[i]   + TIME_STRIP_H))
       ld:SetColor(C_LINE_DMG.r, C_LINE_DMG.g, C_LINE_DMG.b, C_LINE_DMG.a)
       ld:SetThickness(1)
       ld:SetHidden(false)
@@ -1260,8 +1268,8 @@ local function render_view2()
 
   if max_ehps > 0 then
     local ch     = ec:GetHeight()
-    local xs     = r2_xs_top
-    local col_hs = r2_colh_top
+    local xs     = SCR.r2_xs_top
+    local col_hs = SCR.r2_colh_top
     if capture then hit_begin(hit_top, m) end
 
     for i = 1, m do
@@ -1326,8 +1334,8 @@ local function render_view2()
   if max_mps > 0 then
     local mc_h    = mc:GetHeight()
     local ch_plot = math_max(1, mc_h - TIME_STRIP_H)
-    local xs      = r2_xs_bot
-    local col_hs  = r2_colh_bot
+    local xs      = SCR.r2_xs_bot
+    local col_hs  = SCR.r2_colh_bot
     if capture then hit_begin(hit_bot, m) end
 
     for i = 1, m do
@@ -1442,8 +1450,8 @@ local function render_view3()
   local span = axis_span(t_last - t_first, n)
   draw_grid(controls.grid_ems, canvas, max_ehps, span)
 
-  local xs          = r3_xs
-  local top_hs      = r3_top_hs
+  local xs          = SCR.r3_xs
+  local top_hs      = SCR.r3_top_hs
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -1491,6 +1499,95 @@ local function render_view3()
       lt:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
       lt:SetThickness(LINE_THICKNESS)
       lt:SetHidden(false)
+    end
+  end
+  draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
+               canvas, t_first, span, 0, cw)
+end
+
+local function render_view_oh()
+  controls.pool_ehps:ReleaseAllObjects()
+  controls.pool_mps:ReleaseAllObjects()
+  controls.pool_line_ehps:ReleaseAllObjects()
+  controls.pool_line_ems:ReleaseAllObjects()
+
+  local n = Verdant.TemporalBuffer.count()
+  if n == 0 then
+    controls.no_data:SetHidden(false)
+    hide_grid(controls.grid_ems)
+    return
+  end
+  controls.no_data:SetHidden(true)
+
+  local canvas  = controls.canvas
+  local cw      = canvas:GetWidth()
+  local ch      = canvas:GetHeight()
+  if cw <= 4 or ch <= 4 then return end
+  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+
+  local max_tot = 0
+  local t_first, t_last = 0, 0
+  Verdant.TemporalBuffer.iterate(function(i, s)
+    local tot = s.eHPS + (s.o or 0)
+    if tot > max_tot then max_tot = tot end
+    if i == 1 then t_first = s.t end
+    t_last = s.t
+  end)
+  if max_tot <= 0 then
+    hide_grid(controls.grid_ems)
+    return
+  end
+
+  local m, num_cols, col_w, bar_gap = decimate(cw)
+  local span = axis_span(t_last - t_first, n)
+  draw_grid(controls.grid_ems, canvas, max_tot, span)
+
+  local xs     = SCR.r3_xs
+  local eff_hs = SCR.r3_top_hs
+  local capture = not Verdant.TemporalBuffer.is_recording()
+  if capture then hit_begin(hit_main, m) end
+
+  for i = 1, m do
+    local s = dec_cols[i]
+    local left, right = dec_rect(s.c, num_cols, cw)
+    local x  = left
+    local bw = math_max(1, right - left - bar_gap)
+    if capture then hit_col(hit_main, i, left, right - left, s) end
+    local eff_h = math_max(0, math_floor(ch_plot * (s.eHPS / max_tot) + 0.5))
+    local oh_h  = math_max(0, math_floor(ch_plot * ((s.oh or 0) / max_tot) + 0.5))
+    xs[i]     = x + bw * 0.5
+    eff_hs[i] = eff_h
+
+    if eff_h > 0 then
+      local te = controls.pool_ehps:AcquireObject()
+      te:ClearAnchors()
+      te:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -TIME_STRIP_H)
+      te:SetWidth(bw)
+      te:SetHeight(eff_h)
+      te:SetColor(C_EHPS.r, C_EHPS.g, C_EHPS.b, C_EHPS.a)
+      te:SetHidden(false)
+    end
+
+    if oh_h > 0 then
+      local to = controls.pool_mps:AcquireObject()
+      to:ClearAnchors()
+      to:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, x, -(TIME_STRIP_H + eff_h))
+      to:SetWidth(bw)
+      to:SetHeight(oh_h)
+      to:SetColor(C_OVERHEAL.r, C_OVERHEAL.g, C_OVERHEAL.b, C_OVERHEAL.a)
+      to:SetHidden(false)
+    end
+  end
+
+  if col_w >= 3 then
+    for i = 2, m do
+      local le = controls.pool_line_ehps:AcquireObject()
+      le:ClearAnchors()
+      le:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT, xs[i-1], -(eff_hs[i-1] + TIME_STRIP_H))
+      le:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMLEFT, xs[i],   -(eff_hs[i]   + TIME_STRIP_H))
+      le:SetColor(C_LINE_EHPS.r, C_LINE_EHPS.g, C_LINE_EHPS.b, C_LINE_EHPS.a)
+      le:SetThickness(LINE_THICKNESS)
+      le:SetHidden(false)
     end
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
@@ -2014,6 +2111,8 @@ function render_current_view()
     render_view1()
   elseif current_view == VIEW_CRIT then
     render_view3()
+  elseif current_view == VIEW_OVERHEAL then
+    render_view_oh()
   elseif current_view == VIEW_BUFFS then
     render_view4()
   elseif current_view == VIEW_TRIAGE then
@@ -2122,9 +2221,10 @@ local function on_sample_update()
   Verdant.Metrics.eHPS_by_ability_into(sample_ehps_abilities, now)
   Verdant.Metrics.MPS_by_ability_into(sample_mps_abilities, now)
   local d_group = Verdant.Metrics.D_group(now)
+  local ohps    = Verdant.Metrics.OHPS(now)
   Verdant.TemporalBuffer.push(now, ehps, mps, crit, noncrit,
                               sample_ehps_groups, sample_mps_groups,
-                              sample_ehps_abilities, sample_mps_abilities, d_group)
+                              sample_ehps_abilities, sample_mps_abilities, d_group, ohps)
   Verdant.BuffTracker.expire_stale(now)
 
   local elapsed = math_floor((now - recording_start_ms) / 1000)

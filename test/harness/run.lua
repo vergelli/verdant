@@ -33,6 +33,7 @@ local CASES = {
   "library_flow",
   "render_bounds",
   "grow_to_fill",
+  "overheal_view",
 }
 
 local passed, failed = 0, 0
