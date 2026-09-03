@@ -197,7 +197,7 @@
                 mouseEnabled="true"
                 mouseOverBlendMode="ADD"
                 inherits="ZO_ButtonBehaviorClickSound">
-          <Anchor point="TOPRIGHT" offsetX="-72" offsetY="33"/>
+          <Anchor point="TOPRIGHT" offsetX="-76" offsetY="33"/>
           <Dimensions x="24" y="24"/>
           <Textures normal="EsoUI/Art/Buttons/large_leftdoublearrow_up.dds"
                     pressed="EsoUI/Art/Buttons/large_leftdoublearrow_down.dds"
@@ -209,8 +209,8 @@
                font="ZoFontGameSmall"
                horizontalAlignment="CENTER"
                verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-40" offsetY="38"/>
-          <Dimensions x="30" y="14"/>
+          <Anchor point="TOPRIGHT" offsetX="-36" offsetY="38"/>
+          <Dimensions x="36" y="14"/>
         </Label>
 
         <Button name="$(parent)NextViewBtn"

@@ -21,10 +21,17 @@ scripted combat without the game. Built on the mock-ESO harness
 ```
 lua test/simlab/run.lua .                    all scenarios
 lua test/simlab/run.lua . trial_boss        one scenario
-lua test/simlab/run.lua . --svg             + SVG snapshots of all 4 views
+lua test/simlab/run.lua . --svg             + SVG snapshots of all 6 views
+lua test/simlab/mockups.lua .               window mockups (settings, bar, watch, library)
+lua test/simlab/audit.lua .                 layout audit over out/*.svg
 lua test/simlab/replay.lua . <SavedVars/Verdant.lua> [--svg]
 lua test/harness/run.lua . 1                unit cases, DEBUG on
 ```
+
+The audit parses every snapshot in `out/` and flags controls drawn outside
+their window, text pairs that overlap, and text running under a button.
+Labels carry their real width (`data-w`) so clipping and wrapping are
+modeled; the text-width estimate is ~0.55px per char per font pixel.
 
 SVGs land in `test/simlab/out/` (gitignored). Open in any browser; grey
 rectangles are DDS textures (path in the tooltip).
