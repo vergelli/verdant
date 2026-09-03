@@ -76,8 +76,9 @@
   title text.
 - **Hover card widens to fit** — long ability names no longer truncate in
   the per-skill breakdown.
-- **Cards are solid** — opaque body, a frame on all four sides, and the
-  explanation text no longer clips.
+- **Cards are solid** — opaque body, dark warm ground with a thin gold
+  frame instead of the green tint, and the explanation text no longer
+  clips.
 
 ### Fixed
 - **A new recording no longer inherits the previous one** — rates from
