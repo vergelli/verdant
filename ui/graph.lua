@@ -3244,23 +3244,23 @@ function M.init()
   controls.pool_marker_line = Pool.new("VerdantMarkerLine", controls.canvas, CT_TEXTURE,
     function(c)
       fill_factory(c)
-      c:SetDrawLevel(4)
+      c:SetDrawLevel(9)
     end, fill_reset)
   controls.pool_marker_icon = Pool.new("VerdantMarkerIcon", controls.canvas, CT_TEXTURE,
     function(c)
       c:SetPixelRoundingEnabled(false)
-      c:SetDrawLevel(5)
+      c:SetDrawLevel(10)
     end,
     function(c) c:SetHidden(true) end)
   controls.pool_marker_line_top = Pool.new("VerdantMarkerLineTop", controls.ehps_canvas, CT_TEXTURE,
     function(c)
       fill_factory(c)
-      c:SetDrawLevel(4)
+      c:SetDrawLevel(9)
     end, fill_reset)
   controls.pool_marker_icon_top = Pool.new("VerdantMarkerIconTop", controls.ehps_canvas, CT_TEXTURE,
     function(c)
       c:SetPixelRoundingEnabled(false)
-      c:SetDrawLevel(5)
+      c:SetDrawLevel(10)
     end,
     function(c) c:SetHidden(true) end)
   controls.pool_skill_top      = make_skill_fill_pool("VerdantSkillFillTop", "ehps_canvas")
