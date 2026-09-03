@@ -24,7 +24,7 @@ return function(H)
   H.advance(300)
   ok(VerdantGraphWindow._alpha == 1, "hover must go fully opaque")
   ok(VerdantGraphWindowStopBtn._hidden == false, "hover must reveal stop")
-  ok(VerdantGraphWindowNextViewBtn._hidden == false, "hover must reveal view nav")
+  ok(VerdantGraphWindowTabs._hidden == false, "hover must reveal the view tabs")
   ok(VerdantGraphWindowChromeTop._hidden == true, "chrome stays off even on hover")
 
   H.state.mouse_x, H.state.mouse_y = 1900, 1000

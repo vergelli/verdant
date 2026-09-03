@@ -57,6 +57,10 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- **View tabs** — the six views sit in a tab strip under the controls,
+  the current one underlined; click any to jump straight there. The
+  prev / next arrows and the cryptic view label are gone. Light mode
+  hides the strip with the rest of the chrome.
 - **TRIAGE view rebuilt around a donut** — outcomes as a donut with
   `n% saved` in the centre, a legend that counts and explains every
   class in five words, and below it the episodes of the selected class

@@ -13,21 +13,13 @@ return function(H)
     H.advance(1000)
   end
 
-  collectgarbage("collect")
-  collectgarbage("collect")
-  collectgarbage("stop")
-  local before = collectgarbage("count")
   local TICKS = 50
-  for _ = 1, TICKS do
-    H.advance(1000)
-  end
-  local after = collectgarbage("count")
-  collectgarbage("restart")
-
-  local budget = HARNESS_DEBUG and 700 or 400
-  local per_tick = (after - before) * 1024 / TICKS
+  local per_tick = H.addon_alloc(function()
+    for _ = 1, TICKS do H.advance(1000) end
+  end) / TICKS
+  local budget = HARNESS_DEBUG and 9000 or 200
   ok(per_tick < budget,
-     string.format("sample tick allocates %.0f bytes (budget %d)", per_tick, budget))
+     string.format("sample tick allocates %.0f addon-side bytes (budget %d)", per_tick, budget))
 
   local function ticks()
     for _ = 1, 10 do

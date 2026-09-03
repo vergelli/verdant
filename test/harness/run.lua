@@ -39,6 +39,7 @@ local CASES = {
   "skill_donut",
   "categories",
   "new_category_ui",
+  "view_tabs",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",
