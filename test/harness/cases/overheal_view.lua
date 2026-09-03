@@ -28,17 +28,20 @@ return function(H)
     local name = c._name or ""
     if c._hidden == false then
       if name:find("^VerdantGraphFillEhps") then eff = true end
-      if name:find("^VerdantGraphFillMps") and c._r and c._r < 0.7 and c._b and c._b > 0.6 then
+      if name:find("^VerdantGraphFillMps") and c._r and math.abs(c._r - 0.64) < 0.02
+         and c._b and math.abs(c._b - 0.58) < 0.02 then
         wasted = true
       end
     end
   end
   ok(eff, "effective healing bars must render on OHEAL view")
   ok(wasted, "wasted band must stack on top in the overheal palette")
+  ok(VerdantGraphOhLegend._hidden == false, "the OHEAL legend must show with data")
+  ok((VerdantGraphOhLegend._text or ""):find("wasted") ~= nil, "legend must explain the grey band")
 
   local canvas = VerdantGraphWindowViewportCanvas
   local hit    = VerdantGraphHitMain
-  H.state.mouse_x = canvas:GetLeft() + 10
+  H.state.mouse_x = canvas:GetLeft() + canvas:GetWidth() - 10
   H.state.mouse_y = canvas:GetTop() + 200
   hit._onOnMouseEnter(hit)
   H.advance(200)

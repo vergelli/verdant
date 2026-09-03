@@ -21,6 +21,7 @@ local step_t    = {}
 local step_p    = {}
 local n_used    = 0
 local used_t    = {}
+local saw_power = false
 
 local function bump(key) Verdant.Diagnostics.bump(key) end
 
@@ -67,6 +68,7 @@ end
 
 function M.on_power(value, powerMax, effectiveMax)
   bump("ult.power_updates")
+  saw_power = true
   cur_value = value or 0
   local m = effectiveMax or powerMax
   if m and m > 0 then cur_max = m end
@@ -86,6 +88,13 @@ function M.start_session(t)
   t_end     = 0
   n_steps   = 0
   n_used    = 0
+  saw_power = false
+  local api = Verdant.zenimax.api
+  local zc  = Verdant.zenimax.constants
+  if api.GetUnitPower and zc.COMBAT_MECHANIC_FLAGS_ULTIMATE then
+    local v = api.GetUnitPower("player", zc.COMBAT_MECHANIC_FLAGS_ULTIMATE)
+    if v then cur_value = v end
+  end
   M.refresh_cost()
   push_step(t)
 end
@@ -103,11 +112,12 @@ function M.reset()
   t_end     = 0
   n_steps   = 0
   n_used    = 0
+  saw_power = false
 end
 
 function M.steps()    return step_t, step_p, n_steps end
 function M.used()     return used_t, n_used end
-function M.has_data() return n_steps > 0 end
+function M.has_data() return saw_power and n_steps > 0 end
 function M.cost()     return cost end
 function M.is_recording() return recording end
 

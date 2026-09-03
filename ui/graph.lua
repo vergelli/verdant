@@ -37,7 +37,7 @@ local C_LINE_EMS  = { r = 1.00, g = 0.78, b = 0.90, a = 1.00 }  -- brighter pink
 
 local C_NONCRIT   = { r = 0.34, g = 0.55, b = 0.40, a = 0.90 }  -- muted green base
 local C_CRIT      = { r = 1.00, g = 0.85, b = 0.40, a = 0.96 }  -- bright gold (crit pops)
-local C_OVERHEAL  = { r = 0.58, g = 0.64, b = 0.72, a = 0.82 }
+local C_OVERHEAL  = { r = 0.64, g = 0.66, b = 0.58, a = 0.82 }
 local C_LINE_DMG  = { r = 0.93, g = 0.44, b = 0.38, a = 0.60 }
 local C_FILL_DMG  = { r = 0.90, g = 0.38, b = 0.32, a = 0.10 }
 local C_MARK_DEATH     = { r = 0.92, g = 0.88, b = 0.84, a = 0.55 }
@@ -252,7 +252,7 @@ local function hide_grid(grid)
   grid.ymax:SetHidden(true)
 end
 
-local function draw_grid(grid, canvas, max_val, span_ms, flip)
+local function draw_grid(grid, canvas, max_val, span_ms, flip, lookback)
   local cw = canvas:GetWidth()
   local ch = canvas:GetHeight()
   if cw <= 0 or ch <= 0 then
@@ -315,17 +315,17 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip)
   if has_time then
     grid.time_l:ClearAnchors()
     grid.time_l:SetAnchor(BOTTOMLEFT,  canvas, BOTTOMLEFT,  2, 0)
-    grid.time_l:SetText("0s")
+    grid.time_l:SetText(lookback and ("-" .. fmt_secs(span_ms)) or "0s")
     grid.time_l:SetHidden(false)
 
     grid.time_m:ClearAnchors()
     grid.time_m:SetAnchor(BOTTOM, canvas, BOTTOM, 0, 0)
-    grid.time_m:SetText(fmt_secs(span_ms / 2))
+    grid.time_m:SetText(lookback and ("-" .. fmt_secs(span_ms / 2)) or fmt_secs(span_ms / 2))
     grid.time_m:SetHidden(false)
 
     grid.time_r:ClearAnchors()
     grid.time_r:SetAnchor(BOTTOMRIGHT, canvas, BOTTOMRIGHT, -2, 0)
-    grid.time_r:SetText(fmt_secs(span_ms))
+    grid.time_r:SetText(lookback and GetString(VERDANT_GRAPH_NOW) or fmt_secs(span_ms))
     grid.time_r:SetHidden(false)
   else
     grid.time_l:SetHidden(true)
@@ -423,16 +423,17 @@ local function decimate(cw)
   local denom    = capacity
   while true do
     local h = math_floor(denom / 2)
-    if h >= n and h >= 30 then denom = h else break end
+    if h >= n and h >= 15 then denom = h else break end
   end
   dec_cols.denom = denom
   local num_cols = math_floor(cw / MIN_COL_PX)
   if num_cols < 1 then num_cols = 1 end
   if num_cols > denom then num_cols = denom end
+  local offset   = denom - n
   local m, cur_c = 0, -1
   local col
   TB.iterate(function(i, s)
-    local c   = math_floor((i - 1) * num_cols / denom)
+    local c   = math_floor((offset + i - 1) * num_cols / denom)
     local ems = s.eHPS + s.MPS
     if c ~= cur_c then
       m = m + 1
@@ -1190,18 +1191,22 @@ local function draw_ult_band(pool, canvas, t0, span, t_data_hi)
   local st, sp, n = U.steps()
   local ut, un = U.used()
   local k = 1
+  local min_x, max_x
   local run_x0, run_lv, run_avail = nil, -1, false
   local function flush(x1)
     if not run_x0 or x1 <= run_x0 then run_x0 = nil return end
+    if not min_x or run_x0 < min_x then min_x = run_x0 end
+    if not max_x or x1 > max_x then max_x = x1 end
     local seg = pool:AcquireObject()
     seg:ClearAnchors()
+    seg:SetDrawLevel(6)
     seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, run_x0, 22)
     seg:SetWidth(x1 - run_x0)
     seg:SetHeight(5)
     if run_avail then
       seg:SetColor(C_CRIT.r, C_CRIT.g, C_CRIT.b, 0.78)
     else
-      seg:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.08 + 0.045 * run_lv)
+      seg:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.10 + 0.045 * run_lv)
     end
     seg:SetHidden(false)
     run_x0 = nil
@@ -1222,12 +1227,23 @@ local function draw_ult_band(pool, canvas, t0, span, t_data_hi)
     end
   end
   flush(cw)
+  if min_x then
+    local rim = pool:AcquireObject()
+    rim:ClearAnchors()
+    rim:SetDrawLevel(5)
+    rim:SetAnchor(TOPLEFT, canvas, TOPLEFT, min_x - 1, 21)
+    rim:SetWidth(max_x - min_x + 2)
+    rim:SetHeight(7)
+    rim:SetColor(0.04, 0.04, 0.035, 0.60)
+    rim:SetHidden(false)
+  end
   for i = 1, un do
     local t = ut[i]
     if t >= t0 and t <= t0 + span then
       local x = math_floor((t - t0) / span * cw + 0.5)
       local tick = pool:AcquireObject()
       tick:ClearAnchors()
+      tick:SetDrawLevel(6)
       tick:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - 1, 19)
       tick:SetWidth(2)
       tick:SetHeight(11)
@@ -1274,10 +1290,12 @@ local function render_view1()
 
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span = axis_span(t_last - t_first, n)
-  draw_grid(controls.grid_ems, canvas, max_ems, span)
+  local t0x  = t_last - span
+  draw_grid(controls.grid_ems, canvas, max_ems, span, nil, true)
   local xs          = SCR.r1_xs
   local ehps_hs     = SCR.r1_ehps_hs
   local ems_hs      = SCR.r1_ems_hs
+  local bw          = math_max(1, math_floor(col_w) - bar_gap)
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -1285,7 +1303,6 @@ local function render_view1()
     local s = dec_cols[i]
     local left, right = dec_rect(s.c, num_cols, cw)
     local x  = left
-    local bw = math_max(1, right - left - bar_gap)
     if capture then hit_col(hit_main, i, left, right - left, s) end
     local xc = x + bw * 0.5
 
@@ -1363,8 +1380,8 @@ local function render_view1()
   end
 
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
-               canvas, t_first, span, 0, cw)
-  draw_ult_band(controls.pool_ult, canvas, t_first, span, t_last)
+               canvas, t0x, span, 0, cw)
+  draw_ult_band(controls.pool_ult, canvas, t0x, span, t_last)
 end
 
 local function render_view2()
@@ -1397,8 +1414,10 @@ local function render_view2()
   end)
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span_ms = axis_span(t_last - t_first, n)
+  local t0x     = t_last - span_ms
+  local bwu     = math_max(1, math_floor(col_w) - bar_gap)
   draw_grid(controls.grid_top, ec, max_ehps, 0)
-  draw_grid(controls.grid_bot, mc, max_mps, span_ms, shield_down)
+  draw_grid(controls.grid_bot, mc, max_mps, span_ms, shield_down, true)
   local capture = not Verdant.TemporalBuffer.is_recording()
   local hk = hover_key
 
@@ -1412,7 +1431,7 @@ local function render_view2()
       local s = dec_cols[i]
       local left, right = dec_rect(s.c, num_cols, cw)
       local x     = left
-      local bw    = math_max(1, right - left - bar_gap)
+      local bw    = bwu
       local col_h = math_max(0, math_floor(ch * (s.eHPS / max_ehps) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
@@ -1478,7 +1497,7 @@ local function render_view2()
       local s = dec_cols[i]
       local left, right = dec_rect(s.c, num_cols, cw)
       local x     = left
-      local bw    = math_max(1, right - left - bar_gap)
+      local bw    = bwu
       local col_h = math_max(0, math_floor(ch_plot * (s.MPS / max_mps) + 0.5))
       xs[i]      = x + bw * 0.5
       col_hs[i]  = col_h
@@ -1547,8 +1566,8 @@ local function render_view2()
     end
   end
   draw_markers(controls.pool_marker_line_top, controls.pool_marker_icon_top,
-               ec, t_first, span_ms, 0, cw)
-  draw_ult_band(controls.pool_ult_top, ec, t_first, span_ms, t_last)
+               ec, t0x, span_ms, 0, cw)
+  draw_ult_band(controls.pool_ult_top, ec, t0x, span_ms, t_last)
 end
 
 local function render_view3()
@@ -1585,10 +1604,12 @@ local function render_view3()
 
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span = axis_span(t_last - t_first, n)
-  draw_grid(controls.grid_ems, canvas, max_ehps, span)
+  local t0x  = t_last - span
+  draw_grid(controls.grid_ems, canvas, max_ehps, span, nil, true)
 
   local xs          = SCR.r3_xs
   local top_hs      = SCR.r3_top_hs
+  local bw          = math_max(1, math_floor(col_w) - bar_gap)
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -1596,7 +1617,6 @@ local function render_view3()
     local s = dec_cols[i]
     local left, right = dec_rect(s.c, num_cols, cw)
     local x  = left
-    local bw = math_max(1, right - left - bar_gap)
     if capture then hit_col(hit_main, i, left, right - left, s) end
     local noncrit_h = math_max(0, math_floor(ch_plot * (s.noncrit / max_ehps) + 0.5))
     local crit_h    = math_max(0, math_floor(ch_plot * (s.crit    / max_ehps) + 0.5))
@@ -1639,8 +1659,8 @@ local function render_view3()
     end
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
-               canvas, t_first, span, 0, cw)
-  draw_ult_band(controls.pool_ult, canvas, t_first, span, t_last)
+               canvas, t0x, span, 0, cw)
+  draw_ult_band(controls.pool_ult, canvas, t0x, span, t_last)
 end
 
 local function render_view_oh()
@@ -1678,10 +1698,13 @@ local function render_view_oh()
 
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span = axis_span(t_last - t_first, n)
-  draw_grid(controls.grid_ems, canvas, max_tot, span)
+  local t0x  = t_last - span
+  draw_grid(controls.grid_ems, canvas, max_tot, span, nil, true)
+  if controls.oh_legend then controls.oh_legend:SetHidden(false) end
 
   local xs     = SCR.r3_xs
   local eff_hs = SCR.r3_top_hs
+  local bw     = math_max(1, math_floor(col_w) - bar_gap)
   local capture = not Verdant.TemporalBuffer.is_recording()
   if capture then hit_begin(hit_main, m) end
 
@@ -1689,7 +1712,6 @@ local function render_view_oh()
     local s = dec_cols[i]
     local left, right = dec_rect(s.c, num_cols, cw)
     local x  = left
-    local bw = math_max(1, right - left - bar_gap)
     if capture then hit_col(hit_main, i, left, right - left, s) end
     local eff_h = math_max(0, math_floor(ch_plot * (s.eHPS / max_tot) + 0.5))
     local oh_h  = math_max(0, math_floor(ch_plot * ((s.oh or 0) / max_tot) + 0.5))
@@ -1729,8 +1751,8 @@ local function render_view_oh()
     end
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
-               canvas, t_first, span, 0, cw)
-  draw_ult_band(controls.pool_ult, canvas, t_first, span, t_last)
+               canvas, t0x, span, 0, cw)
+  draw_ult_band(controls.pool_ult, canvas, t0x, span, t_last)
 end
 
 local BUFF_MAX_ROW_H = 26
@@ -1835,17 +1857,20 @@ local function render_view4()
     lane:SetColor(C_BUFF_LANE.r, C_BUFF_LANE.g, C_BUFF_LANE.b, C_BUFF_LANE.a)
     lane:SetHidden(false)
 
-    local star = controls.pool_buff_icon:AcquireObject()
-    star:ClearAnchors()
-    star:SetTexture("EsoUI/Art/Collections/Favorite_StarOnly.dds")
-    star:SetDimensions(13, 13)
-    if Verdant.BuffWatch.thr(rec.name) then
-      star:SetColor(1.00, 0.85, 0.40, 0.95)
-    else
-      star:SetColor(0.55, 0.58, 0.55, 0.40)
+    local armed = Verdant.BuffWatch.thr(rec.name) ~= nil
+    if armed or rec.id == hk then
+      local star = controls.pool_buff_icon:AcquireObject()
+      star:ClearAnchors()
+      star:SetTexture("EsoUI/Art/Collections/Favorite_StarOnly.dds")
+      star:SetDimensions(13, 13)
+      if armed then
+        star:SetColor(1.00, 0.85, 0.40, 0.95)
+      else
+        star:SetColor(0.80, 0.85, 0.80, 0.55)
+      end
+      star:SetAnchor(TOPLEFT, canvas, TOPLEFT, 1, y + math_floor((row_h - 13) / 2))
+      star:SetHidden(false)
     end
-    star:SetAnchor(TOPLEFT, canvas, TOPLEFT, 1, y + math_floor((row_h - 13) / 2))
-    star:SetHidden(false)
 
     local icon = controls.pool_buff_icon:AcquireObject()
     icon:ClearAnchors()
@@ -2330,6 +2355,9 @@ local function set_view(v)
   current_view = v
   controls.view_label:SetText(VIEW_LABELS[v])
   hover_key = nil
+  if controls.oh_legend then
+    controls.oh_legend:SetHidden(v ~= VIEW_OVERHEAL or Verdant.TemporalBuffer.count() == 0)
+  end
   if v == VIEW_BUFFS then
     controls.no_data:SetText(GetString(VERDANT_GRAPH_NO_BUFFS))
   elseif v == VIEW_TRIAGE then
@@ -2790,6 +2818,19 @@ function M.init()
   sum_label:SetHidden(true)
 
   controls.summary = { bg = sum_bg, label = sum_label }
+
+  local oh_legend = WM:CreateControl("VerdantGraphOhLegend", controls.canvas, CT_LABEL)
+  oh_legend:SetFont("ZoFontGameSmall")
+  oh_legend:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+  oh_legend:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+  oh_legend:SetAnchor(TOPRIGHT, controls.canvas, TOPRIGHT, -2, 2)
+  oh_legend:SetDimensions(220, 12)
+  oh_legend:SetDrawLevel(7)
+  oh_legend:SetText(string_format("|c%s%s|r · |c%s%s|r",
+    hexc(C_EHPS), GetString(VERDANT_OHEAL_EFF),
+    hexc(C_OVERHEAL), GetString(VERDANT_OHEAL_WASTED)))
+  oh_legend:SetHidden(true)
+  controls.oh_legend = oh_legend
 
   build_hover_card()
   card_fader = make_fader(controls.card.root)
