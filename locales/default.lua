@@ -15,8 +15,6 @@ ZO_CreateStringId("VERDANT_DUMP_SAVED",     "Buffers snapshotted to SavedVars.")
 ZO_CreateStringId("VERDANT_READOUT_LINE",   "[%s] eHPS=%d MPS=%d EMS=%d | %s=%d | C=%.2f (h=%.2f s=%.2f)")
 ZO_CreateStringId("VERDANT_METRIC_SET",     "Active metric: %s")
 ZO_CreateStringId("VERDANT_METRIC_UNKNOWN", "Unknown metric '%s'. Use: EMS | eHPS_only | MPS_only | eff_ratio")
-ZO_CreateStringId("VERDANT_BAR_SHOWN",      "Bar shown.")
-ZO_CreateStringId("VERDANT_BAR_HIDDEN",     "Bar hidden.")
 ZO_CreateStringId("VERDANT_LOADED",         "Verdant v%s loaded. Type %s to toggle.")
 
 -- Settings panel

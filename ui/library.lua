@@ -161,7 +161,7 @@ function M.refresh()
   if scroll_off > max_off then scroll_off = max_off end
   if scroll_off < 0 then scroll_off = 0 end
 
-  local count_text = string_format(GetString(VERDANT_LIB_COUNT), n, 24)
+  local count_text = string_format(GetString(VERDANT_LIB_COUNT), n, SS.cap())
   if scroll_off > 0 then count_text = count_text .. "  ^" .. scroll_off end
   local below = max_off - scroll_off
   if below > 0 then count_text = count_text .. "  v" .. below end

@@ -269,6 +269,8 @@ function M.count()
   return lib and #lib.sessions or 0
 end
 
+function M.cap() return CAP end
+
 function M.get(i)
   local lib = lib_root()
   return lib and lib.sessions[i] or nil

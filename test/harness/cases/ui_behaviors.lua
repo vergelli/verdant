@@ -64,6 +64,15 @@ return function(H)
   Verdant.Settings.toggle()
   g._hidden = true
 
+  local bw = VerdantBarWindow
+  Verdant.Visibility.set("bar", true)
+  ok(bw._hidden == false, "bar must show through visibility")
+  Verdant.Bar.on_close_click()
+  ok(bw._hidden == true, "the close button must hide the bar")
+  H.scene("inventory", SCENE_SHOWN)
+  H.scene("hud", SCENE_SHOWN)
+  ok(bw._hidden == true, "a closed bar must stay closed after a menu roundtrip")
+
   local fb = VerdantAssignPanelFlyoutBg
   ok(fb._cr ~= nil and fb._ca and fb._ca > 0.9,
      "flyout backdrop must have a solid center color")
