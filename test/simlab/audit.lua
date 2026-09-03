@@ -47,13 +47,18 @@ local function parse(path)
       local y = tonumber(line:match('y="(-?[%d.]+)"'))
       local px = tonumber(line:match('font%-size="(%d+)"')) or 12
       local dataw = tonumber(line:match('data%-w="([%d.]+)"')) or 0
+      local lines = tonumber(line:match('data%-lines="(%d+)"')) or 0
       local anchor = line:match('text%-anchor="(%w+)"') or "start"
       local plain = txt:gsub("|t.-|t", ""):gsub("|c%x%x%x%x%x%x", ""):gsub("|r", "")
       local tw = #plain * px * 0.55
       local h = px
       if dataw > 0 and tw > dataw then
-        h = px * math.ceil(tw / dataw)
-        tw = dataw
+        if lines == 1 then
+          tw = dataw
+        else
+          h = px * math.ceil(tw / dataw)
+          tw = dataw
+        end
       end
       local x0 = x
       if anchor == "middle" then x0 = x - tw / 2

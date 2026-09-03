@@ -122,6 +122,8 @@ local function make_row(i)
   name:SetVerticalAlignment(TEXT_ALIGN_CENTER)
   name:SetDimensions(110, ROW_H)
   name:SetAnchor(LEFT, row, LEFT, 30, 0)
+  name:SetMaxLineCount(1)
+  name:SetWrapMode(TEXT_WRAP_MODE_ELLIPSIS)
 
   local stats = WM:CreateControl(nm .. "Stats", row, CT_LABEL)
   stats:SetFont("ZoFontGameSmall")

@@ -25,6 +25,9 @@ lua test/simlab/run.lua . --svg             + SVG snapshots of all 6 views
 lua test/simlab/mockups.lua .               window mockups (settings, bar, watch, library, donut probe, report card)
 lua test/simlab/audit.lua .                 layout audit over out/*.svg
 lua test/simlab/replay.lua . <SavedVars/Verdant.lua> [--svg]
+                                            (then audit; the three traces under
+                                            VerdantWorkingdir/traces/ are the
+                                            pre-release corpus)
 lua test/harness/run.lua . 1                unit cases, DEBUG on
 lua test/harness/perf.lua . 0 40 [VIEW]     render budget per view (docs/RENDER_BUDGET.md)
 ```

@@ -2055,7 +2055,7 @@ local function render_view_oh()
 end
 
 local BUFF_MAX_ROW_H = 26
-local BUFF_GUTTER_W = 156
+local BUFF_GUTTER_W = 176
 local BUFF_ROW_GAP  = 3
 local BUFF_MIN_ROW  = 10
 local BUFF_PCT_W    = 34
@@ -2200,6 +2200,8 @@ local function render_view4()
     lbl:ClearAnchors()
     lbl:SetText(rec.name or tostring(rec.id))
     lbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    lbl:SetMaxLineCount(1)
+    lbl:SetWrapMode(TEXT_WRAP_MODE_ELLIPSIS)
     if hk ~= nil and rec.id ~= hk then
       lbl:SetColor(C_BUFF_NAME.r * 0.45, C_BUFF_NAME.g * 0.45, C_BUFF_NAME.b * 0.45, 0.6)
     else
@@ -2622,6 +2624,8 @@ local function render_view5()
         nlbl:ClearAnchors()
         nlbl:SetText(pname)
         nlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+        nlbl:SetMaxLineCount(1)
+        nlbl:SetWrapMode(TEXT_WRAP_MODE_ELLIPSIS)
         nlbl:SetColor(C_TRI.NAME.r, C_TRI.NAME.g, C_TRI.NAME.b, C_TRI.NAME.a)
         nlbl:SetDimensions(math_max(60, cw - 64 - 130), TRI_L.LIST_ROW_H)
         nlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 64, y)
