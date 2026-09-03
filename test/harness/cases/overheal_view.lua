@@ -21,6 +21,13 @@ return function(H)
   end)
   ok(has_o, "samples must carry the overheal rate")
 
+  local sum = Verdant.TemporalBuffer.summary()
+  ok(sum.total_overheal > 0, "summary must integrate the overheal channel")
+  ok(math.abs(sum.wasted_pct - 1/3) < 0.02, "1000 eff + 500 over must be a third wasted, got " .. tostring(sum.wasted_pct))
+  local chip = VerdantGraphSummaryLabel._text or ""
+  ok(chip:find("WASTED") ~= nil, "summary chip must carry the wasted headline: " .. chip)
+  ok(chip:find("33%%") ~= nil, "summary chip must read 33%% wasted: " .. chip)
+
   while view_label._text ~= "OHEAL" do Verdant.Graph.next_view() end
 
   local eff, wasted = false, false
@@ -57,6 +64,7 @@ return function(H)
   local o_back = 0
   Verdant.TemporalBuffer.iterate(function(_, s) o_back = o_back + (s.o or 0) end)
   ok(o_back > 0, "reloaded session must keep overheal samples")
+  ok((VerdantGraphSummaryLabel._text or ""):find("WASTED") ~= nil, "loaded session must show the wasted headline too")
 
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
   Verdant.Graph.on_flush_click()
