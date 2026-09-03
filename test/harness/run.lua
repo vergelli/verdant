@@ -43,6 +43,7 @@ local CASES = {
   "assign_scroll",
   "hitch",
   "bar_touches",
+  "legacy_session",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",

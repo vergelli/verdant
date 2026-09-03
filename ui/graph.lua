@@ -948,9 +948,10 @@ local function show_report_card()
   card.time:SetText(GetString(VERDANT_REPORT_COPY_HINT))
 
   local split_total = report.hot + report.direct
-  local hot_share = (split_total > 0) and (report.hot / split_total) or 0
-  local hot_pct    = wasted * hot_share
-  local direct_pct = wasted * (1 - hot_share)
+  local known = split_total > 0
+  local hot_share = known and (report.hot / split_total) or 0
+  local hot_pct    = known and (wasted * hot_share) or 0
+  local direct_pct = known and (wasted * (1 - hot_share)) or 0
 
   local dn = card_donut()
   if not report.cols then
@@ -958,7 +959,7 @@ local function show_report_card()
     report.cols = { C_EHPS, C_OVERHEAL, C_TRI.SLOW }
   end
   report.vals[1] = landed
-  report.vals[2] = hot_pct
+  report.vals[2] = known and hot_pct or wasted
   report.vals[3] = direct_pct
   dn:set(report.vals, report.cols)
   dn:control():SetHidden(false)
@@ -968,13 +969,13 @@ local function show_report_card()
   r1.name:SetText(GetString(VERDANT_REPORT_HOT))
   r1.name:SetColor(C_OVERHEAL.r, C_OVERHEAL.g, C_OVERHEAL.b, 1.0)
   r1.name:SetHidden(false)
-  r1.val:SetText(string_format("%d%%", math_floor(hot_pct * 100 + 0.5)))
+  r1.val:SetText(known and string_format("%d%%", math_floor(hot_pct * 100 + 0.5)) or "-")
   r1.val:SetHidden(false)
   local r2 = rows[2]
   r2.name:SetText(GetString(VERDANT_REPORT_DIRECT))
   r2.name:SetColor(C_TRI.SLOW.r, C_TRI.SLOW.g, C_TRI.SLOW.b, 1.0)
   r2.name:SetHidden(false)
-  r2.val:SetText(string_format("%d%%", math_floor(direct_pct * 100 + 0.5)))
+  r2.val:SetText(known and string_format("%d%%", math_floor(direct_pct * 100 + 0.5)) or "-")
   r2.val:SetHidden(false)
   local n_rows = 2
 
