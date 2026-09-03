@@ -90,6 +90,7 @@ ZO_CreateStringId("VERDANT_HELP_TOGGLE",  "  /verdant         toggle the bar win
 ZO_CreateStringId("VERDANT_HELP_GRAPH",   "  /verdant graph   toggle the temporal analytics window")
 ZO_CreateStringId("VERDANT_HELP_HELP",    "  /verdant help    show this list")
 ZO_CreateStringId("VERDANT_HELP_HITCH",   "  /verdant hitch   frame hitches seen, and whether Verdant was busy")
+ZO_CreateStringId("VERDANT_HELP_GRID",    "  /verdant grid    toggle the pixel-aligned column grid (A/B test)")
 
 -- Graph window
 ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Healing Analysis")

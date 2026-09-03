@@ -44,6 +44,7 @@ local CASES = {
   "hitch",
   "bar_touches",
   "legacy_session",
+  "pixel_grid",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",
