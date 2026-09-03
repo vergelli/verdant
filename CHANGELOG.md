@@ -102,6 +102,9 @@
   buttons across the graph, bar, library and settings, and the same sound
   vocabulary everywhere: windows open and close with their sounds, record
   and stop confirm, flush and delete decline.
+- **The compact bar stops allocating** — its refresh built fresh tables
+  every second in every mode; it now reuses them (0.6 to 1.5 KB per
+  tick down to under 150 B). The tripwire covers all four bar modes.
 - **BUFFS view stops allocating while recording** — a per-row closure
   cost 2.4 KB per tick; the tripwire now feeds buffs and triage so it
   would catch that again.

@@ -92,6 +92,9 @@ end
 
 
 local metric_idx  = 1
+local segs_ehps   = { count = 0 }
+local segs_mps    = { count = 0 }
+local ALL_VALS    = { EMS = { frac = 0, raw = 0 }, eHPS = { frac = 0, raw = 0 }, MPS = { frac = 0, raw = 0 } }
 local display_pct = false
 local controls    = {}
 
@@ -318,11 +321,10 @@ local function refresh()
     controls.value_label:SetHidden(true)
     controls.tri_container:SetHidden(false)
 
-    local vals = {
-      EMS  = { frac = r.C_self   or 0, raw = r.EMS  or 0 },
-      eHPS = { frac = r.C_heal   or 0, raw = r.eHPS or 0 },
-      MPS  = { frac = r.C_shield or 0, raw = r.MPS  or 0 },
-    }
+    local vals = ALL_VALS
+    vals.EMS.frac,  vals.EMS.raw  = r.C_self   or 0, r.EMS  or 0
+    vals.eHPS.frac, vals.eHPS.raw = r.C_heal   or 0, r.eHPS or 0
+    vals.MPS.frac,  vals.MPS.raw  = r.C_shield or 0, r.MPS  or 0
 
     for _, cm in ipairs(TRI_COLS) do
       local col   = controls.tri[cm]
@@ -347,11 +349,11 @@ local function refresh()
       if area_h > 4 then
         if cm == "eHPS" then
           col.fill:SetHidden(true)
-          local segs = Verdant.Metrics.eHPS_by_group(now)
+          local segs = Verdant.Metrics.eHPS_by_group_into(segs_ehps, now)
           col.bar:render(col.area, segs, area_w, area_h, frac)
         elseif cm == "MPS" then
           col.fill:SetHidden(true)
-          local segs = Verdant.Metrics.MPS_by_group(now)
+          local segs = Verdant.Metrics.MPS_by_group_into(segs_mps, now)
           col.bar:render(col.area, segs, area_w, area_h, frac)
         else
           col.fill:SetHidden(true)
@@ -430,7 +432,7 @@ local function refresh()
       controls.fill_heal:SetHidden(true)
       controls.fill_shield:SetHidden(true)
       controls.bar_mps:release()
-      local segs = Verdant.Metrics.eHPS_by_group(now)
+      local segs = Verdant.Metrics.eHPS_by_group_into(segs_ehps, now)
       controls.bar_ehps:render(controls.bar_area, segs, area_w, area_h, frac)
 
     elseif m == "MPS" then
@@ -438,7 +440,7 @@ local function refresh()
       controls.fill_heal:SetHidden(true)
       controls.fill_shield:SetHidden(true)
       controls.bar_ehps:release()
-      local segs = Verdant.Metrics.MPS_by_group(now)
+      local segs = Verdant.Metrics.MPS_by_group_into(segs_mps, now)
       controls.bar_mps:render(controls.bar_area, segs, area_w, area_h, frac)
     end
 

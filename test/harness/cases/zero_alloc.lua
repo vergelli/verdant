@@ -50,6 +50,16 @@ return function(H)
   end
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
   Verdant.Visibility.set("graph", false)
+
+  Verdant.Visibility.set("bar", true)
+  local bar_base = H.addon_alloc(ticks) / 10
+  for mode = 1, 4 do
+    local bytes = H.addon_alloc(ticks) / 10
+    ok(bytes - baseline < 250,
+       string.format("bar refresh mode %d allocates %.0f addon-side bytes over the hidden baseline (budget 250)", mode, bytes - baseline))
+    Verdant.Bar.next_metric()
+  end
+  Verdant.Visibility.set("bar", false)
   H.state.grouped = false
   H.state.group_size = 1
   H.state.player_group_tag = nil
