@@ -2566,7 +2566,14 @@ function M.load_session(sess)
   end
   Verdant.TemporalBuffer.load_session(series, markers)
   Verdant.BuffTracker.load_session(sess.buffs or {}, steps, 0, sess.head.dur_ms or 0)
-  Verdant.Ultimate.reset()
+  if sess.streams.ult and sess.desc.ult then
+    local ult_steps = vsf.unpack(sess.streams.ult, sess.desc.ult)
+    local ult_used  = (sess.streams.ultu and sess.desc.ultu)
+                      and vsf.unpack(sess.streams.ultu, sess.desc.ultu) or nil
+    Verdant.Ultimate.load_session(ult_steps or {}, ult_used or {})
+  else
+    Verdant.Ultimate.reset()
+  end
   Verdant.Triage.load_session(eps, sess.roster, sess.head.player_slot)
 
   summary_text = build_summary_text()

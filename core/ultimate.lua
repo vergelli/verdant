@@ -121,6 +121,21 @@ function M.has_data() return saw_power and n_steps > 0 end
 function M.cost()     return cost end
 function M.is_recording() return recording end
 
+function M.load_session(steps, used)
+  M.reset()
+  for i = 1, #steps do
+    step_t[i] = steps[i].t
+    step_p[i] = steps[i].p or 0
+  end
+  n_steps = #steps
+  for i = 1, #used do
+    used_t[i] = used[i].t
+  end
+  n_used = #used
+  saw_power = n_steps > 0
+  log:info("session loaded: steps=", n_steps, "used=", n_used)
+end
+
 function M.pct_at(t)
   if n_steps == 0 then return 0 end
   if t < step_t[1] then return step_p[1] end
