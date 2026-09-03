@@ -25,21 +25,27 @@ pipeline/       Dataflow stages: acquisition → filter → processing
                 → presentation. Drives the addon at runtime.
 
 core/           Pure domain logic: metrics, coverage, group set,
-                shield registry, skill colors, mode, the temporal
-                buffer and the session trackers (triage, buffs,
-                ultimate, buff watch). No I/O.
+                shield registry, skill colors (built-in and user
+                categories), mode, the temporal buffer, the session
+                store, the session trackers (triage, buffs, ultimate
+                per bar, buff watch) and the frame hitch watcher.
+                No I/O.
 
-lib/            Reusable utilities. lib/plot/ owns visualization;
+lib/            Reusable utilities. lib/plot/ owns visualization
+                (pools, stacked bars, the cooldown-based donut);
                 lib/mem/ owns pools and ring buffers; lib/vsf.lua
                 is the session serialization format.
 
-ui/             Widgets (bar, graph, settings, library, assign,
-                watch overlay, logo). Read from core state; do not
-                own domain logic.
+ui/             Widgets (bar, graph with its view tabs, hover cards
+                and healing report, settings, library, assign with
+                its category creator, watch overlay, logo, the DEBUG
+                donut probe). Read from core state; do not own
+                domain logic.
 
-observability/  Logging, profiling, validation, diagnostics.
-                Cross-cutting; may be called from anywhere;
-                release-mode no-op.
+observability/  Logging, profiling, validation, diagnostics, copy
+                box. Cross-cutting; may be called from anywhere;
+                profiler and diagnostics are release-mode no-ops,
+                the copy box and the hitch log are not.
 
 test/           The offline lab: mock-ESO harness, SimLab scenarios
                 with an error-zero oracle, SVG snapshots and the
@@ -64,6 +70,18 @@ Two execution regimes shape implementation choices:
 Modules and functions should be classifiable as one or the other.
 Mixing both regimes in a single module without clear separation is
 a smell.
+
+Two offline tripwires keep the hot path honest (`test/harness/cases/
+zero_alloc.lua`): the sample path must allocate under 200 bytes per
+tick and every view's render under 400 bytes per tick over the hidden
+baseline, both measured addon-side. `docs/RENDER_BUDGET.md` has the
+numbers and the tool (`test/harness/perf.lua`).
+
+The one deliberately slow operation, session capture at Stop, runs as
+a cooperative coroutine over the frames after the click (`core/
+session_store.lua`); anything that clears the buffer calls
+`finish_autosave()` first. In-game, `/verdant hitch` lists frames over
+80ms and whether Verdant did anything in them.
 
 ## Globals discipline
 
@@ -93,6 +111,15 @@ For maintainers, the `specs/` folder contains the authoritative design:
 - `SPEC_03_PIPELINE.md` — stage contracts and event schemas.
 - `SPEC_04_OBSERVABILITY.md` — log, profiler, validation layers.
 - `SPEC_05_MIGRATION.md` — phased plan from v1.1.0 to v2.0.
+- `SPEC_VSF.md` — the session serialization format.
+
+Working notes that are kept up to date with the code:
+
+- `docs/SIMLAB.md` — the offline lab and how to run it.
+- `docs/RENDER_BUDGET.md` — per-tick budgets, the stop path, the
+  200-local ceiling of `ui/graph.lua`.
+- `docs/DONUT_RESEARCH.md` — why the donut is a cooldown control.
+- `docs/BACKLOG.md` — engineering backlog.
 
 The SPEC files are not shipped with the addon and are not part of the
 release zip; they are working documents for the codebase maintainers.
