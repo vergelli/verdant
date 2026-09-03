@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Session Library: sessions record the dungeon difficulty; veteran runs show a small badge and the row tooltip leads with date, place, difficulty, group size and duration.
 - **The summary chip lives inside the viewport** now, top right, and the
   plot makes room below it while it is up, so it no longer straddles the
   viewport border.
@@ -88,6 +89,10 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- Long time windows decimate into whole-sample columns (min 6px), so large fights render as even columns.
+- SKILL view keeps both plots the same height when the ultimate band is present.
+- BUFFS and TRIAGE content starts below the summary chip instead of under it.
+- Session Library rows drop the per-row overheal ring.
 - **View tabs** — the six views sit in a tab strip under the controls,
   the current one on a soft band and underlined; click any to jump straight there. The
   prev / next arrows and the cryptic view label are gone. Light mode
