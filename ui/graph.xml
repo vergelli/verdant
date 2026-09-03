@@ -291,6 +291,53 @@
           </Controls>
         </Control>
 
+        <Control name="$(parent)Welcome" hidden="true">
+          <Dimensions x="380" y="216"/>
+          <Anchor point="CENTER"/>
+          <Controls>
+
+            <Backdrop name="$(parent)Bg">
+              <AnchorFill/>
+              <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
+                    edgeFileWidth="128" edgeFileHeight="16" edgeSize="6"/>
+              <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+              <Insets left="6" top="6" right="-6" bottom="-6"/>
+            </Backdrop>
+
+            <Texture name="$(parent)Logo" textureFile="Verdant/assets/logo.dds">
+              <Anchor point="TOP" offsetY="14"/>
+              <Dimensions x="32" y="32"/>
+            </Texture>
+
+            <Label name="$(parent)Title"
+                   font="ZoFontWindowTitle"
+                   horizontalAlignment="CENTER"
+                   verticalAlignment="CENTER">
+              <Anchor point="TOP" offsetY="48"/>
+              <Dimensions x="340" y="20"/>
+            </Label>
+
+            <Label name="$(parent)Body"
+                   font="ZoFontGameSmall"
+                   horizontalAlignment="CENTER"
+                   verticalAlignment="TOP">
+              <Anchor point="TOPLEFT"  offsetX="20"  offsetY="76"/>
+              <Anchor point="TOPRIGHT" offsetX="-20" offsetY="76"/>
+              <Dimensions y="96"/>
+            </Label>
+
+            <Button name="$(parent)OkBtn"
+                    mouseEnabled="true"
+                    font="ZoFontGameSmall"
+                    inherits="ZO_DefaultButton">
+              <Anchor point="BOTTOM" offsetY="-12"/>
+              <Dimensions x="140" y="24"/>
+              <OnClicked>Verdant.Graph.on_welcome_ok()</OnClicked>
+            </Button>
+
+          </Controls>
+        </Control>
+
       </Controls>
     </TopLevelControl>
 
