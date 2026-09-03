@@ -62,6 +62,12 @@ H.advance(200)
 print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_hover.svg"))
 hit._onOnMouseExit(hit)
 
+Verdant.SavedVars.settings.welcomed = nil
+Verdant.Visibility.set("graph", false)
+Verdant.Graph.toggle()
+print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_welcome.svg"))
+Verdant.Graph.on_welcome_ok()
+
 H.state.mouse_x, H.state.mouse_y = 1900, 1000
 Verdant.SavedVars.settings.light_mode = true
 Verdant.Graph.on_record_click()

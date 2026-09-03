@@ -72,6 +72,14 @@ local VIEW_OVERHEAL = 4
 local VIEW_BUFFS    = 5
 local VIEW_TRIAGE   = 6
 local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE" }
+local VIEW_TIPS
+local function view_tips()
+  if not VIEW_TIPS then
+    VIEW_TIPS = { VERDANT_VIEWTIP_EMS, VERDANT_VIEWTIP_SKILL, VERDANT_VIEWTIP_CRIT,
+                  VERDANT_VIEWTIP_OHEAL, VERDANT_VIEWTIP_BUFFS, VERDANT_VIEWTIP_TRIAGE }
+  end
+  return VIEW_TIPS
+end
 local current_view = VIEW_EMS
 
 -- SKILL view shield orientation: false = shields grow UP from the subplot floor
@@ -2675,11 +2683,22 @@ end
 
 function M.get_shield_down() return shield_down end
 
+function M.on_welcome_ok()
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  sv.settings.welcomed = true
+  if controls.welcome then controls.welcome:SetHidden(true) end
+end
+
 function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
   log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
   if now_visible then
+    local sv = Verdant.SavedVars
+    if controls.welcome and not (sv.settings and sv.settings.welcomed) then
+      controls.welcome:SetHidden(false)
+    end
     local use_main_canvas = (current_view ~= VIEW_SKILL)
     controls.canvas:SetHidden(not use_main_canvas)
     controls.skill_area:SetHidden(use_main_canvas)
@@ -2800,8 +2819,27 @@ function M.init()
     end,
     function(c) c:SetHidden(true) end)
 
-  controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
+  controls.title:SetText(string_format("%s |c6f8a76%s|r",
+    GetString(VERDANT_GRAPH_TITLE), GetString(VERDANT_GRAPH_TITLE_TAG)))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
+
+  controls.view_label:SetMouseEnabled(true)
+  controls.view_label:SetHandler("OnMouseEnter", function(self)
+    ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(view_tips()[current_view]))
+  end)
+  controls.view_label:SetHandler("OnMouseExit", function()
+    ZO_Tooltips_HideTextTooltip()
+  end)
+
+  controls.welcome = VerdantGraphWindowWelcome
+  VerdantGraphWindowWelcomeBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
+  VerdantGraphWindowWelcomeBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
+  VerdantGraphWindowWelcomeTitle:SetText(GetString(VERDANT_WELCOME_TITLE))
+  VerdantGraphWindowWelcomeTitle:SetColor(0.46, 0.86, 0.58, 1)
+  VerdantGraphWindowWelcomeBody:SetText(GetString(VERDANT_WELCOME_BODY))
+  VerdantGraphWindowWelcomeBody:SetColor(0.88, 0.92, 0.88, 1)
+  VerdantGraphWindowWelcomeOkBtn:SetText(GetString(VERDANT_WELCOME_OK))
+  controls.welcome:SetDrawLevel(30)
 
   controls.btn_record:SetText(GetString(VERDANT_GRAPH_RECORD))
   controls.btn_stop:SetText(GetString(VERDANT_GRAPH_STOP))

@@ -39,6 +39,7 @@ local CASES = {
   "light_mode",
   "buff_watch",
   "zero_alloc",
+  "clarity",
 }
 
 local passed, failed = 0, 0
