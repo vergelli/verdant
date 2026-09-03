@@ -2794,6 +2794,7 @@ local function style_tabs()
     t.label:SetColor(on and 0.92 or 0.58, on and 0.96 or 0.64, on and 0.93 or 0.60, 1)
     t.line:SetHidden(not on)
     t.line:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.9)
+    t.band:SetHidden(not on)
   end
 end
 
@@ -2816,6 +2817,9 @@ local function layout_tabs()
     t.line:ClearAnchors()
     t.line:SetAnchor(TOPLEFT, strip, TOPLEFT, x + 4, 18)
     t.line:SetDimensions(tw - 8, 2)
+    t.band:ClearAnchors()
+    t.band:SetAnchor(TOPLEFT, strip, TOPLEFT, x + 2, 1)
+    t.band:SetDimensions(tw - 4, 17)
   end
 end
 
@@ -2860,6 +2864,7 @@ local sample_mps_abilities  = { count = 0 }
 
 local function on_sample_update()
   prof_enter("graph.sample_tick")
+  Verdant.Hitch.mark("tick")
   local now  = GetGameTimeMilliseconds()
   local ehps = Verdant.Metrics.eHPS(now)
   local mps  = Verdant.Metrics.MPS(now)
@@ -2880,6 +2885,7 @@ local function on_sample_update()
   controls.status:SetText(string_format("%s%d:%02d", prefix, math_floor(elapsed / 60), elapsed % 60))
 
   if not controls.window:IsHidden() then
+    Verdant.Hitch.mark("render")
     render_current_view()
   end
   prof_exit("graph.sample_tick")
@@ -2916,6 +2922,7 @@ end
 function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
   log:info("stop click")
+  Verdant.Hitch.mark("stop")
   PlaySound(SOUNDS.DIALOG_ACCEPT)
   light.exit()
   Verdant.AutoRecord.notify_manual_stop()
@@ -3320,6 +3327,11 @@ function M.init()
     line:SetTexture(FILL_TEXTURE)
     line:SetTextureCoords(0, 1, 0, 0.05)
     line:SetDrawLevel(2)
+    local band = WM:CreateControl("VerdantGraphTab" .. v .. "Band", strip, CT_TEXTURE)
+    band:SetTexture(FILL_TEXTURE)
+    band:SetTextureCoords(0, 1, 0, 0.05)
+    band:SetDrawLevel(1)
+    band:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.10)
     local view = v
     hit:SetHandler("OnMouseUp", function(_, _, upInside)
       if upInside == false or view == current_view then return end
@@ -3335,7 +3347,7 @@ function M.init()
       style_tabs()
       ZO_Tooltips_HideTextTooltip()
     end)
-    controls.tabs[v] = { hit = hit, label = label, line = line }
+    controls.tabs[v] = { hit = hit, label = label, line = line, band = band }
   end
   layout_tabs()
   style_tabs()

@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- **Unknown Contributions scrolls** — wheel through the list instead of
+  assigning blind; the help line counts what is above and below. Buffs
+  no longer show up there: only skills that actually healed or shielded
+  need a colour.
+- **`/verdant hitch`** — a frame watcher that logs stutters (frames over
+  80ms) and says whether Verdant was doing anything in that frame, so a
+  stutter can be blamed or cleared. `/verdant hitch reset` clears it.
 - **Your own categories** — in Unknown Contributions the picker ends with
   "+ New category": type a name, pick one of twelve colours, done. The
   category shows up everywhere a built-in one does and survives logins.
@@ -58,7 +65,7 @@
 
 ### Changed
 - **View tabs** — the six views sit in a tab strip under the controls,
-  the current one underlined; click any to jump straight there. The
+  the current one on a soft band and underlined; click any to jump straight there. The
   prev / next arrows and the cryptic view label are gone. Light mode
   hides the strip with the rest of the chrome.
 - **TRIAGE view rebuilt around a donut** — outcomes as a donut with

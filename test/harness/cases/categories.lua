@@ -46,6 +46,14 @@ return function(H)
   end
   Verdant.Graph.on_stop_click()
   ok(SC.group_of(999001) == "other", "an unknown icon stays grey")
+  H.ability_icons[999002] = "/esoui/art/icons/ability_buff_minor_berserk.dds"
+  ok(SC.group_of_quiet(999002) == "other", "a quiet lookup still classifies")
+  local logged = false
+  for _, u in ipairs(SC.get_unknowns()) do if u.id == 999002 then logged = true end end
+  ok(not logged, "quiet lookups never land in Unknown Contributions")
+  logged = false
+  for _, u in ipairs(SC.get_unknowns()) do if u.id == 999001 then logged = true end end
+  ok(logged, "contribution lookups still do")
   while view_label._text ~= "SKILL" do Verdant.Graph.next_view() end
   local ec  = VerdantGraphWindowViewportSkillAreaEhpsCanvas
   local hit = VerdantGraphHitTop

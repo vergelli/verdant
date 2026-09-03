@@ -159,11 +159,19 @@ local function on_slash(input)
     Verdant.Library.toggle() ; return
   end
 
+  if cmd == "hitch" then
+    local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+    if sub == "reset" then Verdant.Hitch.reset(); d("[V] hitch log cleared") return end
+    for _, line in ipairs(Verdant.Hitch.lines()) do d("[V] " .. line) end
+    return
+  end
+
   if cmd == "help" then
     d(GetString(VERDANT_HELP_HEADER))
     d(GetString(VERDANT_HELP_TOGGLE))
     d(GetString(VERDANT_HELP_GRAPH))
     d(GetString(VERDANT_HELP_LIB))
+    d(GetString(VERDANT_HELP_HITCH))
     d(GetString(VERDANT_HELP_HELP))
     return
   end
@@ -192,6 +200,7 @@ local function on_addon_loaded()
   Verdant.Triage.init()
   Verdant.SessionStore.init()
   Verdant.GC.init()            -- GC pacing (ported): smooth the incremental collector
+  Verdant.Hitch.init()
   Verdant.Pipeline.init()
   Verdant.Ultimate.init()
   Verdant.Bar.init()
