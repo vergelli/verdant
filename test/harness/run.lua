@@ -37,6 +37,7 @@ local CASES = {
   "ultimate_band",
   "settings_columns",
   "light_mode",
+  "buff_watch",
 }
 
 local passed, failed = 0, 0
