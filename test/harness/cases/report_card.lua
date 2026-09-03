@@ -7,13 +7,23 @@ return function(H)
   local view_label = VerdantGraphWindowViewLabel
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
 
+  H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [8] = 41001 } }
+  H.state.ult_cost = 200
   Verdant.Graph.on_record_click()
-  for _ = 1, 6 do
+  local ult = 0
+  for i = 1, 6 do
     H.heal({ hit = 1000, overflow = 600, target_unit_id = 600 })
     H.heal({ hit = 500, overflow = 200, target_unit_id = 601, result = ACTION_RESULT_HOT_TICK })
+    ult = ult + 100
+    H.ult_power(ult)
     H.advance(1000)
   end
   Verdant.Graph.on_stop_click()
+
+  local us = Verdant.Ultimate.summary()
+  ok(us.dur_ms > 0 and us.ready_pct > 0.5 and us.ready_pct < 0.9,
+     string.format("ultimate sits ready for most of the tail: ready_pct=%.2f dur=%d", us.ready_pct, us.dur_ms))
+  ok(us.casts == 0, "no cast in this recording")
 
   local hot, direct = Verdant.Metrics.overheal_split()
   ok(hot == 1200 and direct == 3600, "overflow must split by result: hot=" .. hot .. " direct=" .. direct)
@@ -34,6 +44,12 @@ return function(H)
   ok(landed and math.abs(landed + hp + dp - 100) <= 2, "landed + hot + direct must add up to 100: " .. tostring(landed) .. "+" .. tostring(hp) .. "+" .. tostring(dp))
   ok(VerdantHoverCardDesc._hidden == false and (VerdantHoverCardDesc._text or ""):find("HoT overflow is normal") ~= nil, "report must explain the split")
   ok(VerdantReportDonut._hidden == false and VerdantReportDonutSlice1._cd_pct > 0.3, "report card must draw its donut")
+  ok(VerdantHoverCardRowName3._hidden == false and VerdantHoverCardRowName3._text == "Ultimate ready, unused",
+     "row 3 is the unused ultimate time")
+  local rp = tonumber((VerdantHoverCardRowVal3._text or ""):match("(%d+)%%"))
+  ok(rp and rp > 50, "unused ultimate time must show as a percentage: " .. tostring(VerdantHoverCardRowVal3._text))
+  ok(VerdantHoverCardRowName4._text == "Ultimate casts" and VerdantHoverCardRowVal4._text == "0", "row 4 counts the casts")
+  ok(VerdantHoverCardRowName5._text == "Peak at" and (VerdantHoverCardRowVal5._text or ""):find("s") ~= nil, "row 5 says when the peak was")
   hit._onOnMouseExit(hit)
 
   local session = Verdant.SessionStore.capture()
@@ -60,5 +76,7 @@ return function(H)
 
   Verdant.Graph.on_flush_click()
   Verdant.Visibility.set("graph", false)
+  H.slotted = nil
+  H.state.ult_cost = nil
   Verdant.Metrics.reset()
 end

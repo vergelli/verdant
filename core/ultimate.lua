@@ -226,6 +226,38 @@ function M.pct_at(t, b)
   return p
 end
 
+local sum_scratch = { ready_ms = 0, dur_ms = 0, ready_pct = 0, casts = 0, mean_gap_ms = 0 }
+
+function M.summary()
+  local r = sum_scratch
+  r.ready_ms, r.dur_ms, r.ready_pct, r.casts, r.mean_gap_ms = 0, 0, 0, n_used, 0
+  if n_steps == 0 then return r end
+  local t_lo = (t_start > 0) and t_start or step_t[1]
+  local t_hi = (t_end > 0) and t_end or step_t[n_steps]
+  if n_used > 0 and used_t[n_used] > t_hi then t_hi = used_t[n_used] end
+  if t_hi <= t_lo then return r end
+  r.dur_ms = t_hi - t_lo
+  local ready = 0
+  for i = 1, n_steps do
+    local t0 = step_t[i]
+    local t1 = (i < n_steps) and step_t[i + 1] or t_hi
+    if t1 > t0 then
+      local c = M.cost_at(1, t0)
+      if bar_id[2] > 0 or n_abil > 0 then
+        local c2 = M.cost_at(2, t0)
+        if c2 > 0 and c2 < c then c = c2 end
+      end
+      if step_v[i] >= c then ready = ready + (t1 - t0) end
+    end
+  end
+  r.ready_ms  = ready
+  r.ready_pct = ready / r.dur_ms
+  if n_used > 1 then
+    r.mean_gap_ms = (used_t[n_used] - used_t[1]) / (n_used - 1)
+  end
+  return r
+end
+
 function M.snapshot()
   local a = active_bar()
   return {
