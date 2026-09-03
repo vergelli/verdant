@@ -7,6 +7,10 @@ return {
   build = function(sim, H)
     sim:at(0, function(s)
       Verdant.SavedVars.settings.group_death_markers = true
+      H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [8] = 40223 } }
+      H.ability_icons = H.ability_icons or {}
+      H.ability_icons[40223] = "EsoUI/Art/Icons/ability_templar_rite_of_passage.dds"
+      Verdant.Ultimate.refresh_cost()
       s:combat(true)
       s:bosses({ { name = "Lord Warrior", in_combat = true } })
       s:shield_on(1, 41967)
@@ -18,6 +22,15 @@ return {
         s:hit(i, s.rng:range(400, 1300), ACTION_RESULT_DAMAGE)
       end
     end, 0.10)
+
+    local ult = 0
+    sim:every(1000, 1000, 179000, function(s)
+      ult = ult + 4
+      if ult > 250 then ult = 250 end
+      s:ult(ult)
+    end)
+    sim:at(75000,  function(s) ult = 0; s:ult_cast() end)
+    sim:at(150000, function(s) ult = 0; s:ult_cast() end)
 
     sim:every(1500, 1500, 179000, function(s)
       s:hit(2, s.rng:range(3000, 7000), ACTION_RESULT_DAMAGE)

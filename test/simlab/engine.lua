@@ -56,6 +56,15 @@ return function(H, Prng)
     end
   end
 
+  function Sim:ult(value)
+    H.ult_power(value)
+  end
+
+  function Sim:ult_cast()
+    H.ult_used()
+    H.ult_power(0)
+  end
+
   function Sim:hit(i, amount, result)
     local m = self.members[i]
     if not m or not m.alive then return end
