@@ -3,6 +3,7 @@ return function(H)
   local BW = Verdant.BuffWatch
 
   Verdant.Metrics.reset()
+  H.combat_state(false)
   H.ability_names = H.ability_names or {}
   H.ability_names[9001] = "Major Courage"
 
