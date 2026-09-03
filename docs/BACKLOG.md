@@ -111,6 +111,9 @@ user never has to reach for the Record button mid-pull.
 - Sub-pixel moiré on bar rendering — RESOLVED here (uniform bar width
   per render, fractional slack absorbed by the gaps, PR #93). Still
   pending the same one-line port in Vermilion, Verditer and bgmeter.
-- Zero-alloc render pass — scratch arrays now live in one table (SCR);
-  the iterate-closure removal remains the risky 10%. The sample-path
-  budget has an offline tripwire in the harness since PR #94.
+- Zero-alloc render pass — DONE: scratch arrays live in one table (SCR),
+  the iterate closures are gone (indexed `TemporalBuffer.at`), and the
+  render path has its own tripwire (400 B/tick over the hidden baseline)
+  next to the sample-path one. Numbers and tool in docs/RENDER_BUDGET.md.
+  Next step, only if in-game profiling asks for it: diff-based anchoring
+  instead of release-all / re-anchor (~500 anchors per tick on EMS).
