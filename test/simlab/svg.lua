@@ -125,6 +125,28 @@ local function is_backdrop(c)
   return c._ctype == CT_BACKDROP or c._xml_tag == "Backdrop"
 end
 
+local function is_cooldown(c)
+  return c._ctype == CT_COOLDOWN
+end
+
+local function arc_path(cx, cy, R, r, a0, sweep)
+  local function pt(rad, ang) return cx + rad * math.cos(ang), cy + rad * math.sin(ang) end
+  if sweep >= 2 * math.pi - 1e-6 then
+    return string.format(
+      "M %.1f %.1f A %.1f %.1f 0 1 1 %.1f %.1f A %.1f %.1f 0 1 1 %.1f %.1f Z M %.1f %.1f A %.1f %.1f 0 1 0 %.1f %.1f A %.1f %.1f 0 1 0 %.1f %.1f Z",
+      cx + R, cy, R, R, cx - R, cy, R, R, cx + R, cy,
+      cx + r, cy, r, r, cx - r, cy, r, r, cx + r, cy)
+  end
+  local large = (sweep > math.pi) and 1 or 0
+  local x0, y0 = pt(R, a0)
+  local x1, y1 = pt(R, a0 + sweep)
+  local x2, y2 = pt(r, a0 + sweep)
+  local x3, y3 = pt(r, a0)
+  return string.format(
+    "M %.1f %.1f A %.1f %.1f 0 %d 1 %.1f %.1f L %.1f %.1f A %.1f %.1f 0 %d 0 %.1f %.1f Z",
+    x0, y0, R, R, large, x1, y1, x2, y2, r, r, large, x3, y3)
+end
+
 local function is_texture(c)
   return c._ctype == CT_TEXTURE or c._xml_tag == "Texture"
       or c._xml_tag == "Button" or c._tex ~= nil
@@ -204,6 +226,20 @@ function M.snapshot(H, root, out_path)
           out[#out + 1] = string.format(
             '<text x="%.1f" y="%.1f" font-size="%d" data-w="%.0f" fill="%s" fill-opacity="%.2f" text-anchor="%s" dominant-baseline="middle"><title>%s</title>%s</text>',
             tx, r.y + r.h / 2, px, r.w, col(c._r, c._g, c._b), (c._a or 1) * alpha, anchor, name, esc(txt))
+        end
+      elseif is_cooldown(c) then
+        local pct = c._cd_pct or 0
+        if pct > 0 then
+          local origin = c._cd_origin or 0
+          if origin > 2 * math.pi + 1e-6 then origin = origin / 360 * 2 * math.pi end
+          local R = math.min(r.w, r.h) / 2
+          local a0 = -math.pi / 2 + origin
+          if c._cd_cw == false then a0 = -math.pi / 2 - origin end
+          local sweep = math.min(1, pct) * 2 * math.pi
+          out[#out + 1] = string.format(
+            '<path d="%s" fill="%s" fill-opacity="%.2f" data-pct="%.3f"><title>%s</title></path>',
+            arc_path(r.x + r.w / 2, r.y + r.h / 2, R, R * 0.645, a0, sweep),
+            col(c._fr, c._fg, c._fb), (c._fa or 1) * alpha, pct, name)
         end
       elseif is_texture(c) then
         local fill, fop
