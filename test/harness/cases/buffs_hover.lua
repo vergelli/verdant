@@ -33,7 +33,8 @@ return function(H)
   ok(hit._hidden == false, "hit surface must be active on frozen BUFFS view")
 
   H.state.mouse_x = canvas:GetLeft() + 300
-  H.state.mouse_y = canvas:GetTop() + 5
+  local chip_h = (VerdantGraphSummaryBg._hidden == false) and (VerdantGraphSummaryBg._h + 8) or 0
+  H.state.mouse_y = canvas:GetTop() + chip_h + 5
   hit._onOnMouseEnter(hit)
   H.advance(200)
 
@@ -58,11 +59,11 @@ return function(H)
   ok(VerdantHoverCardDesc._text == "Increases your healing done by 10%.",
      "desc text wrong: " .. tostring(VerdantHoverCardDesc._text))
 
-  H.state.mouse_y = canvas:GetTop() + 35
+  H.state.mouse_y = canvas:GetTop() + chip_h + 35
   H.advance(200)
   ok(VerdantHoverCardName._text == "Ability222", "row 2 hover expected: " .. tostring(VerdantHoverCardName._text))
   ok(VerdantHoverCardDesc._hidden == true, "desc must hide when no id has a description")
-  H.state.mouse_y = canvas:GetTop() + 5
+  H.state.mouse_y = canvas:GetTop() + chip_h + 5
   H.advance(200)
 
   local dimmed = false

@@ -84,16 +84,16 @@ return function(H)
 
   Verdant.SessionStore.store(legacy)
   Verdant.Library.show()
-  local ring_hidden = true
+  local badge_hidden = true
   for _, c in ipairs(H.controls) do
     local name = c._name or ""
-    if name:find("^VerdantLibraryRow%d+Ring$") and c._hidden == false then
+    if name:find("^VerdantLibraryRow%d+Vet$") and c._hidden == false then
       local p = c._parent
       local nm = p and rawget(_G, (p._name or "") .. "Name")
-      if nm and nm._text == "Old Keep" then ring_hidden = false end
+      if nm and nm._text == "Old Keep" then badge_hidden = false end
     end
   end
-  ok(ring_hidden, "a legacy row shows no ring rather than a wrong one")
+  ok(badge_hidden, "a legacy row without a difficulty shows no badge")
   Verdant.Library.hide()
 
   Verdant.Graph.on_flush_click()

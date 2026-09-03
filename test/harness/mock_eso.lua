@@ -453,6 +453,9 @@ function GetSlotAbilityCost(slot, mechanic, cat)
   if per_bar and cat ~= nil and per_bar[cat] then return per_bar[cat] end
   return H.state.ult_cost or 250
 end
+DUNGEON_DIFFICULTY_NONE = 0 DUNGEON_DIFFICULTY_NORMAL = 1 DUNGEON_DIFFICULTY_VETERAN = 2
+function GetCurrentZoneDungeonDifficulty() return H.state.difficulty or 0 end
+function GetDateStringFromTimestamp(ts) return "2026-09-03" end
 function GetActiveHotbarCategory()
   return H.state.active_bar or HOTBAR_CATEGORY_PRIMARY
 end

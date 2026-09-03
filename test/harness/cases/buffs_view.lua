@@ -25,6 +25,18 @@ return function(H)
 
   ok(VerdantGraphWindowViewportCanvas._hidden ~= true, "main canvas must be visible on BUFFS")
   ok(VerdantGraphWindowViewportSkillArea._hidden == true, "skill area must hide on BUFFS")
+  do
+    local chip_h = (VerdantGraphSummaryBg._hidden == false) and (VerdantGraphSummaryBg._h + 8) or 0
+    local first_y = nil
+    for _, c in ipairs(H.controls) do
+      local name = c._name or ""
+      if c._hidden == false and name:find("^VerdantBuffSeg") and c._anchor_list then
+        local oy = c._anchor_list[1].oy or 0
+        if first_y == nil or oy < first_y then first_y = oy end
+      end
+    end
+    ok(first_y ~= nil and first_y >= chip_h, "the first gantt row must start below the summary chip, got " .. tostring(first_y) .. " vs chip " .. chip_h)
+  end
 
   local seg1 = rawget(_G, "VerdantBuffSeg1")
   ok(seg1 and seg1._hidden == false, "no gantt segment rendered")

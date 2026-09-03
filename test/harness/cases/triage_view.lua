@@ -80,9 +80,11 @@ return function(H)
 
   local canvas = VerdantGraphWindowViewportCanvas
   local hit    = VerdantGraphHitMain
+  local chip_h = (VerdantGraphSummaryBg._hidden == false) and (VerdantGraphSummaryBg._h + 8) or 0
+  if canvas:GetHeight() - chip_h < 160 then chip_h = 0 end
   H.sounds = {}
   H.state.mouse_x = canvas:GetLeft() + 120
-  H.state.mouse_y = canvas:GetTop() + 44 + 3 * 14 + 7
+  H.state.mouse_y = canvas:GetTop() + chip_h + 44 + 3 * 14 + 7
   hit._onOnMouseUp(hit, nil, true)
   ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "switching the legend filter must confirm with a sound")
   seen = visible_texts()
@@ -90,7 +92,7 @@ return function(H)
   ok(seen["Ally2"] == nil, "missed list must not show Ally2")
   ok(has(seen, "MISSED"), "caption must follow the filter")
 
-  H.state.mouse_y = canvas:GetTop() + 44 + 68 + 8 + 18 + 8
+  H.state.mouse_y = canvas:GetTop() + chip_h + 44 + 68 + 8 + 18 + 8
   hit._onOnMouseEnter(hit)
   H.advance(200)
   ok(VerdantHoverCardName._text == "Ally3", "hovering the row must name the ally, got " .. tostring(VerdantHoverCardName._text))
@@ -105,9 +107,9 @@ return function(H)
   hit._onOnMouseWheel(hit, 1)
   ok(visible_texts()["Ally3"] ~= nil, "wheel on a one-row list must not lose the row")
 
-  H.state.mouse_y = canvas:GetTop() + 44 + 7
+  H.state.mouse_y = canvas:GetTop() + chip_h + 44 + 7
   hit._onOnMouseUp(hit, nil, true)
-  H.state.mouse_y = canvas:GetTop() + 44 + 68 + 8 + 18 + 8
+  H.state.mouse_y = canvas:GetTop() + chip_h + 44 + 68 + 8 + 18 + 8
   hit._onOnMouseEnter(hit)
   H.advance(200)
   ok(VerdantHoverCardName._text == "Ally2", "back on saves the row must be Ally2, got " .. tostring(VerdantHoverCardName._text))

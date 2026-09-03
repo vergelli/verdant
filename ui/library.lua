@@ -22,8 +22,7 @@ local C_NAME      = { r = 0.86, g = 0.92, b = 0.88 }
 local C_DIM       = { r = 0.55, g = 0.58, b = 0.55 }
 local C_SEL       = { r = 0.55, g = 0.92, b = 0.62 }
 local C_STAR      = { r = 0.91, g = 0.72, b = 0.29 }
-local RING_COLS   = { { r = 0.42, g = 0.78, b = 0.50 }, { r = 0.64, g = 0.66, b = 0.58 } }
-local ring_vals   = { 0, 0 }
+local VET_ICON    = "EsoUI/Art/LFG/LFG_veteranDungeon_up.dds"
 
 local controls = {}
 local rows = {}
@@ -112,9 +111,12 @@ local function make_row(i)
   pip:SetDimensions(3, ROW_H - 12)
   pip:SetAnchor(LEFT, row, LEFT, 4, 0)
 
-  local ring = Verdant.lib.plot.Donut.new(nm .. "Ring", row, 16, { mode = "stack" })
-  ring:control():SetAnchor(LEFT, row, LEFT, 10, 0)
-  ring:set_hidden(true)
+  local vet = WM:CreateControl(nm .. "Vet", row, CT_TEXTURE)
+  vet:SetTexture(VET_ICON)
+  vet:SetDimensions(16, 16)
+  vet:SetAnchor(LEFT, row, LEFT, 10, 0)
+  vet:SetColor(0.95, 0.80, 0.35, 1)
+  vet:SetHidden(true)
 
   local name = WM:CreateControl(nm .. "Name", row, CT_LABEL)
   name:SetFont("ZoFontGameSmall")
@@ -146,7 +148,7 @@ local function make_row(i)
   star:SetColor(C_STAR.r, C_STAR.g, C_STAR.b, 0.95)
   star:SetHidden(true)
 
-  return { root = row, bg = bg, sel = sel, pip = pip, ring = ring,
+  return { root = row, bg = bg, sel = sel, pip = pip, vet = vet,
            name = name, stats = stats, when = when, star = star }
 end
 
@@ -208,15 +210,7 @@ function M.refresh()
       (pc == C_PIP_LOST) and "f26b56" or "8cea9e",
       sum.saves or 0, denom))
     row.stats:SetColor(1, 1, 1, 1)
-    local th, to = sum.total_heal or 0, sum.total_overheal
-    if to and (th + to) > 0 then
-      ring_vals[1] = th
-      ring_vals[2] = to
-      row.ring:set(ring_vals, RING_COLS)
-      row.ring:set_hidden(false)
-    else
-      row.ring:set_hidden(true)
-    end
+    row.vet:SetHidden((h.difficulty or 0) ~= Verdant.zenimax.constants.DUNGEON_DIFFICULTY_VETERAN)
     row.when:SetText(fmt_dur(h.dur_ms) .. "  " .. fmt_ago(h.ts))
     row.when:SetColor(C_DIM.r, C_DIM.g, C_DIM.b, 1)
     row.star:SetHidden(not h.locked)
@@ -235,11 +229,17 @@ function M.on_row_enter(i)
   local s = Verdant.SessionStore.get(idx)
   if not s then return end
   local sum = s.head.sum or {}
-  local text = string_format(GetString(VERDANT_LIB_ROW_TIP),
+  local h = s.head
+  local api = Verdant.zenimax.api
+  local zc  = Verdant.zenimax.constants
+  local when = (api.GetDateStringFromTimestamp and h.ts and api.GetDateStringFromTimestamp(h.ts)) or fmt_ago(h.ts)
+  local diff = ""
+  if (h.difficulty or 0) == zc.DUNGEON_DIFFICULTY_VETERAN then diff = "  ·  " .. GetString(VERDANT_LIB_VETERAN)
+  elseif (h.difficulty or 0) == zc.DUNGEON_DIFFICULTY_NORMAL then diff = "  ·  " .. GetString(VERDANT_LIB_NORMAL) end
+  local text = string_format(GetString(VERDANT_LIB_ROW_HEAD),
+    when, h.zone or "?", diff, h.group_size or 0, fmt_dur(h.dur_ms))
+  text = text .. "\n" .. string_format(GetString(VERDANT_LIB_ROW_TIP),
     sum.saves or 0, sum.o or 0, (sum.l or 0) + (sum.m or 0))
-  if s.head.label and s.head.zone and s.head.zone ~= "" then
-    text = s.head.zone .. "\n" .. text
-  end
   if s.head.locked then
     text = text .. "\n" .. GetString(VERDANT_LIB_ROW_TIP_LOCKED)
   end

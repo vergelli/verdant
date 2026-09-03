@@ -52,15 +52,8 @@ return function(H)
   ok(VerdantLibrary._hidden == false, "library window must show")
   ok(VerdantLibraryRow1Name._text == "Direfrost Keep",
      "row must show the zone, got " .. tostring(VerdantLibraryRow1Name._text))
-  local sum1 = saved.head.sum or {}
-  ok(sum1.total_overheal ~= nil, "session head must carry the overheal total for the ring")
-  if (sum1.total_heal or 0) + (sum1.total_overheal or 0) > 0 then
-    ok(VerdantLibraryRow1Ring._hidden == false, "a session with output shows its landed ring")
-    ok(VerdantLibraryRow1RingSlice1._cd_pct and VerdantLibraryRow1RingSlice1._cd_pct > 0,
-       "the ring's first slice is the landed share")
-  else
-    ok(VerdantLibraryRow1Ring._hidden == true, "a session without output hides its ring")
-  end
+  ok(saved.head.difficulty ~= nil, "session head must carry the dungeon difficulty")
+  ok(VerdantLibraryRow1Vet._hidden == ((saved.head.difficulty or 0) ~= 2), "the veteran badge follows the difficulty")
   Verdant.Library.on_row_click(1)
   H.sounds = {}
   VerdantLibraryLabelBoxEdit:SetText("  Sunday HM run  ")
@@ -110,6 +103,8 @@ return function(H)
 
   Verdant.Library.show()
   Verdant.Library.on_row_enter(1)
+  ok(H.last_tooltip and H.last_tooltip:find("2026-09-03", 1, true) and H.last_tooltip:find("Direfrost Keep", 1, true)
+     and H.last_tooltip:find("players", 1, true), "the row tooltip leads with date, place and group: " .. tostring(H.last_tooltip))
   ok(H.last_tooltip and H.last_tooltip:find("saved by you", 1, true),
      "row tooltip must explain the rescue counts")
   Verdant.Library.on_row_click(1)

@@ -83,8 +83,9 @@ return function(H)
   ok(not star_visible(), "stars stay hidden until a row is armed or hovered")
 
   local canvas = VerdantGraphWindowViewportCanvas
+  local chip_h = (VerdantGraphSummaryBg._hidden == false) and (VerdantGraphSummaryBg._h + 8) or 0
   H.state.mouse_x = canvas:GetLeft() + 5
-  H.state.mouse_y = canvas:GetTop() + 5
+  H.state.mouse_y = canvas:GetTop() + chip_h + 5
   local hit = VerdantGraphHitMain
   hit._onOnMouseUp(hit, 1, true)
   ok(BW.thr("Major Courage") == 3, "clicking the star gutter must arm the watch")
