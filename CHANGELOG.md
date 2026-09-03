@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- **Wasted healing in the report** — the summary chip that appears after a
+  recording (and on library sessions) now reads `WASTED n%`: overhealing
+  integrated over the whole session against effective healing. The chip folds
+  to two lines when the window is too narrow for one.
+- **Ultimate icon on the band** — the ultimate slotted while recording shows
+  its icon at the left edge of the band; a bar swap mid-fight adds the other
+  bar's ultimate where it took over. Saved with the session.
 - **OHEAL view** — overhealing finally gets its place: effective healing
   stacked under the wasted overflow, sharing one axis so the proportion
   reads at a glance. Hover shows the wasted percentage per moment. Context,
