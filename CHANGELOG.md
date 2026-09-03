@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- **The summary chip lives inside the viewport** now, top right, and the
+  plot makes room below it while it is up, so it no longer straddles the
+  viewport border.
 - **Record and Stop wear their icons** (red dot, white square), Flush is
   now called New, and the tab strip has some air below the buttons.
 - **`/verdant hitch` also opens the copy box** and the hitch log is part
