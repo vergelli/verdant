@@ -48,7 +48,7 @@ local function parse(path)
       local px = tonumber(line:match('font%-size="(%d+)"')) or 12
       local dataw = tonumber(line:match('data%-w="([%d.]+)"')) or 0
       local anchor = line:match('text%-anchor="(%w+)"') or "start"
-      local plain = txt:gsub("|c%x%x%x%x%x%x", ""):gsub("|r", "")
+      local plain = txt:gsub("|t.-|t", ""):gsub("|c%x%x%x%x%x%x", ""):gsub("|r", "")
       local tw = #plain * px * 0.55
       local h = px
       if dataw > 0 and tw > dataw then

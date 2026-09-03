@@ -107,7 +107,7 @@ local function rich(s)
   local out = {}
   local pos = 1
   local open = false
-  s = tostring(s)
+  s = tostring(s):gsub("|t.-|t", "")
   while true do
     local a, b, hex = s:find("|c(%x%x%x%x%x%x)", pos)
     local ra, rb = s:find("|r", pos, true)
