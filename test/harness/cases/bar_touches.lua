@@ -7,6 +7,13 @@ return function(H)
   H.advance(1000)
 
   local lbl = VerdantBarWindowMetricLabel
+  local guard = 0
+  while not (lbl._hidden == false and lbl._text == "EMS") and guard < 6 do
+    Verdant.Bar.next_metric()
+    H.advance(1000)
+    guard = guard + 1
+  end
+  ok(lbl._text == "EMS", "the bar must be parked on EMS to start, got " .. tostring(lbl._text))
   ok(type(lbl._onOnMouseUp) == "function", "the metric name must be clickable")
   ok(type(lbl._onOnMouseEnter) == "function", "the metric name must explain itself on hover")
   local before = lbl._text

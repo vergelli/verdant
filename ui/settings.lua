@@ -369,6 +369,21 @@ function M.on_logo_click()
   if not now then d("[V] " .. GetString(VERDANT_LOGO_HINT)) end
 end
 
+local function sounds_on()
+  local sv = Verdant.SavedVars
+  return not (sv and sv.settings and sv.settings.sounds == false)
+end
+
+function M.on_sounds_click()
+  local sv = Verdant.SavedVars
+  sv.settings = sv.settings or {}
+  local now = not sounds_on()
+  sv.settings.sounds = now
+  controls.sounds_btn:SetText(now and GetString(VERDANT_SETTINGS_SOUNDS_ON)
+                                   or GetString(VERDANT_SETTINGS_SOUNDS_OFF))
+  if now then PlaySound(SOUNDS.DIALOG_ACCEPT) end
+end
+
 function M.on_bars_click()
   local now = not Verdant.Visibility.is_bar_enabled()
   Verdant.Visibility.set_bar_enabled(now)
@@ -747,6 +762,7 @@ function M.init()
   controls.pname_edit     = VerdantSettingsPanelPNameBoxEdit
   controls.psave_btn      = VerdantSettingsPanelPSaveBtn
   controls.pdelete_btn    = VerdantSettingsPanelPDeleteBtn
+  controls.sounds_btn     = VerdantSettingsPanelSoundsBtn
   zui.tooltip(controls.psave_btn,     VERDANT_TIP_PSAVE)
   zui.tooltip(controls.pdelete_btn,   VERDANT_TIP_PDELETE)
   zui.tooltip(controls.autorec_btn,   VERDANT_TIP_AUTOREC)
@@ -758,6 +774,7 @@ function M.init()
   zui.tooltip(controls.logo_btn,      VERDANT_TIP_LOGO)
   zui.tooltip(controls.bars_btn,      VERDANT_TIP_BARS)
   zui.tooltip(controls.reset_btn,     VERDANT_TIP_RESET)
+  zui.tooltip(controls.sounds_btn,    VERDANT_TIP_SOUNDS)
   zui.tooltip(VerdantSettingsPanelCloseBtn, VERDANT_TIP_CLOSE)
   controls.psave_btn:SetText(GetString(VERDANT_SETTINGS_SAVE_PROFILE))
   controls.pdelete_btn:SetText(GetString(VERDANT_SETTINGS_DELETE_PROFILE))
@@ -792,6 +809,8 @@ function M.init()
   VerdantSettingsPanelSepColumns:SetColor(0.46, 0.86, 0.58, 0.12)
   controls.logo_btn:SetText(Verdant.Logo.is_enabled()
     and GetString(VERDANT_SETTINGS_LOGO_ON) or GetString(VERDANT_SETTINGS_LOGO_OFF))
+  controls.sounds_btn:SetText(sounds_on()
+    and GetString(VERDANT_SETTINGS_SOUNDS_ON) or GetString(VERDANT_SETTINGS_SOUNDS_OFF))
 
   local bars_on = not (Verdant.SavedVars and Verdant.SavedVars.bar
                        and Verdant.SavedVars.bar.enabled == false)
