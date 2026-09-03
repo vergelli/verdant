@@ -300,7 +300,8 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip, lookback, top_ins
       lbl:ClearAnchors()
       lbl:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, -(y + 1))
       lbl:SetText(fmt_val(max_val * frac))
-      lbl:SetHidden(false)
+      local spacing = ch_plot / (N_HGRID + 1)
+      lbl:SetHidden(spacing < 14 and (spacing * 2 < 14 or i ~= 2))
     end
     if ch_plot >= 96 then
       local ymax_y = flip and (y_base + 2) or (y_base + ch_plot - 12)
@@ -2693,22 +2694,27 @@ local function build_summary_text()
 end
 
 local function compose_summary(label, parts, avail)
-  local line = table.concat(parts, "   ")
-  label:SetText(line)
-  local w = label:GetTextWidth()
-  if w <= avail or #parts < 2 then return line, w, 1 end
-  for split = #parts - 1, 1, -1 do
-    local first = table.concat(parts, "   ", 1, split)
-    label:SetText(first)
-    local w1 = label:GetTextWidth()
-    if w1 <= avail then
-      local second = table.concat(parts, "   ", split + 1)
-      label:SetText(second)
-      local w2 = label:GetTextWidth()
-      return first .. "\n" .. second, math_max(w1, w2), 2
+  local lines, widest = 1, 0
+  local text = ""
+  local line = ""
+  for i = 1, #parts do
+    local candidate = (line == "") and parts[i] or (line .. "   " .. parts[i])
+    label:SetText(candidate)
+    local w = label:GetTextWidth()
+    if w <= avail or line == "" then
+      line = candidate
+      if w > widest then widest = w end
+    else
+      text = (text == "") and line or (text .. "\n" .. line)
+      lines = lines + 1
+      line = parts[i]
+      label:SetText(line)
+      local lw = label:GetTextWidth()
+      if lw > widest then widest = lw end
     end
   end
-  return line, w, 1
+  text = (text == "") and line or (text .. "\n" .. line)
+  return text, widest, lines
 end
 
 local function report_text()
@@ -2736,7 +2742,7 @@ local function update_summary_chip()
             and not Verdant.TemporalBuffer.is_recording()
             and Verdant.TemporalBuffer.count() > 0
   if show then
-    local avail = controls.window:GetWidth() - 36
+    local avail = controls.window:GetWidth() - 36 - 34
     local text, w, lines = compose_summary(chip.label, summary_text, avail)
     chip.label:SetText(text)
     chip.label:SetWidth(w)
@@ -3027,6 +3033,7 @@ function M.on_resize_stop()
     sv.temporal.graph_h = h
   end
   if not controls.window:IsHidden() then
+    update_summary_chip()
     render_current_view()
   end
 end
