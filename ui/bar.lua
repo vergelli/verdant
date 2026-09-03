@@ -534,6 +534,12 @@ function M.init()
   controls.prev_btn      = VerdantBarWindowPrevBtn
   controls.next_btn      = VerdantBarWindowNextBtn
   controls.settings_btn  = VerdantBarWindowSettingsBtn
+  zui.tooltip(controls.prev_btn,     VERDANT_TIP_BAR_PREV)
+  zui.tooltip(controls.next_btn,     VERDANT_TIP_BAR_NEXT)
+  zui.tooltip(controls.mode_btn,     VERDANT_TIP_BAR_MODE)
+  zui.tooltip(controls.settings_btn, VERDANT_TIP_SETTINGS)
+  zui.tooltip(VerdantBarWindowGraphBtn, VERDANT_TIP_GRAPH)
+  zui.tooltip(VerdantBarWindowCloseBtn, VERDANT_TIP_CLOSE)
 
   controls.api_label:SetHidden(true)
   if C.DEBUG then

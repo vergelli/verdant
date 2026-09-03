@@ -4,6 +4,7 @@ local M = Verdant.Graph
 
 local api  = Verdant.zenimax.api
 local zui  = Verdant.zenimax.ui
+local PlaySound = zui.PlaySound
 local zc   = Verdant.zenimax.constants
 local zev  = Verdant.zenimax.events
 local WINDOW_MANAGER             = zui.WINDOW_MANAGER
@@ -2526,6 +2527,7 @@ end
 function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
   log:info("record click")
+  PlaySound(SOUNDS.DIALOG_ACCEPT)
   if not Verdant.AutoRecord.is_auto_active() then
     Verdant.AutoRecord.notify_manual_record()
   end
@@ -2550,6 +2552,7 @@ end
 function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
   log:info("stop click")
+  PlaySound(SOUNDS.DIALOG_ACCEPT)
   light.exit()
   Verdant.AutoRecord.notify_manual_stop()
   Verdant.TemporalBuffer.stop_recording()
@@ -2671,6 +2674,7 @@ function M.load_session(sess)
 end
 
 function M.on_flush_click()
+  PlaySound(SOUNDS.DIALOG_DECLINE)
   light.exit()
   if Verdant.TemporalBuffer.is_recording() then
     zev.unregister_update(Verdant.Constants.TEMPORAL.UPDATE_NAME)
@@ -2688,6 +2692,7 @@ function M.on_flush_click()
 end
 
 function M.on_close_click()
+  PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
   light.exit()
   Verdant.Visibility.set("graph", false)
   stop_hover_poll(); hide_hover_ui(); hover_key = nil
@@ -2763,6 +2768,7 @@ function M.on_welcome_ok()
   local sv = Verdant.SavedVars
   sv.settings = sv.settings or {}
   sv.settings.welcomed = true
+  PlaySound(SOUNDS.DIALOG_ACCEPT)
   if controls.welcome then controls.welcome:SetHidden(true) end
 end
 
@@ -2770,6 +2776,7 @@ function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
   log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
+  PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
   if now_visible then
     local sv = Verdant.SavedVars
     if controls.welcome and not (sv.settings and sv.settings.welcomed) then
@@ -2801,6 +2808,16 @@ function M.init()
   controls.btn_prev_view = VerdantGraphWindowPrevViewBtn
   controls.view_label    = VerdantGraphWindowViewLabel
   controls.btn_next_view = VerdantGraphWindowNextViewBtn
+  zui.tooltip(controls.btn_record,    VERDANT_TIP_RECORD)
+  zui.tooltip(controls.btn_stop,      VERDANT_TIP_STOP)
+  zui.tooltip(controls.btn_flush,     VERDANT_TIP_FLUSH)
+  zui.tooltip(controls.btn_lib,       VERDANT_TIP_LIB)
+  zui.tooltip(controls.btn_prev_view, VERDANT_TIP_PREV_VIEW)
+  zui.tooltip(controls.btn_next_view, VERDANT_TIP_NEXT_VIEW)
+  zui.tooltip(VerdantGraphWindowSettingsBtn, VERDANT_TIP_SETTINGS)
+  zui.tooltip(VerdantGraphWindowBarBtn,      VERDANT_TIP_BAR)
+  zui.tooltip(VerdantGraphWindowCloseBtn,    VERDANT_TIP_CLOSE)
+  zui.tooltip(VerdantGraphWindowWelcomeOkBtn, VERDANT_TIP_WELCOME_OK, TOP)
   controls.viewport      = VerdantGraphWindowViewport
   controls.canvas        = VerdantGraphWindowViewportCanvas
   controls.no_data       = VerdantGraphWindowViewportNoDataLabel
@@ -3035,6 +3052,7 @@ function M.init()
       if rel_y >= buff_hit.y0[i] and rel_y <= buff_hit.y1[i] then
         local rec = buff_hit.rec[i]
         local thr = Verdant.BuffWatch.toggle(rec.name, rec.id)
+        PlaySound(SOUNDS.ABILITY_SLOTTED)
         if thr then
           d("[V] " .. string_format(GetString(VERDANT_WATCH_ARMED), rec.name or "?", thr))
         else

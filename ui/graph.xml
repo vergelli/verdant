@@ -177,8 +177,6 @@
                     pressed="EsoUI/Art/Journal/journal_tabIcon_loreLibrary_down.dds"
                     mouseOver="EsoUI/Art/Journal/journal_tabIcon_loreLibrary_over.dds"/>
           <OnClicked>Verdant.Library.toggle()</OnClicked>
-          <OnMouseEnter>ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(VERDANT_LIB_TITLE))</OnMouseEnter>
-          <OnMouseExit>ZO_Tooltips_HideTextTooltip()</OnMouseExit>
         </Button>
 
         <!-- StatusLabel spans the gap between Lib and the view nav so it

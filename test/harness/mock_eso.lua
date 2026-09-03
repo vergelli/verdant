@@ -76,7 +76,7 @@ CD_TIME_TYPE_TIME_UNTIL = 0 CD_TIME_TYPE_TIME_REMAINING = 1
 TEXT_ALIGN_LEFT = 61 TEXT_ALIGN_CENTER = 62 TEXT_ALIGN_RIGHT = 63
 TEXT_ALIGN_TOP = 64 TEXT_ALIGN_BOTTOM = 65
 SCENE_SHOWN = "shown" SCENE_HIDDEN = "hidden"
-SOUNDS = setmetatable({}, { __index = function() return "sound" end })
+SOUNDS = setmetatable({}, { __index = function(_, k) return "sound:" .. tostring(k) end })
 ZO_COMBOBOX_SUPPRESS_UPDATE = true
 SLASH_COMMANDS = {}
 
@@ -412,7 +412,10 @@ end
 function GetString(s) return s or "" end
 function ZO_AbbreviateAndLocalizeNumber(n) return tostring(math.floor(n or 0)) end
 function ZO_CommaDelimitNumber(n) return tostring(n) end
-function PlaySound() end
+function PlaySound(id)
+  H.sounds = H.sounds or {}
+  H.sounds[#H.sounds + 1] = id
+end
 function zo_callLater(fn) fn() end
 
 function GetGameTimeMilliseconds() return T end

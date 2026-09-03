@@ -6,6 +6,7 @@ local M = Verdant.Settings
 
 local api = Verdant.zenimax.api
 local zui = Verdant.zenimax.ui
+local PlaySound = zui.PlaySound
 local zc  = Verdant.zenimax.constants
 local GetUIMousePosition = api.GetUIMousePosition
 local GetString          = api.GetString
@@ -340,8 +341,10 @@ function M.toggle()
     win:SetHidden(false)
     refresh_all_sliders()
     M.refresh_unknown_count()
+    PlaySound(SOUNDS.ARMORY_OPEN)
   else
     win:SetHidden(true)
+    PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
   end
 end
 
@@ -744,6 +747,18 @@ function M.init()
   controls.pname_edit     = VerdantSettingsPanelPNameBoxEdit
   controls.psave_btn      = VerdantSettingsPanelPSaveBtn
   controls.pdelete_btn    = VerdantSettingsPanelPDeleteBtn
+  zui.tooltip(controls.psave_btn,     VERDANT_TIP_PSAVE)
+  zui.tooltip(controls.pdelete_btn,   VERDANT_TIP_PDELETE)
+  zui.tooltip(controls.autorec_btn,   VERDANT_TIP_AUTOREC)
+  zui.tooltip(controls.autosave_btn,  VERDANT_TIP_AUTOSAVE)
+  zui.tooltip(controls.light_btn,     VERDANT_TIP_LIGHT)
+  zui.tooltip(controls.shielddir_btn, VERDANT_TIP_SHIELDDIR)
+  zui.tooltip(controls.gdm_btn,       VERDANT_TIP_GDM)
+  zui.tooltip(controls.unknown_btn,   VERDANT_TIP_UNKNOWN)
+  zui.tooltip(controls.logo_btn,      VERDANT_TIP_LOGO)
+  zui.tooltip(controls.bars_btn,      VERDANT_TIP_BARS)
+  zui.tooltip(controls.reset_btn,     VERDANT_TIP_RESET)
+  zui.tooltip(VerdantSettingsPanelCloseBtn, VERDANT_TIP_CLOSE)
   controls.psave_btn:SetText(GetString(VERDANT_SETTINGS_SAVE_PROFILE))
   controls.pdelete_btn:SetText(GetString(VERDANT_SETTINGS_DELETE_PROFILE))
   controls.pname_edit:SetDefaultText(GetString(VERDANT_PROFILE_NAME_DEFAULT))
