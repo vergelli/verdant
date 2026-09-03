@@ -58,6 +58,11 @@ local LABEL_H        = 12
 local N_HGRID      = 3
 local N_VGRID      = 3
 local TIME_STRIP_H = 18
+local ULT_L = { PAD = 3, ROW_H = 5, GAP = 5, ICON = 10, AREA = 22 }
+local C_ULT_READY = { r = 1.00, g = 0.90, b = 0.30 }
+local function ult_inset()
+  return Verdant.Ultimate.has_data() and ULT_L.AREA or 0
+end
 local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.25 }
 local C_GRID_LBL  = { r = 0.82, g = 0.85, b = 0.90, a = 0.92 }
 local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
@@ -261,7 +266,7 @@ local function hide_grid(grid)
   grid.ymax:SetHidden(true)
 end
 
-local function draw_grid(grid, canvas, max_val, span_ms, flip, lookback)
+local function draw_grid(grid, canvas, max_val, span_ms, flip, lookback, top_inset)
   local cw = canvas:GetWidth()
   local ch = canvas:GetHeight()
   if cw <= 0 or ch <= 0 then
@@ -277,7 +282,7 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip, lookback)
   end
 
   local y_base   = has_time and TIME_STRIP_H or 0
-  local ch_plot  = math_max(1, ch - y_base)
+  local ch_plot  = math_max(1, ch - y_base - (top_inset or 0))
 
   if has_y then
     for i = 1, N_HGRID do
@@ -543,7 +548,7 @@ local function build_hover_card()
   base:SetTextureCoords(0, 1, 0, 0.05)
   base:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
   base:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
-  base:SetColor(0.045, 0.05, 0.042, 0.97)
+  base:SetColor(0.045, 0.05, 0.042, 1.0)
 
   local border_top = WM:CreateControl("VerdantHoverCardBTop", root, CT_TEXTURE)
   border_top:SetTexture(FILL_TEXTURE)
@@ -551,28 +556,35 @@ local function build_hover_card()
   border_top:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
   border_top:SetAnchor(TOPRIGHT, root, TOPRIGHT, 0, 0)
   border_top:SetHeight(1)
-  border_top:SetColor(0.42, 1.00, 0.60, 0.30)
+  border_top:SetColor(0.42, 1.00, 0.60, 0.55)
   local border_bot = WM:CreateControl("VerdantHoverCardBBot", root, CT_TEXTURE)
   border_bot:SetTexture(FILL_TEXTURE)
   border_bot:SetTextureCoords(0, 1, 0, 0.05)
   border_bot:SetAnchor(BOTTOMLEFT, root, BOTTOMLEFT, 0, 0)
   border_bot:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
   border_bot:SetHeight(1)
-  border_bot:SetColor(0.42, 1.00, 0.60, 0.30)
+  border_bot:SetColor(0.42, 1.00, 0.60, 0.55)
   local border_r = WM:CreateControl("VerdantHoverCardBR", root, CT_TEXTURE)
   border_r:SetTexture(FILL_TEXTURE)
   border_r:SetTextureCoords(0, 1, 0, 0.05)
   border_r:SetAnchor(TOPRIGHT, root, TOPRIGHT, 0, 0)
   border_r:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
   border_r:SetWidth(1)
-  border_r:SetColor(0.42, 1.00, 0.60, 0.30)
+  border_r:SetColor(0.42, 1.00, 0.60, 0.55)
+  local border_l = WM:CreateControl("VerdantHoverCardBL", root, CT_TEXTURE)
+  border_l:SetTexture(FILL_TEXTURE)
+  border_l:SetTextureCoords(0, 1, 0, 0.05)
+  border_l:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
+  border_l:SetAnchor(BOTTOMLEFT, root, BOTTOMLEFT, 0, 0)
+  border_l:SetWidth(1)
+  border_l:SetColor(0.42, 1.00, 0.60, 0.55)
 
   local bg = WM:CreateControl("VerdantHoverCardBg", root, CT_TEXTURE)
   bg:SetTexture(FILL_TEXTURE)
   bg:SetTextureCoords(0, 1, 0, 0.05)
   bg:SetAnchor(TOPLEFT, root, TOPLEFT, 0, 0)
   bg:SetAnchor(BOTTOMRIGHT, root, BOTTOMRIGHT, 0, 0)
-  bg:SetColor(C_CARD_BG.r, C_CARD_BG.g, C_CARD_BG.b, C_CARD_BG.a)
+  bg:SetColor(C_CARD_BG.r, C_CARD_BG.g, C_CARD_BG.b, 1.0)
 
   local accent = WM:CreateControl("VerdantHoverCardAccent", root, CT_TEXTURE)
   accent:SetTexture(FILL_TEXTURE)
@@ -650,6 +662,18 @@ local function build_hover_card()
   end
 
   controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time, desc = desc, rows = rows }
+end
+
+local function desc_height(desc)
+  local w = desc:GetWidth()
+  if not w or w < 40 then w = CARD_W - 20 end
+  local text = desc:GetText() or ""
+  local lines = math_floor((#text * 6.4) / w) + 1
+  local est = lines * 14 + 2
+  local dh = desc:GetTextHeight() or 0
+  if dh < est then dh = est end
+  if dh < 12 then dh = 12 end
+  return dh
 end
 
 local function clear_card_rows(card)
@@ -897,8 +921,7 @@ local function show_report_card()
   desc:SetHeight(400)
   desc:SetText(GetString((wasted > 0) and VERDANT_REPORT_DESC or VERDANT_REPORT_CLEAN))
   desc:SetHidden(false)
-  local dh = desc:GetTextHeight()
-  if dh < 12 then dh = 12 end
+  local dh = desc_height(desc)
   desc:SetHeight(dh)
   card.root:SetHeight(desc_y + dh + 8)
   position_card(chip.bg:GetLeft() - 16, chip.bg:GetBottom() - 14)
@@ -987,8 +1010,7 @@ local function show_buff_card(rec, t_at, conc_at, mx, my)
     desc:SetHeight(400)
     desc:SetText(d)
     desc:SetHidden(false)
-    local dh = desc:GetTextHeight()
-    if dh < 12 then dh = 12 end
+    local dh = desc_height(desc)
     desc:SetHeight(dh)
     h = h + dh + 10
   end
@@ -1087,8 +1109,7 @@ local function hover_poll()
         desc:SetHeight(400)
         desc:SetText(GetString(rawget(_G, TRI_TIP_KEY[e.class] or TRI_TIP_KEY[5])))
         desc:SetHidden(false)
-        local dh = desc:GetTextHeight()
-        if dh < 12 then dh = 12 end
+        local dh = desc_height(desc)
         desc:SetHeight(dh)
         card.root:SetHeight(CARD_H - 4 + dh + 8)
       end
@@ -1296,16 +1317,16 @@ local function draw_markers(pool_line, pool_icon, canvas, t0, span, lane_x, lane
   end
 end
 
-local function ult_seg(pool, canvas, x0, x1, lv, avail, min_x, max_x)
+local function ult_seg(pool, canvas, x0, x1, y, lv, avail, min_x, max_x)
   if x1 <= x0 then return min_x, max_x end
   local seg = pool:AcquireObject()
   seg:ClearAnchors()
   seg:SetDrawLevel(6)
-  seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, 22)
+  seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y)
   seg:SetWidth(x1 - x0)
-  seg:SetHeight(5)
+  seg:SetHeight(ULT_L.ROW_H)
   if avail then
-    seg:SetColor(C_CRIT.r, C_CRIT.g, C_CRIT.b, 0.78)
+    seg:SetColor(C_ULT_READY.r, C_ULT_READY.g, C_ULT_READY.b, 0.95)
   else
     seg:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.10 + 0.045 * lv)
   end
@@ -1322,89 +1343,85 @@ local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
   local U = Verdant.Ultimate
   if not U.has_data() then return end
   local cw = canvas:GetWidth()
-  local nb = math_floor(cw / 4)
+  local x_left = ULT_L.ICON + 4
+  local bw = cw - x_left
+  local nb = math_floor(bw / 4)
   if nb < 1 then return end
-  local st, sp, n = U.steps()
-  local ut, un = U.used()
-  local k = 1
-  local min_x, max_x
-  local run_x0, run_lv, run_avail = nil, -1, false
-  for b = 1, nb do
-    local x0 = math_floor((b - 1) * cw / nb + 0.5)
-    local bt = t0 + (b - 1) / nb * span
-    while k < n and st[k + 1] <= bt do k = k + 1 end
-    local p = -1
-    if bt >= st[1] and bt <= t_data_hi then p = sp[k] end
-    if p < 0 then
-      if run_x0 then
-        min_x, max_x = ult_seg(pool, canvas, run_x0, x0, run_lv, run_avail, min_x, max_x)
-        run_x0 = nil
-      end
-    else
-      local avail = p >= 1
-      local lv = avail and 8 or math_floor(p * 8)
-      if run_x0 and (avail ~= run_avail or lv ~= run_lv) then
-        min_x, max_x = ult_seg(pool, canvas, run_x0, x0, run_lv, run_avail, min_x, max_x)
-        run_x0 = nil
-      end
-      if not run_x0 then run_x0, run_lv, run_avail = x0, lv, avail end
-    end
-  end
-  if run_x0 then
-    min_x, max_x = ult_seg(pool, canvas, run_x0, cw, run_lv, run_avail, min_x, max_x)
-  end
-  if min_x then
-    local rim = pool:AcquireObject()
-    rim:ClearAnchors()
-    rim:SetDrawLevel(5)
-    rim:SetAnchor(TOPLEFT, canvas, TOPLEFT, min_x - 1, 21)
-    rim:SetWidth(max_x - min_x + 2)
-    rim:SetHeight(7)
-    rim:SetColor(0.04, 0.04, 0.035, 0.60)
-    rim:SetHidden(false)
-  end
-  for i = 1, un do
-    local t = ut[i]
-    if t >= t0 and t <= t0 + span then
-      local x = math_floor((t - t0) / span * cw + 0.5)
-      local tick = pool:AcquireObject()
-      tick:ClearAnchors()
-      tick:SetDrawLevel(6)
-      tick:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - 1, 19)
-      tick:SetWidth(2)
-      tick:SetHeight(11)
-      tick:SetColor(1, 1, 1, 0.85)
-      tick:SetHidden(false)
-    end
-  end
-  if not min_x then return end
-  local at, ai, an = U.abilities()
+  local st, sv, n = U.steps()
+  local ut, ub, un = U.used()
+  local at, ab, ai, ac, an = U.abilities()
   local t_hi = t0 + span
-  local last_x = nil
-  for i = 1, an do
-    local t = at[i]
-    local visible = (i == an) or (at[i + 1] > t0)
-    if visible and t <= t_hi then
-      local x = math_floor((t - t0) / span * cw + 0.5)
-      if x < min_x then x = min_x end
-      if x > cw - 15 then x = cw - 15 end
-      if not last_x or x - last_x >= 16 then
-        local back = pool:AcquireObject()
-        back:ClearAnchors()
-        back:SetDrawLevel(7)
-        back:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - 1, 16)
-        back:SetWidth(16)
-        back:SetHeight(16)
-        back:SetColor(0.04, 0.04, 0.035, 0.88)
-        back:SetHidden(false)
+  for b = 1, 2 do
+    local id = U.id_at(b, t_hi)
+    if id > 0 or b == 1 then
+      local y = ULT_L.PAD + (b - 1) * (ULT_L.ROW_H + ULT_L.GAP)
+      local k, ka, cost = 1, 0, 0
+      local min_x, max_x
+      local run_x0, run_lv, run_avail = nil, -1, false
+      for bx = 1, nb do
+        local x0 = x_left + math_floor((bx - 1) * bw / nb + 0.5)
+        local bt = t0 + (bx - 1) / nb * span
+        while k < n and st[k + 1] <= bt do k = k + 1 end
+        while ka < an and at[ka + 1] <= bt do
+          ka = ka + 1
+          if ab[ka] == b then cost = ac[ka] end
+        end
+        local p = -1
+        if bt >= st[1] and bt <= t_data_hi then
+          local c = (cost > 0) and cost or U.cost_at(b, bt)
+          p = sv[k] / c
+          if p > 1 then p = 1 end
+        end
+        if p < 0 then
+          if run_x0 then
+            min_x, max_x = ult_seg(pool, canvas, run_x0, x0, y, run_lv, run_avail, min_x, max_x)
+            run_x0 = nil
+          end
+        else
+          local avail = p >= 1
+          local lv = avail and 8 or math_floor(p * 8)
+          if run_x0 and (avail ~= run_avail or lv ~= run_lv) then
+            min_x, max_x = ult_seg(pool, canvas, run_x0, x0, y, run_lv, run_avail, min_x, max_x)
+            run_x0 = nil
+          end
+          if not run_x0 then run_x0, run_lv, run_avail = x0, lv, avail end
+        end
+      end
+      if run_x0 then
+        min_x, max_x = ult_seg(pool, canvas, run_x0, cw, y, run_lv, run_avail, min_x, max_x)
+      end
+      if min_x then
+        local rim = pool:AcquireObject()
+        rim:ClearAnchors()
+        rim:SetDrawLevel(5)
+        rim:SetAnchor(TOPLEFT, canvas, TOPLEFT, min_x - 1, y - 1)
+        rim:SetWidth(max_x - min_x + 2)
+        rim:SetHeight(ULT_L.ROW_H + 2)
+        rim:SetColor(0.04, 0.04, 0.035, 0.60)
+        rim:SetHidden(false)
+      end
+      for i = 1, un do
+        local t = ut[i]
+        if (ub[i] or 1) == b and t >= t0 and t <= t_hi then
+          local x = x_left + math_floor((t - t0) / span * bw + 0.5)
+          local tick = pool:AcquireObject()
+          tick:ClearAnchors()
+          tick:SetDrawLevel(7)
+          tick:SetAnchor(TOPLEFT, canvas, TOPLEFT, x - 1, y - 2)
+          tick:SetWidth(2)
+          tick:SetHeight(ULT_L.ROW_H + 4)
+          tick:SetColor(1, 1, 1, 0.9)
+          tick:SetHidden(false)
+        end
+      end
+      if id > 0 then
         local icon = ipool:AcquireObject()
         icon:ClearAnchors()
-        icon:SetTexture(Verdant.SkillColors.ability_icon(ai[i]))
-        icon:SetDimensions(14, 14)
+        icon:SetTexture(Verdant.SkillColors.ability_icon(id))
+        icon:SetDimensions(ULT_L.ICON, ULT_L.ICON)
         icon:SetColor(1, 1, 1, 0.95)
-        icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, 17)
+        icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y - math_floor((ULT_L.ICON - ULT_L.ROW_H) / 2))
         icon:SetHidden(false)
-        last_x = x
       end
     end
   end
@@ -1431,7 +1448,7 @@ local function render_view1()
   local ch      = canvas:GetHeight()
   if cw <= 4 or ch <= 4 then return end
 
-  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+  local ch_plot = math_max(4, ch - TIME_STRIP_H - ult_inset())
 
   local max_ems = 0
   local max_d   = 0
@@ -1449,7 +1466,7 @@ local function render_view1()
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span = axis_span(t_last - t_first, n)
   local t0x  = t_last - span
-  draw_grid(controls.grid_ems, canvas, max_ems, span, nil, true)
+  draw_grid(controls.grid_ems, canvas, max_ems, span, nil, true, ult_inset())
   local xs          = SCR.r1_xs
   local ehps_hs     = SCR.r1_ehps_hs
   local ems_hs      = SCR.r1_ems_hs
@@ -1575,13 +1592,13 @@ local function render_view2()
   local span_ms = axis_span(t_last - t_first, n)
   local t0x     = t_last - span_ms
   local bwu     = math_max(1, math_floor(col_w) - bar_gap)
-  draw_grid(controls.grid_top, ec, max_ehps, 0)
+  draw_grid(controls.grid_top, ec, max_ehps, 0, nil, nil, ult_inset())
   draw_grid(controls.grid_bot, mc, max_mps, span_ms, shield_down, true)
   local capture = not Verdant.TemporalBuffer.is_recording()
   local hk = hover_key
 
   if max_ehps > 0 then
-    local ch     = ec:GetHeight()
+    local ch     = ec:GetHeight() - ult_inset()
     local xs     = SCR.r2_xs_top
     local col_hs = SCR.r2_colh_top
     if capture then hit_begin(hit_top, m) end
@@ -1747,7 +1764,7 @@ local function render_view3()
   local cw      = canvas:GetWidth()
   local ch      = canvas:GetHeight()
   if cw <= 4 or ch <= 4 then return end
-  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+  local ch_plot = math_max(4, ch - TIME_STRIP_H - ult_inset())
 
   local max_ehps = 0
   local t_first, t_last = 0, 0
@@ -1765,7 +1782,7 @@ local function render_view3()
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span = axis_span(t_last - t_first, n)
   local t0x  = t_last - span
-  draw_grid(controls.grid_ems, canvas, max_ehps, span, nil, true)
+  draw_grid(controls.grid_ems, canvas, max_ehps, span, nil, true, ult_inset())
 
   local xs          = SCR.r3_xs
   local top_hs      = SCR.r3_top_hs
@@ -1841,7 +1858,7 @@ local function render_view_oh()
   local cw      = canvas:GetWidth()
   local ch      = canvas:GetHeight()
   if cw <= 4 or ch <= 4 then return end
-  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+  local ch_plot = math_max(4, ch - TIME_STRIP_H - ult_inset())
 
   local max_tot = 0
   local t_first, t_last = 0, 0
@@ -1860,7 +1877,7 @@ local function render_view_oh()
   local m, num_cols, col_w, bar_gap = decimate(cw)
   local span = axis_span(t_last - t_first, n)
   local t0x  = t_last - span
-  draw_grid(controls.grid_ems, canvas, max_tot, span, nil, true)
+  draw_grid(controls.grid_ems, canvas, max_tot, span, nil, true, ult_inset())
   if controls.oh_legend then controls.oh_legend:SetHidden(false) end
 
   local xs     = SCR.r3_xs
@@ -1971,7 +1988,7 @@ local function render_view4()
   Verdant.Diagnostics.bump("graph.view_buffs.renders")
   draw_grid(controls.grid_ems, canvas, 0, span)
 
-  local ch_plot = math_max(4, ch - TIME_STRIP_H)
+  local ch_plot = math_max(4, ch - TIME_STRIP_H - ult_inset())
   local rows    = n
   local extra   = 0
   local row_h   = math_floor(ch_plot / rows) - BUFF_ROW_GAP

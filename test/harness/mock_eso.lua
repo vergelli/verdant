@@ -447,7 +447,12 @@ function GetSlotBoundId(slot, cat)
   return (bar and bar[slot]) or 0
 end
 function GetSlotAbilityCost(slot, mechanic, cat)
+  local per_bar = H.state.ult_costs
+  if per_bar and cat ~= nil and per_bar[cat] then return per_bar[cat] end
   return H.state.ult_cost or 250
+end
+function GetActiveHotbarCategory()
+  return H.state.active_bar or HOTBAR_CATEGORY_PRIMARY
 end
 function GetUnitPower(tag, ptype)
   if ptype == COMBAT_MECHANIC_FLAGS_ULTIMATE then
