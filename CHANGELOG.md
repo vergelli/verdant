@@ -1,5 +1,32 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **OHEAL view** — overhealing finally gets its place: effective healing
+  stacked under the wasted overflow, sharing one axis so the proportion
+  reads at a glance. Hover shows the wasted percentage per moment. Context,
+  not a score — it never becomes a headline number.
+- **Ultimate band** — a thin strip under the timeline markers on every
+  graph view: green while the ultimate charges (brighter as it fills), gold
+  while it sits ready unspent, a white tick at each cast.
+- **Light Mode** (Settings > Recording, off by default) — while recording,
+  the window sheds its border, title and buttons and dims to a configurable
+  opacity; hover restores it and reveals stop + view navigation. Stopping
+  brings the normal window back.
+- **Buff watch** — star any buff in the BUFFS view to get a recast banner:
+  click the star to arm it and cycle the warning threshold (3s / 5s / 8s /
+  off). A small movable banner counts down when a watched buff is about to
+  drop, and calls for a recast if it falls off mid-combat.
+
+### Changed
+- **The graph grows into its window** — a fresh recording no longer starts
+  as tiny bars on a huge empty axis: the chart fills the available width
+  and expands its time span in steps until it reaches the configured
+  window, then slides as before.
+- **Settings panel in two columns** (600 wide) — no more tower taller than
+  the window it docks to.
+
 ## [2.4.0] - 2026-08-23
 
 The rescue update: a fifth graph view that scores your clutch heals, a
