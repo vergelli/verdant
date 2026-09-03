@@ -70,6 +70,17 @@ Verdant.DonutProbe.toggle()
 print(svg.snapshot(H, VerdantDonutProbe, OUT .. "donut_probe.svg"))
 Verdant.DonutProbe.toggle()
 
+while VerdantGraphWindowViewLabel._text ~= "SKILL" do Verdant.Graph.next_view() end
+local ec = VerdantGraphWindowViewportSkillAreaEhpsCanvas
+H.state.mouse_x = ec:GetLeft() + ec:GetWidth() - 30
+H.state.mouse_y = ec:GetTop() + ec:GetHeight() - 30
+local hit_top = VerdantGraphHitTop
+hit_top._onOnMouseEnter(hit_top)
+H.advance(200)
+print(svg.snapshot(H, VerdantGraphWindow, OUT .. "skill_hover.svg"))
+hit_top._onOnMouseExit(hit_top)
+while VerdantGraphWindowViewLabel._text ~= "EMS" do Verdant.Graph.next_view() end
+
 VerdantGraphSummaryHit._onOnMouseEnter(VerdantGraphSummaryHit)
 H.advance(200)
 print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_report.svg"))

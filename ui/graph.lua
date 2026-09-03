@@ -432,6 +432,7 @@ local SCR = {
   r1_xs = {}, r1_ehps_hs = {}, r1_ems_hs = {}, r1_d_hs = {},
   r2_xs_top = {}, r2_colh_top = {}, r2_xs_bot = {}, r2_colh_bot = {},
   r3_xs = {}, r3_top_hs = {},
+  donut_vals = {}, donut_cols = {},
 }
 
 local MIN_COL_PX = 4
@@ -714,6 +715,22 @@ local function size_card(w)
   end
 end
 
+local DONUT_SHADES = { 1.00, 0.82, 0.66, 0.52, 0.40, 0.30 }
+
+local function card_donut()
+  local card = controls.card
+  if not controls.card_donut then
+    local Donut = Verdant.lib.plot.Donut
+    controls.card_donut = Donut.new("VerdantReportDonut", card.root, 44, { mode = "stack" })
+    controls.card_donut:control():SetAnchor(TOPRIGHT, card.root, TOPRIGHT, -10, 8)
+    controls.card_donut:control():SetDrawLevel(21)
+    for i = 1, #DONUT_SHADES + 1 do
+      SCR.donut_cols[i] = { r = 0.5, g = 0.5, b = 0.5, a = 1 }
+    end
+  end
+  return controls.card_donut
+end
+
 local function show_card(band, col, unit, mx, my, elapsed_ms)
   local card = controls.card
   if not card then return end
@@ -775,6 +792,35 @@ local function show_card(band, col, unit, mx, my, elapsed_ms)
   if want > 300 then want = 300 end
   size_card(want)
   card.root:SetHeight((shown > 0) and (CARD_ROWS_Y0 + shown * CARD_ROW_H + 4) or CARD_H)
+
+  local group_share = band.share or 0
+  if list and shown > 0 and group_share > 0 then
+    local dn = card_donut()
+    local vals, cols = SCR.donut_vals, SCR.donut_cols
+    for i = 1, #vals do vals[i] = nil end
+    local k, acc = 0, 0
+    for a = 1, list.count do
+      local ab = list[a]
+      if ab and ab.key == band.key and k < #DONUT_SHADES then
+        k = k + 1
+        vals[k] = ab.share or 0
+        acc = acc + vals[k]
+        local f = DONUT_SHADES[k]
+        local c = cols[k]
+        c.r, c.g, c.b = band.r * f, band.g * f, band.b * f
+      end
+    end
+    local rest = group_share - acc
+    if rest > 0.005 then
+      k = k + 1
+      vals[k] = rest
+      local c = cols[k]
+      c.r, c.g, c.b = 0.35, 0.35, 0.33
+    end
+    dn:set(vals, cols)
+    dn:control():SetHidden(false)
+    card.name:SetWidth(want - 36 - 52)
+  end
 
   position_card(mx, my)
 end
@@ -885,19 +931,16 @@ local function show_report_card()
   local hot_pct    = wasted * hot_share
   local direct_pct = wasted * (1 - hot_share)
 
-  if not controls.card_donut then
-    local Donut = Verdant.lib.plot.Donut
-    controls.card_donut = Donut.new("VerdantReportDonut", card.root, 44, { mode = "stack" })
-    controls.card_donut:control():SetAnchor(TOPRIGHT, card.root, TOPRIGHT, -10, 8)
-    controls.card_donut:control():SetDrawLevel(21)
+  local dn = card_donut()
+  if not report.cols then
     report.vals = {}
     report.cols = { C_EHPS, C_OVERHEAL, C_TRI.SLOW }
   end
   report.vals[1] = landed
   report.vals[2] = hot_pct
   report.vals[3] = direct_pct
-  controls.card_donut:set(report.vals, report.cols)
-  controls.card_donut:control():SetHidden(false)
+  dn:set(report.vals, report.cols)
+  dn:control():SetHidden(false)
 
   local rows = card.rows
   local r1 = rows[1]
