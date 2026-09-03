@@ -112,7 +112,6 @@ local function save_state()
   local b = sv.bar
   b.metric_idx  = metric_idx
   b.display_pct = display_pct
-  b.visible     = not controls.window:IsHidden()
 end
 
 local function apply_size_constraints()
@@ -479,20 +478,9 @@ function M.toggle()
   PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
 end
 
-function M.show()
-  controls.window:SetHidden(false)
-  PlaySound(SOUNDS.ARMORY_OPEN)
-  save_state()
-end
-
 function M.on_close_click()
-  M.hide()
-end
-
-function M.hide()
-  controls.window:SetHidden(true)
+  Verdant.Visibility.set("bar", false)
   PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
-  save_state()
 end
 
 function M.set_rate(ms)
