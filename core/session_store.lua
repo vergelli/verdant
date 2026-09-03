@@ -95,6 +95,7 @@ function M.capture()
   local t_end = BT.session_end()
   local tb_sum = TB.summary()
   local tri = T.summary()
+  local oh_hot, oh_direct = Verdant.Metrics.overheal_split()
 
   local series = {}
   local share_recs = {}
@@ -243,6 +244,8 @@ function M.capture()
         active_pct = tb_sum.active_pct,
         total_heal = tb_sum.total_heal,
         total_shield = tb_sum.total_shield,
+        total_overheal = tb_sum.total_overheal,
+        oh_hot = oh_hot, oh_direct = oh_direct,
         saves = tri.counts.s, s_star = tri.counts.s_star,
         o = tri.counts.o, l = tri.counts.l, m = tri.counts.m,
         oneshot = tri.counts.oneshot, x = tri.counts.x,

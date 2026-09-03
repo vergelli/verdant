@@ -34,6 +34,7 @@ local CASES = {
   "render_bounds",
   "donut_widget",
   "button_manners",
+  "report_card",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",
