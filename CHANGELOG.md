@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **Companion category** — companion heals get their own teal colour
+  instead of landing in the grey unknown pile.
+- **Grey bars explain themselves** — hovering an unknown skill says where
+  to give it a category.
 - **Landed ring in the library** — every saved session shows a small ring
   of landed versus overflowed healing, so nights compare at a glance
   without opening them.

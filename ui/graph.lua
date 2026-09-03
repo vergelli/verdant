@@ -834,6 +834,20 @@ local function show_card(band, col, unit, mx, my, elapsed_ms)
     card.name:SetWidth(want - 36 - 52)
   end
 
+  if band.key == "other" then
+    local desc = card.desc
+    local dy = (shown > 0) and (CARD_ROWS_Y0 + shown * CARD_ROW_H + 4) or (CARD_H - 4)
+    desc:ClearAnchors()
+    desc:SetAnchor(TOPLEFT, card.root, TOPLEFT, 12, dy)
+    desc:SetWidth(want - 20)
+    desc:SetHeight(400)
+    desc:SetText(GetString(VERDANT_UNKNOWN_HINT))
+    desc:SetHidden(false)
+    local dh = desc_height(desc)
+    desc:SetHeight(dh)
+    card.root:SetHeight(dy + dh + 8)
+  end
+
   position_card(mx, my)
 end
 
