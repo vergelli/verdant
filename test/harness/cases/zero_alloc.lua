@@ -21,9 +21,20 @@ return function(H)
   ok(per_tick < budget,
      string.format("sample tick allocates %.0f addon-side bytes (budget %d)", per_tick, budget))
 
+  H.state.grouped = true
+  H.state.group_size = 4
+  H.state.player_group_tag = "group1"
+  H.unit_names = { group1 = "Me", group2 = "Ally2", group3 = "Ally3", group4 = "Ally4" }
+  H.fire(EVENT_GROUP_UPDATE)
+  local tick_n = 0
   local function ticks()
     for _ = 1, 10 do
-      H.heal({ hit = 1000, overflow = 200 })
+      tick_n = tick_n + 1
+      local b = tick_n % 6
+      H.heal({ hit = 1000, overflow = 200, target_unit_id = 600 + (b % 4) })
+      H.effect(EFFECT_RESULT_GAINED, 61700 + b, 600 + (b % 4), (H.now() + 9000) / 1000, nil, "group" .. (1 + b % 4))
+      if tick_n % 4 == 0 then H.power("group2", 12000, 40000) end
+      if tick_n % 4 == 2 then H.power("group2", 30000, 40000) end
       H.advance(1000)
     end
   end
@@ -39,6 +50,10 @@ return function(H)
   end
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
   Verdant.Visibility.set("graph", false)
+  H.state.grouped = false
+  H.state.group_size = 1
+  H.state.player_group_tag = nil
+  H.unit_names = nil
 
   Verdant.Graph.on_stop_click()
   Verdant.Graph.on_flush_click()

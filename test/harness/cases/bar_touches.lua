@@ -29,6 +29,13 @@ return function(H)
   H.advance(1000)
   ok(dot._hidden == true, "stopping hides the dot")
 
+  Verdant.Graph.toggle_record()
+  ok(Verdant.TemporalBuffer.is_recording(), "the record keybind starts a recording")
+  H.heal({ hit = 1000 })
+  H.advance(1000)
+  Verdant.Graph.toggle_record()
+  ok(not Verdant.TemporalBuffer.is_recording(), "the record keybind stops it")
+
   Verdant.Graph.on_flush_click()
   Verdant.Visibility.set("bar", false)
   Verdant.Metrics.reset()
