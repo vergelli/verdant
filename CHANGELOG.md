@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- **Healing report card** — hover the summary chip (it now wears a help
+  icon) for the report: how much of your healing landed, how much
+  overflowed, and the overflow split into HoT ticks on full targets
+  (normal) versus direct heals that overflowed (the part to work on).
+  Small donut included. Library sessions keep the split.
 - **Active and shield share in the report** — the summary chip also says
   how much of the recording you were actually healing (`ACTIVE n%`) and,
   when shields were involved, how much of your output they were

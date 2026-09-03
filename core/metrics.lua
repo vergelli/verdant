@@ -88,8 +88,17 @@ function M.ingest_heal(ev)
   end
 end
 
+local oh_hot, oh_direct = 0, 0
+
 function M.ingest_overheal(ev)
   if ev.amount > 0 then
+    local zc = Verdant.zenimax.constants
+    local r  = ev.result
+    if r == zc.ACTION_RESULT_HOT_TICK or r == zc.ACTION_RESULT_HOT_TICK_CRITICAL then
+      oh_hot = oh_hot + ev.amount
+    else
+      oh_direct = oh_direct + ev.amount
+    end
     overheal_buf:push(ev)
   else
     event_pool:release(ev)
@@ -216,6 +225,14 @@ function M.reset()
   overheal_buf:reset()
   shield_buf:reset()
   damage_buf:reset()
+end
+
+function M.session_mark()
+  oh_hot, oh_direct = 0, 0
+end
+
+function M.overheal_split()
+  return oh_hot, oh_direct
 end
 
 function M.size_snapshot()

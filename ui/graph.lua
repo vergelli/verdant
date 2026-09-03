@@ -660,6 +660,7 @@ local function clear_card_rows(card)
     r.icon:SetHidden(true); r.name:SetHidden(true); r.val:SetHidden(true)
   end
   if card.desc then card.desc:SetHidden(true) end
+  if controls.card_donut then controls.card_donut:control():SetHidden(true) end
 end
 
 local function position_card(mx, my)
@@ -818,6 +819,7 @@ local tri_hit = { n = 0, y0 = {}, y1 = {}, ep = {},
                   vals = {}, cols = {}, rt = {} }
 local tri_dot_lastx = {}
 local TRI_GLYPH_GAP = 6
+local report = { hot = 0, direct = 0 }
 
 local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, my)
   local card = controls.card
@@ -831,6 +833,73 @@ local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, 
   clear_card_rows(card)
   card.root:SetHeight(CARD_H)
   position_card(mx, my)
+end
+
+local function show_report_card()
+  local card = controls.card
+  local chip = controls.summary
+  if not card or not chip then return end
+  local s = Verdant.TemporalBuffer.summary()
+  if s.count == 0 then return end
+  size_card(250)
+  clear_card_rows(card)
+  card.swatch:SetColor(C_OVERHEAL.r, C_OVERHEAL.g, C_OVERHEAL.b, 1.0)
+  card.name:SetColor(C_CARD_NAME.r, C_CARD_NAME.g, C_CARD_NAME.b, 1.0)
+  card.name:SetText(GetString(VERDANT_REPORT_TITLE))
+  card.name:SetWidth(250 - 36 - 56)
+
+  local wasted = s.wasted_pct
+  local landed = 1 - wasted
+  card.stat:SetText(string_format(GetString(VERDANT_REPORT_LANDED),
+    hexc(C_EHPS), math_floor(landed * 100 + 0.5), math_floor(wasted * 100 + 0.5)))
+  card.time:SetText("")
+
+  local split_total = report.hot + report.direct
+  local hot_share = (split_total > 0) and (report.hot / split_total) or 0
+  local hot_pct    = wasted * hot_share
+  local direct_pct = wasted * (1 - hot_share)
+
+  if not controls.card_donut then
+    local Donut = Verdant.lib.plot.Donut
+    controls.card_donut = Donut.new("VerdantReportDonut", card.root, 44, { mode = "stack" })
+    controls.card_donut:control():SetAnchor(TOPRIGHT, card.root, TOPRIGHT, -10, 8)
+    controls.card_donut:control():SetDrawLevel(21)
+    report.vals = {}
+    report.cols = { C_EHPS, C_OVERHEAL, C_TRI_SLOW }
+  end
+  report.vals[1] = landed
+  report.vals[2] = hot_pct
+  report.vals[3] = direct_pct
+  controls.card_donut:set(report.vals, report.cols)
+  controls.card_donut:control():SetHidden(false)
+
+  local rows = card.rows
+  local r1 = rows[1]
+  r1.name:SetText(GetString(VERDANT_REPORT_HOT))
+  r1.name:SetColor(C_OVERHEAL.r, C_OVERHEAL.g, C_OVERHEAL.b, 1.0)
+  r1.name:SetHidden(false)
+  r1.val:SetText(string_format("%d%%", math_floor(hot_pct * 100 + 0.5)))
+  r1.val:SetHidden(false)
+  local r2 = rows[2]
+  r2.name:SetText(GetString(VERDANT_REPORT_DIRECT))
+  r2.name:SetColor(C_TRI_SLOW.r, C_TRI_SLOW.g, C_TRI_SLOW.b, 1.0)
+  r2.name:SetHidden(false)
+  r2.val:SetText(string_format("%d%%", math_floor(direct_pct * 100 + 0.5)))
+  r2.val:SetHidden(false)
+
+  local desc = card.desc
+  local desc_y = CARD_ROWS_Y0 + 2 * CARD_ROW_H + 6
+  desc:ClearAnchors()
+  desc:SetAnchor(TOPLEFT, card.root, TOPLEFT, 12, desc_y)
+  desc:SetWidth(250 - 20)
+  desc:SetHeight(400)
+  desc:SetText(GetString((wasted > 0) and VERDANT_REPORT_DESC or VERDANT_REPORT_CLEAN))
+  desc:SetHidden(false)
+  local dh = desc:GetTextHeight()
+  if dh < 12 then dh = 12 end
+  desc:SetHeight(dh)
+  card.root:SetHeight(desc_y + dh + 8)
+  position_card(chip.bg:GetLeft() - 16, chip.bg:GetBottom() - 14)
 end
 
 local function hit_begin(H, n) H.n = n end
@@ -2561,13 +2630,17 @@ local function update_summary_chip()
     chip.label:SetText(text)
     chip.label:SetWidth(w)
     chip.label:SetHeight(18 * lines + 2)
-    chip.bg:SetWidth(w + 16)
+    chip.bg:SetWidth(w + 34)
     chip.bg:SetHeight(18 * lines + 2)
     chip.bg:SetHidden(false)
     chip.label:SetHidden(false)
+    chip.help:SetHidden(false)
+    chip.hit:SetHidden(false)
   else
     chip.bg:SetHidden(true)
     chip.label:SetHidden(true)
+    chip.help:SetHidden(true)
+    chip.hit:SetHidden(true)
   end
 end
 
@@ -2653,6 +2726,8 @@ function M.on_record_click()
   end
   summary_text = nil
   Verdant.TemporalBuffer.clear()
+  Verdant.Metrics.session_mark()
+  report.hot, report.direct = 0, 0
   release_all_pools()
   hide_all_grids()
   controls.no_data:SetHidden(false)
@@ -2680,6 +2755,7 @@ function M.on_stop_click()
   Verdant.BuffTracker.finalize(GetGameTimeMilliseconds())
   Verdant.Ultimate.finalize(GetGameTimeMilliseconds())
   Verdant.SessionStore.on_session_stop()
+  report.hot, report.direct = Verdant.Metrics.overheal_split()
   summary_text = build_summary_text()
   local s = Verdant.TemporalBuffer.summary()
   Verdant.Diagnostics.bump("graph.summary.computed")
@@ -2784,6 +2860,8 @@ function M.load_session(sess)
   Verdant.Triage.load_session(eps, sess.roster, sess.head.player_slot)
 
   summary_text = build_summary_text()
+  local hs = sess.head.sum or {}
+  report.hot, report.direct = hs.oh_hot or 0, hs.oh_direct or 0
   controls.status:SetText(string_format(GetString(VERDANT_LIB_LOADED),
     sess.head.zone or "?"))
   Verdant.Visibility.set("graph", true)
@@ -3108,12 +3186,32 @@ function M.init()
   sum_label:SetFont("ZoFontGameSmall")
   sum_label:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
   sum_label:SetVerticalAlignment(TEXT_ALIGN_CENTER)
-  sum_label:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -22, 61)
+  sum_label:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -40, 61)
   sum_label:SetHeight(20)
   sum_label:SetDrawLevel(12)
   sum_label:SetHidden(true)
 
-  controls.summary = { bg = sum_bg, label = sum_label }
+  local sum_help = WM:CreateControl("VerdantGraphSummaryHelp", controls.window, CT_TEXTURE)
+  sum_help:SetTexture("EsoUI/Art/Miscellaneous/help_icon.dds")
+  sum_help:SetDimensions(16, 16)
+  sum_help:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -18, 63)
+  sum_help:SetColor(0.75, 0.90, 0.80, 0.9)
+  sum_help:SetDrawLevel(12)
+  sum_help:SetHidden(true)
+
+  local sum_hit = WM:CreateControl("VerdantGraphSummaryHit", controls.window, CT_CONTROL)
+  sum_hit:SetAnchorFill(sum_bg)
+  sum_hit:SetMouseEnabled(true)
+  sum_hit:SetDrawLevel(13)
+  sum_hit:SetHidden(true)
+  sum_hit:SetHandler("OnMouseEnter", function()
+    show_report_card()
+  end)
+  sum_hit:SetHandler("OnMouseExit", function()
+    fade_out(card_fader)
+  end)
+
+  controls.summary = { bg = sum_bg, label = sum_label, help = sum_help, hit = sum_hit }
 
   local oh_legend = WM:CreateControl("VerdantGraphOhLegend", controls.canvas, CT_LABEL)
   oh_legend:SetFont("ZoFontGameSmall")
