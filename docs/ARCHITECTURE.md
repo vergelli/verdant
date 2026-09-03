@@ -25,20 +25,29 @@ pipeline/       Dataflow stages: acquisition → filter → processing
                 → presentation. Drives the addon at runtime.
 
 core/           Pure domain logic: metrics, coverage, group set,
-                shield registry, skill colors, mode. No I/O.
+                shield registry, skill colors, mode, the temporal
+                buffer and the session trackers (triage, buffs,
+                ultimate, buff watch). No I/O.
 
 lib/            Reusable utilities. lib/plot/ owns visualization;
-                lib/mem/ owns pools and ring buffers.
+                lib/mem/ owns pools and ring buffers; lib/vsf.lua
+                is the session serialization format.
 
-ui/             Widgets (bar, graph, settings). Read from
-                pipeline/presentation; do not reach into core/.
+ui/             Widgets (bar, graph, settings, library, assign,
+                watch overlay, logo). Read from core state; do not
+                own domain logic.
 
-observability/  Logging, profiling, validation. Cross-cutting; may
-                be called from anywhere; release-mode no-op.
+observability/  Logging, profiling, validation, diagnostics.
+                Cross-cutting; may be called from anywhere;
+                release-mode no-op.
 
-config/         User-configurable settings: schema, defaults, presets.
-                Read by anyone, written by the settings UI.
+test/           The offline lab: mock-ESO harness, SimLab scenarios
+                with an error-zero oracle, SVG snapshots and the
+                layout auditor (docs/SIMLAB.md). Never shipped.
 ```
+
+Configuration has no layer of its own: presets and persistence live in
+`ui/settings.lua` over the SavedVars table the ACL opens.
 
 Inner layers know nothing about outer layers. Circular dependencies
 are not allowed.
