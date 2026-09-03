@@ -42,16 +42,20 @@ local function tick()
   local now_s = api.GetGameTimeMilliseconds() / 1000
   local in_combat = api.IsUnitInCombat("player") and true or false
   local n = 0
+  local chime = 0
   for i = 1, n_watched do
     local w = watch_list[i]
+    local stage = 0
     if w.seen and w.end_s ~= math_huge and n < ALERT_CAP then
       local remaining = w.end_s - now_s
       local firing = false
       if remaining <= 0 then
         firing = in_combat
         remaining = 0
+        if firing then stage = 2 end
       elseif remaining <= w.thr then
         firing = true
+        stage = 1
       end
       if firing then
         n = n + 1
@@ -61,7 +65,10 @@ local function tick()
         a.remaining = remaining
       end
     end
+    if stage > (w.stage or 0) and stage > chime then chime = stage end
+    w.stage = stage
   end
+  alerts.chime = chime
   for i = 2, n do
     local j = i
     while j > 1 and alerts[j].remaining < alerts[j - 1].remaining do

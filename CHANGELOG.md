@@ -6,6 +6,10 @@
 - **The summary chip lives inside the viewport** now, top right, and the
   plot makes room below it while it is up, so it no longer straddles the
   viewport border.
+- **Buff watch chimes** — a soft note when a starred buff enters its
+  warning window, a sharper one when it drops mid-combat, each once.
+- **The library says when it saved** — after a recording lands in the
+  library a chat line says so and how to open it.
 - **Keybinds** for the graph window and for start / stop recording, next
   to the existing bar toggle in Controls > Keybindings.
 - **Double-click a library row** to open it.

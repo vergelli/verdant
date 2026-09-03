@@ -40,6 +40,7 @@ return function(H)
 
   ok(SS.count() == 1, "autosave on must store the session, got " .. SS.count())
   ok(not SS.autosave_pending(), "the deferred autosave must have finished within a few frames")
+  ok(H.chat_contains("saved to the library"), "the player is told the recording was saved")
 
   Verdant.Graph.on_record_click()
   for _ = 1, 30 do

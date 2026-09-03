@@ -3387,6 +3387,11 @@ function M.init()
   layout_tabs()
   style_tabs()
 
+  Verdant.SessionStore.on_saved = function(session)
+    d("[V] " .. string_format(GetString(VERDANT_LIB_SAVED),
+      session.head.zone or "?", fmt_secs(session.head.dur_ms or 0)))
+  end
+
   controls.welcome = VerdantGraphWindowWelcome
   VerdantGraphWindowWelcomeBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantGraphWindowWelcomeBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
