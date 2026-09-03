@@ -73,10 +73,12 @@ local log
 local api
 local start_zone  = ""
 local start_group = 0
+local start_diff  = 0
 
 function M.on_session_start()
   start_zone  = api.GetUnitZone("player") or ""
   start_group = api.GetGroupSize() or 0
+  start_diff  = api.GetCurrentZoneDungeonDifficulty and api.GetCurrentZoneDungeonDifficulty() or 0
 end
 
 local function lib_root()
@@ -249,6 +251,7 @@ function M.capture(cooperative)
       build = Verdant.Constants.BUILD,
       api = api.GetAPIVersion(),
       locked = false,
+      difficulty = start_diff or 0,
       player_slot = T.player_slot(),
       sum = {
         avg = math_floor(tb_sum.avg_ems + 0.5),

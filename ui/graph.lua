@@ -393,7 +393,8 @@ local function layout_skill_area()
 
   local usable = sh - LABEL_H * 2 - 4
   if usable < 2 then return end
-  local top_h = math_floor(usable / 2)
+  local top_h = math_floor((usable + ult_inset()) / 2)
+  if usable - top_h < 60 then top_h = math_floor(usable / 2) end
   local bot_h = usable - top_h
   local mid_y = LABEL_H + top_h + 2
 
@@ -432,7 +433,7 @@ local SCR = {
   hex = setmetatable({}, { __mode = "k" }),
 }
 
-local MIN_COL_PX = 4
+local MIN_COL_PX = 6
 local dec_cols   = { denom = 1 }
 
 local function decimate(cw)
@@ -445,9 +446,12 @@ local function decimate(cw)
     if h >= n and h >= 15 then denom = h else break end
   end
   dec_cols.denom = denom
-  local num_cols = math_floor(cw / MIN_COL_PX)
+  local max_cols = math_floor(cw / MIN_COL_PX)
+  if max_cols < 1 then max_cols = 1 end
+  local per = math.ceil(denom / max_cols)
+  if per < 1 then per = 1 end
+  local num_cols = math.ceil(denom / per)
   if num_cols < 1 then num_cols = 1 end
-  if num_cols > denom then num_cols = denom end
   local offset   = denom - n
   local m, cur_c = 0, -1
   local col
@@ -2135,7 +2139,7 @@ local function render_view4()
   Verdant.Diagnostics.bump("graph.view_buffs.renders")
   draw_grid(controls.grid_ems, canvas, 0, span)
 
-  local ch_plot = math_max(4, ch - TIME_STRIP_H - ult_inset())
+  local ch_plot = math_max(4, ch - TIME_STRIP_H - ULT_L.CHIP)
   local rows    = n
   local extra   = 0
   local row_h   = math_floor(ch_plot / rows) - BUFF_ROW_GAP
@@ -2166,7 +2170,7 @@ local function render_view4()
 
   for i = 1, rows do
     local rec = vis[i]
-    local y   = (i - 1) * (row_h + BUFF_ROW_GAP)
+    local y   = ULT_L.CHIP + (i - 1) * (row_h + BUFF_ROW_GAP)
     local c   = buff_color(rec)
     if capture then
       buff_hit.y0[i]  = y
@@ -2273,7 +2277,7 @@ local function render_view4()
     more:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     more:SetColor(C_BUFF_MORE.r, C_BUFF_MORE.g, C_BUFF_MORE.b, C_BUFF_MORE.a)
     more:SetDimensions(cw, row_h)
-    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, rows * (row_h + BUFF_ROW_GAP))
+    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, ULT_L.CHIP + rows * (row_h + BUFF_ROW_GAP))
     more:SetHidden(false)
   end
 end
@@ -2296,6 +2300,8 @@ local function render_view5()
   local canvas = controls.canvas
   local cw, ch = canvas:GetWidth(), canvas:GetHeight()
   if cw <= 180 or ch <= TRI_L.HEADER_H + TRI_L.STRIP_H + TRI_L.ROW_H then return end
+  local top = ULT_L.CHIP
+  if ch - top < 160 then top = 0 end
 
   local BT = Verdant.BuffTracker
   local recording = Verdant.TemporalBuffer.is_recording()
@@ -2329,10 +2335,10 @@ local function render_view5()
   head:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
   head:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, C_TRI.DIM.a)
   head:SetDimensions(cw, TRI_L.HEADER_H)
-  head:SetAnchor(TOPLEFT, canvas, TOPLEFT, 2, 0)
+  head:SetAnchor(TOPLEFT, canvas, TOPLEFT, 2, top)
   head:SetHidden(false)
 
-  local strip_y = TRI_L.HEADER_H
+  local strip_y = top + TRI_L.HEADER_H
   local strip = controls.pool_buff_seg:AcquireObject()
   strip:ClearAnchors()
   strip:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, strip_y)
@@ -2695,7 +2701,7 @@ local function render_view5()
     more:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
     more:SetColor(C_TRI.TIME.r, C_TRI.TIME.g, C_TRI.TIME.b, 0.9)
     more:SetDimensions(200, TRI_L.HEADER_H)
-    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 204, 0)
+    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 204, top)
     more:SetHidden(false)
   end
 end
