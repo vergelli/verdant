@@ -111,13 +111,13 @@ jobs:
         run: |
           missing=0
           refs=$(grep -rhoE 'Verdant/assets/[A-Za-z0-9_./-]+\.dds' ui/ | sort -u)
-          if [ -z "$refs" ]; then echo "::warning::no Verdant/assets textures referenced in ui/ XML"; fi
+          if [ -z "$refs" ]; then echo "::warning::no Verdant/assets textures referenced in ui/, lib/ or core/"; fi
           for ref in $refs; do
             rel="${ref#Verdant/}"
             if [ -f "staging/Verdant/$rel" ]; then
               echo "ok: $rel"
             else
-              echo "::error::texture referenced in XML is missing from the zip: $rel"
+              echo "::error::texture referenced in code is missing from the zip: $rel"
               missing=1
             fi
           done
