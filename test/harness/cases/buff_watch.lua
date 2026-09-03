@@ -18,8 +18,15 @@ return function(H)
   H.advance(1000)
   ok(VerdantWatchOverlay:IsHidden(), "9s remaining sits above the 5s threshold")
 
+  H.sounds = {}
   H.advance(5000)
   ok(not VerdantWatchOverlay:IsHidden(), "4s remaining must raise the banner")
+  local soon = 0
+  for _, snd in ipairs(H.sounds) do if snd == "sound:NEW_TIMED_NOTIFICATION" then soon = soon + 1 end end
+  ok(soon == 1, "entering the warning window chimes exactly once, got " .. soon)
+  H.sounds = {}
+  H.advance(1000)
+  ok(#H.sounds == 0, "staying in the warning window stays quiet")
   ok(VerdantWatchRowName1._text == "Major Courage",
      "banner must name the buff, got " .. tostring(VerdantWatchRowName1._text))
   ok((VerdantWatchRowTime1._text or ""):find("s") ~= nil, "banner must show the countdown")

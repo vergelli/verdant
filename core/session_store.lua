@@ -314,6 +314,7 @@ local function autosave_finish(session)
       log:info("session autosaved: zone=", session.head.zone,
                "dur=", session.head.dur_ms, "ms", "frames=", autosave_frames)
     end
+    if M.on_saved then M.on_saved(session) end
   end
 end
 

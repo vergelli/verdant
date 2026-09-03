@@ -88,6 +88,13 @@ end
 
 function M.render(alerts)
   if not window then return end
+  local chime = alerts.chime or 0
+  if chime == 2 then
+    zui.PlaySound(SOUNDS.ABILITY_READY)
+  elseif chime == 1 then
+    zui.PlaySound(SOUNDS.NEW_TIMED_NOTIFICATION)
+  end
+  alerts.chime = 0
   local n = alerts.n
   if n > MAX_ROWS then n = MAX_ROWS end
   if n == 0 then
