@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- **Your own categories** — in Unknown Contributions the picker ends with
+  "+ New category": type a name, pick one of twelve colours, done. The
+  category shows up everywhere a built-in one does and survives logins.
 - **Companion category** — companion heals get their own teal colour
   instead of landing in the grey unknown pile.
 - **Grey bars explain themselves** — hovering an unknown skill says where

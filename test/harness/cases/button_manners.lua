@@ -13,6 +13,8 @@ return function(H)
     "VerdantSettingsPanelAutosaveBtn", "VerdantSettingsPanelLightBtn", "VerdantSettingsPanelShieldDirBtn",
     "VerdantSettingsPanelGdmBtn", "VerdantSettingsPanelUnknownBtn", "VerdantSettingsPanelLogoBtn",
     "VerdantSettingsPanelBarsBtn", "VerdantSettingsPanelResetBtn", "VerdantSettingsPanelCloseBtn",
+    "VerdantAssignPanelAssignBtn", "VerdantAssignPanelCloseBtn", "VerdantAssignConfirmYesBtn", "VerdantAssignConfirmNoBtn",
+    "VerdantAssignPanelNewCatCreateBtn", "VerdantAssignPanelNewCatCancelBtn",
   }
   for _, name in ipairs(BUTTONS) do
     local c = rawget(_G, name)
