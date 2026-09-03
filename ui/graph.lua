@@ -1319,9 +1319,7 @@ end
 
 function light.minimal(hidden)
   controls.btn_stop:SetHidden(hidden)
-  controls.btn_prev_view:SetHidden(hidden)
-  controls.btn_next_view:SetHidden(hidden)
-  controls.view_label:SetHidden(hidden)
+  if controls.tabs then controls.tabs.strip:SetHidden(hidden) end
   controls.status:SetHidden(hidden)
 end
 
@@ -2787,9 +2785,44 @@ local function refresh_button_colors()
   update_summary_chip()
 end
 
+local function style_tabs()
+  local tabs = controls.tabs
+  if not tabs then return end
+  for v = 1, #VIEW_LABELS do
+    local t = tabs[v]
+    local on = (v == current_view)
+    t.label:SetColor(on and 0.92 or 0.58, on and 0.96 or 0.64, on and 0.93 or 0.60, 1)
+    t.line:SetHidden(not on)
+    t.line:SetColor(C_VIEWPORT.r, C_VIEWPORT.g, C_VIEWPORT.b, 0.9)
+  end
+end
+
+local function layout_tabs()
+  local tabs = controls.tabs
+  if not tabs then return end
+  local strip = tabs.strip
+  local n = #VIEW_LABELS
+  local w = strip:GetWidth()
+  local tw = math_floor(w / n)
+  for v = 1, n do
+    local t = tabs[v]
+    local x = (v - 1) * tw
+    t.hit:ClearAnchors()
+    t.hit:SetAnchor(TOPLEFT, strip, TOPLEFT, x, 0)
+    t.hit:SetDimensions(tw, 20)
+    t.label:ClearAnchors()
+    t.label:SetAnchor(TOPLEFT, strip, TOPLEFT, x, 0)
+    t.label:SetDimensions(tw, 18)
+    t.line:ClearAnchors()
+    t.line:SetAnchor(TOPLEFT, strip, TOPLEFT, x + 4, 18)
+    t.line:SetDimensions(tw - 8, 2)
+  end
+end
+
 local function set_view(v)
   current_view = v
   controls.view_label:SetText(VIEW_LABELS[v])
+  style_tabs()
   hover_key = nil
   if controls.oh_legend then
     controls.oh_legend:SetHidden(v ~= VIEW_OVERHEAL or Verdant.TemporalBuffer.count() == 0)
@@ -3050,6 +3083,7 @@ function M.on_resize_stop()
     sv.temporal.graph_w = w
     sv.temporal.graph_h = h
   end
+  layout_tabs()
   if not controls.window:IsHidden() then
     update_summary_chip()
     render_current_view()
@@ -3270,6 +3304,42 @@ function M.init()
     ZO_Tooltips_HideTextTooltip()
   end)
 
+  local strip = VerdantGraphWindowTabs
+  controls.tabs = { strip = strip }
+  for v = 1, #VIEW_LABELS do
+    local hit = WM:CreateControl("VerdantGraphTab" .. v, strip, CT_CONTROL)
+    hit:SetMouseEnabled(true)
+    hit:SetDrawLevel(3)
+    local label = WM:CreateControl("VerdantGraphTab" .. v .. "Label", strip, CT_LABEL)
+    label:SetFont("ZoFontGameSmall")
+    label:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
+    label:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+    label:SetText(VIEW_LABELS[v])
+    label:SetDrawLevel(2)
+    local line = WM:CreateControl("VerdantGraphTab" .. v .. "Line", strip, CT_TEXTURE)
+    line:SetTexture(FILL_TEXTURE)
+    line:SetTextureCoords(0, 1, 0, 0.05)
+    line:SetDrawLevel(2)
+    local view = v
+    hit:SetHandler("OnMouseUp", function(_, _, upInside)
+      if upInside == false or view == current_view then return end
+      PlaySound(SOUNDS.DIALOG_ACCEPT)
+      release_all_pools()
+      set_view(view)
+    end)
+    hit:SetHandler("OnMouseEnter", function(self)
+      label:SetColor(1, 1, 1, 1)
+      ZO_Tooltips_ShowTextTooltip(self, BOTTOM, GetString(view_tips()[view]))
+    end)
+    hit:SetHandler("OnMouseExit", function()
+      style_tabs()
+      ZO_Tooltips_HideTextTooltip()
+    end)
+    controls.tabs[v] = { hit = hit, label = label, line = line }
+  end
+  layout_tabs()
+  style_tabs()
+
   controls.welcome = VerdantGraphWindowWelcome
   VerdantGraphWindowWelcomeBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantGraphWindowWelcomeBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
@@ -3313,7 +3383,7 @@ function M.init()
   sum_bg:SetTexture(FILL_TEXTURE)
   sum_bg:SetTextureCoords(0, 1, 0, 0.05)
   sum_bg:SetColor(0.04, 0.09, 0.06, 0.55)
-  sum_bg:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -14, 61)
+  sum_bg:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -14, 84)
   sum_bg:SetHeight(20)
   sum_bg:SetDrawLevel(11)
   sum_bg:SetHidden(true)
@@ -3322,7 +3392,7 @@ function M.init()
   sum_label:SetFont("ZoFontGameSmall")
   sum_label:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
   sum_label:SetVerticalAlignment(TEXT_ALIGN_CENTER)
-  sum_label:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -40, 61)
+  sum_label:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -40, 84)
   sum_label:SetHeight(20)
   sum_label:SetDrawLevel(12)
   sum_label:SetHidden(true)
@@ -3330,7 +3400,7 @@ function M.init()
   local sum_help = WM:CreateControl("VerdantGraphSummaryHelp", controls.window, CT_TEXTURE)
   sum_help:SetTexture("EsoUI/Art/Miscellaneous/help_icon.dds")
   sum_help:SetDimensions(16, 16)
-  sum_help:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -18, 63)
+  sum_help:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -18, 86)
   sum_help:SetColor(0.75, 0.90, 0.80, 0.9)
   sum_help:SetDrawLevel(12)
   sum_help:SetHidden(true)
