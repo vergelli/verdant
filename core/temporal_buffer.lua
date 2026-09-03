@@ -131,6 +131,7 @@ function M.summary()
   s.count = state.count
   s.dur_ms = 0; s.avg_ems = 0; s.peak_ems = 0; s.peak_t_off = 0
   s.crit_pct = 0; s.active_pct = 0; s.total_heal = 0; s.total_shield = 0
+  s.total_overheal = 0; s.wasted_pct = 0
   if state.count == 0 then return s end
 
   local t0, t_prev = 0, 0
@@ -150,6 +151,7 @@ function M.summary()
       local dt = (sample.t - t_prev) / 1000
       s.total_heal   = s.total_heal   + sample.eHPS * dt
       s.total_shield = s.total_shield + sample.MPS  * dt
+      s.total_overheal = s.total_overheal + (sample.o or 0) * dt
     end
     t_prev = sample.t
   end)
@@ -161,6 +163,8 @@ function M.summary()
   s.active_pct = active_n / state.count
   local heal_total = sum_crit + sum_noncrit
   if heal_total > 0 then s.crit_pct = sum_crit / heal_total end
+  local raw_total = s.total_heal + s.total_overheal
+  if raw_total > 0 then s.wasted_pct = s.total_overheal / raw_total end
   return s
 end
 

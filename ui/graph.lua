@@ -2346,17 +2346,41 @@ local function build_summary_text()
   if s.count == 0 then return nil end
   local vc = hexc(C_SUM_VAL)
   local crit_pct = math_floor(s.crit_pct * 100 + 0.5)
-  local text = string_format(
-    "|c%s%s|r |c%s%s|r   |c%s%s|r |c%s%s|r   |c%s%s|r |c%s%d%%|r",
-    hexc(C_SUM_AVG),  GetString(VERDANT_SUMMARY_AVG),  vc, fmt_val(s.avg_ems),
-    hexc(C_SUM_PEAK), GetString(VERDANT_SUMMARY_PEAK), vc, fmt_val(s.peak_ems),
-    hexc(C_SUM_CRIT), GetString(VERDANT_SUMMARY_CRIT), vc, crit_pct)
+  local parts = {
+    string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM_AVG),  GetString(VERDANT_SUMMARY_AVG),  vc, fmt_val(s.avg_ems)),
+    string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM_PEAK), GetString(VERDANT_SUMMARY_PEAK), vc, fmt_val(s.peak_ems)),
+    string_format("|c%s%s|r |c%s%d%%|r", hexc(C_SUM_CRIT), GetString(VERDANT_SUMMARY_CRIT), vc, crit_pct),
+  }
+  if s.total_overheal > 0 then
+    parts[#parts + 1] = string_format("|c%s%s|r |c%s%d%%|r",
+      hexc(C_OVERHEAL), GetString(VERDANT_SUMMARY_WASTED), vc,
+      math_floor(s.wasted_pct * 100 + 0.5))
+  end
   local ts = Verdant.Triage.summary()
   if ts.rt_n > 0 then
-    text = text .. string_format("   |c%s%s|r |c%s%.1fs|r",
+    parts[#parts + 1] = string.format("|c%s%s|r |c%s%.1fs|r",
       hexc(C_SUM_RT), GetString(VERDANT_SUMMARY_RT), vc, ts.rt50 / 1000)
   end
-  return text
+  return parts
+end
+
+local function compose_summary(label, parts, avail)
+  local line = table.concat(parts, "   ")
+  label:SetText(line)
+  local w = label:GetTextWidth()
+  if w <= avail or #parts < 2 then return line, w, 1 end
+  for split = #parts - 1, 1, -1 do
+    local first = table.concat(parts, "   ", 1, split)
+    label:SetText(first)
+    local w1 = label:GetTextWidth()
+    if w1 <= avail then
+      local second = table.concat(parts, "   ", split + 1)
+      label:SetText(second)
+      local w2 = label:GetTextWidth()
+      return first .. "\n" .. second, math_max(w1, w2), 2
+    end
+  end
+  return line, w, 1
 end
 
 local function update_summary_chip()
@@ -2366,9 +2390,13 @@ local function update_summary_chip()
             and not Verdant.TemporalBuffer.is_recording()
             and Verdant.TemporalBuffer.count() > 0
   if show then
-    chip.label:SetText(summary_text)
-    chip.label:SetWidth(chip.label:GetTextWidth())
-    chip.bg:SetWidth(chip.label:GetTextWidth() + 16)
+    local avail = controls.window:GetWidth() - 36
+    local text, w, lines = compose_summary(chip.label, summary_text, avail)
+    chip.label:SetText(text)
+    chip.label:SetWidth(w)
+    chip.label:SetHeight(18 * lines + 2)
+    chip.bg:SetWidth(w + 16)
+    chip.bg:SetHeight(18 * lines + 2)
     chip.bg:SetHidden(false)
     chip.label:SetHidden(false)
   else
@@ -2489,6 +2517,7 @@ function M.on_stop_click()
   Verdant.Diagnostics.bump("graph.summary.computed")
   log:info("session summary: samples=", s.count, "dur_ms=", s.dur_ms,
            "avg_ems=", math_floor(s.avg_ems), "peak_ems=", math_floor(s.peak_ems),
+           "wasted_pct=", math_floor(s.wasted_pct * 100 + 0.5),
            "crit_pct=", math_floor(s.crit_pct * 100 + 0.5))
   refresh_button_colors()
   render_current_view()

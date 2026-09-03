@@ -179,9 +179,17 @@ local MOCKC = {
       fn = function(s)
         local t = tostring(s._text or "")
         t = t:gsub("|c%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|t.-|t", "")
-        return #t * 7
+        local widest = 0
+        for line in (t .. "\n"):gmatch("(.-)\n") do
+          if #line > widest then widest = #line end
+        end
+        return widest * 7
       end
-    elseif k == "GetTextHeight" then fn = function() return 14 end
+    elseif k == "GetTextHeight" then
+      fn = function(s)
+        local _, n = tostring(s._text or ""):gsub("\n", "")
+        return 14 * (n + 1)
+      end
     elseif k == "SetHidden" then fn = function(s, h) s._hidden = h and true or false end
     elseif k == "IsHidden" then fn = function(s) return s._hidden == true end
     elseif k == "SetColor" then fn = function(s, r, g, b, a) s._r, s._g, s._b, s._a = r, g, b, a end
