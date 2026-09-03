@@ -41,6 +41,7 @@ core/mode.lua
 core/skill_colors.lua
 core/metrics.lua
 core/buff_tracker.lua
+core/buff_watch.lua
 core/triage.lua
 core/session_store.lua
 observability/diagnostics.lua
@@ -61,6 +62,8 @@ ui/settings.xml
 ui/settings.lua
 ui/graph.xml
 ui/graph.lua
+ui/watch.xml
+ui/watch.lua
 ui/library.xml
 ui/library.lua
 ui/assign.xml

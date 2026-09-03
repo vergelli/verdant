@@ -1835,16 +1835,28 @@ local function render_view4()
     lane:SetColor(C_BUFF_LANE.r, C_BUFF_LANE.g, C_BUFF_LANE.b, C_BUFF_LANE.a)
     lane:SetHidden(false)
 
+    local star = controls.pool_buff_icon:AcquireObject()
+    star:ClearAnchors()
+    star:SetTexture("EsoUI/Art/Collections/Favorite_StarOnly.dds")
+    star:SetDimensions(13, 13)
+    if Verdant.BuffWatch.thr(rec.name) then
+      star:SetColor(1.00, 0.85, 0.40, 0.95)
+    else
+      star:SetColor(0.55, 0.58, 0.55, 0.40)
+    end
+    star:SetAnchor(TOPLEFT, canvas, TOPLEFT, 1, y + math_floor((row_h - 13) / 2))
+    star:SetHidden(false)
+
     local icon = controls.pool_buff_icon:AcquireObject()
     icon:ClearAnchors()
     icon:SetTexture(SC.ability_icon(rec.id))
     icon:SetDimensions(isz, isz)
     icon:SetColor(1, 1, 1, 1)
-    icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + math_floor((row_h - isz) / 2))
+    icon:SetAnchor(TOPLEFT, canvas, TOPLEFT, 16, y + math_floor((row_h - isz) / 2))
     icon:SetHidden(false)
 
-    local name_w = capture and (BUFF_GUTTER_W - isz - BUFF_PCT_W - 12)
-                            or (BUFF_GUTTER_W - isz - 10)
+    local name_w = capture and (BUFF_GUTTER_W - isz - BUFF_PCT_W - 28)
+                            or (BUFF_GUTTER_W - isz - 26)
     local lbl = controls.pool_buff_lbl:AcquireObject()
     lbl:ClearAnchors()
     lbl:SetText(rec.name or tostring(rec.id))
@@ -1855,7 +1867,7 @@ local function render_view4()
       lbl:SetColor(C_BUFF_NAME.r, C_BUFF_NAME.g, C_BUFF_NAME.b, C_BUFF_NAME.a)
     end
     lbl:SetDimensions(name_w, row_h)
-    lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 4, y)
+    lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 20, y)
     lbl:SetHidden(false)
 
     if capture and dur > 0 then
@@ -2812,6 +2824,27 @@ function M.init()
   controls.hit_main = make_hit("VerdantGraphHitMain", controls.canvas)
   controls.hit_top  = make_hit("VerdantGraphHitTop",  controls.ehps_canvas)
   controls.hit_bot  = make_hit("VerdantGraphHitBot",  controls.mps_canvas)
+
+  controls.hit_main:SetHandler("OnMouseUp", function(_, _, upInside)
+    if upInside == false or current_view ~= VIEW_BUFFS then return end
+    local mx, my = GetUIMousePosition()
+    local rel_x = mx - controls.canvas:GetLeft()
+    local rel_y = my - controls.canvas:GetTop()
+    if rel_x < 0 or rel_x > 20 then return end
+    for i = 1, buff_hit.n do
+      if rel_y >= buff_hit.y0[i] and rel_y <= buff_hit.y1[i] then
+        local rec = buff_hit.rec[i]
+        local thr = Verdant.BuffWatch.toggle(rec.name, rec.id)
+        if thr then
+          d("[V] " .. string_format(GetString(VERDANT_WATCH_ARMED), rec.name or "?", thr))
+        else
+          d("[V] " .. string_format(GetString(VERDANT_WATCH_OFF), rec.name or "?"))
+        end
+        render_current_view()
+        break
+      end
+    end
+  end)
 
   refresh_button_colors()
 end
