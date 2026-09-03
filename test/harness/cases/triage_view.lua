@@ -40,23 +40,34 @@ return function(H)
   ok(view_label._text == "TRIAGE", "could not reach TRIAGE view: " .. tostring(view_label._text))
   ok(VerdantGraphWindowViewportNoDataLabel._hidden == true, "no_data must hide with episodes present")
 
-  local seen = {}
-  for _, c in ipairs(H.controls) do
-    if c._hidden == false and type(c._text) == "string" then
-      if c._text == "Ally2" or c._text == "Ally3"
-         or c._text == "save" or c._text == "missed" then
-        seen[c._text] = true
-      end
-      if c._text:find("Saves", 1, true) then seen.header = true end
-      if c._text:match("^%d:%d%d$") then seen.time = true end
+  local function visible_texts()
+    local seen = {}
+    for _, c in ipairs(H.controls) do
+      if c._hidden == false and type(c._text) == "string" then seen[c._text] = c end
     end
+    return seen
   end
-  ok(seen["Ally2"], "ledger must show Ally2's row")
-  ok(seen["Ally3"], "ledger must show Ally3's row")
-  ok(seen["save"], "Ally2 episode must chip as save")
-  ok(seen["missed"], "Ally3 episode must chip as missed")
-  ok(seen.header, "view header must show the saves aggregate")
-  ok(seen.time, "rows must show session timestamps")
+  local function has(seen, needle)
+    for t in pairs(seen) do
+      if t:find(needle, 1, true) then return true end
+    end
+    return false
+  end
+
+  local seen = visible_texts()
+  ok(has(seen, "Saves"), "view header must show the saves aggregate")
+  ok(has(seen, "1|r saves"), "legend must count the save")
+  ok(has(seen, "1|r missed"), "legend must count the missed episode")
+  ok(has(seen, "your heal saved them"), "legend must explain what a save is")
+  ok(seen["50%"] ~= nil, "donut centre must read 50%% saved (1 of 2)")
+  ok(seen["saved"] ~= nil, "donut centre must carry the word saved")
+  ok(seen["Ally2"] ~= nil, "saves list must show Ally2")
+  ok(seen["Ally3"] == nil, "saves list must not show the missed Ally3")
+  ok(has(seen, "SAVES"), "caption must name the active filter")
+
+  local d1 = VerdantTriDonutSlice1
+  ok(d1 and d1._hidden == false and d1._cd_pct and d1._cd_pct > 0.4, "donut must draw the save slice")
+  ok(VerdantTriDonut._hidden == false, "donut must be visible on the TRIAGE view")
 
   local icon_seen = false
   for _, c in ipairs(H.controls) do
@@ -65,41 +76,51 @@ return function(H)
       break
     end
   end
-  ok(icon_seen, "ledger rows must show the member class icon")
+  ok(icon_seen, "list rows must show the member class icon")
 
   local canvas = VerdantGraphWindowViewportCanvas
   local hit    = VerdantGraphHitMain
-  H.state.mouse_x = canvas:GetLeft() + 100
-  H.state.mouse_y = canvas:GetTop() + 60
+  H.sounds = {}
+  H.state.mouse_x = canvas:GetLeft() + 120
+  H.state.mouse_y = canvas:GetTop() + 44 + 3 * 14 + 7
+  hit._onOnMouseUp(hit, nil, true)
+  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "switching the legend filter must confirm with a sound")
+  seen = visible_texts()
+  ok(seen["Ally3"] ~= nil, "missed list must show Ally3")
+  ok(seen["Ally2"] == nil, "missed list must not show Ally2")
+  ok(has(seen, "MISSED"), "caption must follow the filter")
+
+  H.state.mouse_y = canvas:GetTop() + 44 + 68 + 8 + 18 + 8
   hit._onOnMouseEnter(hit)
   H.advance(200)
-  local card = VerdantHoverCardName
-  ok(card._text == "Ally2" or card._text == "Ally3",
-     "triage hover must name the ally, got " .. tostring(card._text))
-  local stat = VerdantHoverCardStat
-  ok(stat._text and stat._text:find("min HP", 1, true),
-     "triage hover stat must show min HP, got " .. tostring(stat._text))
-  local desc = VerdantHoverCardDesc
-  ok(desc and desc._hidden == false and desc._text and
-     (desc._text:find("brought them back", 1, true)
-      or desc._text:find("without a single heal", 1, true)
-      or desc._text:find("Got back up", 1, true)),
-     "triage hover must explain the outcome, got " .. tostring(desc and desc._text))
+  ok(VerdantHoverCardName._text == "Ally3", "hovering the row must name the ally, got " .. tostring(VerdantHoverCardName._text))
+  ok(VerdantHoverCardStat._text and VerdantHoverCardStat._text:find("min HP", 1, true),
+     "row hover must show min HP, got " .. tostring(VerdantHoverCardStat._text))
+  ok(VerdantHoverCardDesc._hidden == false and VerdantHoverCardDesc._text
+     and VerdantHoverCardDesc._text:find("without a single heal", 1, true),
+     "row hover must explain the outcome, got " .. tostring(VerdantHoverCardDesc._text))
+  hit._onOnMouseExit(hit)
 
-  local names_seen = { [tostring(VerdantHoverCardName._text)] = true }
-  local rt_seen = stat._text:find("RT 0.5s", 1, true) ~= nil
-  H.state.mouse_y = canvas:GetTop() + 82
+  hit._onOnMouseWheel(hit, -1)
+  hit._onOnMouseWheel(hit, 1)
+  ok(visible_texts()["Ally3"] ~= nil, "wheel on a one-row list must not lose the row")
+
+  H.state.mouse_y = canvas:GetTop() + 44 + 7
+  hit._onOnMouseUp(hit, nil, true)
+  H.state.mouse_y = canvas:GetTop() + 44 + 68 + 8 + 18 + 8
+  hit._onOnMouseEnter(hit)
   H.advance(200)
-  names_seen[tostring(VerdantHoverCardName._text)] = true
-  rt_seen = rt_seen or (VerdantHoverCardStat._text:find("RT 0.5s", 1, true) ~= nil)
-  ok(names_seen["Ally2"] and names_seen["Ally3"],
-     "both episode rows must be hoverable")
-  ok(rt_seen, "the responded row must show its measured RT, got "
-     .. tostring(VerdantHoverCardStat._text))
+  ok(VerdantHoverCardName._text == "Ally2", "back on saves the row must be Ally2, got " .. tostring(VerdantHoverCardName._text))
+  ok(VerdantHoverCardStat._text:find("RT 0.5s", 1, true) ~= nil,
+     "the responded row must show its measured RT, got " .. tostring(VerdantHoverCardStat._text))
+  hit._onOnMouseExit(hit)
   H.state.mouse_x, H.state.mouse_y = 400, 300
 
   local chip = VerdantGraphSummaryLabel
   ok(chip._text and chip._text:find("RT"), "summary chip must include RT when episodes responded")
+
+  Verdant.Graph.next_view()
+  ok(VerdantTriDonut._hidden == true, "leaving the view must hide the donut")
 
   H.state.grouped = false
   H.state.group_size = 1

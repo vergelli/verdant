@@ -36,6 +36,12 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- **TRIAGE view rebuilt around a donut** — outcomes as a donut with
+  `n% saved` in the centre, a legend that counts and explains every
+  class in five words, and below it the episodes of the selected class
+  only, latest first, with wheel scrolling. Click a legend row to switch.
+  Long fights no longer overflow and the colours finally say what they
+  mean.
 - **Every button explains itself** — one-sentence tooltips on all 32
   buttons across the graph, bar, library and settings, and the same sound
   vocabulary everywhere: windows open and close with their sounds, record
