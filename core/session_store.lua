@@ -17,6 +17,7 @@ local DESC = {
     { name = "crit",    width = 4, scale = 10 },
     { name = "noncrit", width = 4, scale = 10 },
     { name = "d",       width = 4, scale = 10 },
+    { name = "o",       width = 4, scale = 10 },
   },
   steps = {
     { name = "b", width = 1 },
@@ -121,7 +122,7 @@ function M.capture()
   TB.iterate(function(i, s)
     series[#series + 1] = {
       t = s.t - t0, eHPS = s.eHPS, MPS = s.MPS,
-      crit = s.crit, noncrit = s.noncrit, d = s.d,
+      crit = s.crit, noncrit = s.noncrit, d = s.d, o = s.o or 0,
     }
     harvest(#series, 0, s.ehps_groups)
     harvest(#series, 1, s.mps_groups)
