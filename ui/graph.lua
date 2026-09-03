@@ -881,6 +881,29 @@ local C_TRI = {
 }
 local TRI_L = { HEADER_H = 20, STRIP_H = 14, STRIP_GAP = 10, ROW_H = 24, ROW_GAP = 2,
                 DONUT = 68, LEG_H = 14, LIST_ROW_H = 18 }
+TRI_L.NEED = TRI_L.HEADER_H + TRI_L.STRIP_H + TRI_L.STRIP_GAP + TRI_L.DONUT + 8 + 18 + TRI_L.LIST_ROW_H
+
+local function tri_compact()
+  local canvas = controls.canvas
+  if not canvas then return false end
+  return canvas:GetHeight() - ULT_L.CHIP < TRI_L.NEED
+end
+
+local function chip_collapse(on)
+  if ULT_L.COLLAPSED == on then return end
+  ULT_L.COLLAPSED = on
+  local chip = controls.summary
+  if not chip or ULT_L.CHIP == 0 then return end
+  if on then
+    chip.label:SetHidden(true)
+    chip.bg:SetWidth(28)
+    chip.bg:SetHeight(20)
+  else
+    chip.label:SetHidden(false)
+    chip.bg:SetWidth(ULT_L.CHIP_W or 28)
+    chip.bg:SetHeight(ULT_L.CHIP - 8)
+  end
+end
 local TRI_LEGEND = {
   { cls = 1, key = "s",       name = "VERDANT_TRI_LEG_SAVES",     mean = "VERDANT_TRI_MEAN_SAVE" },
   { cls = 2, key = "o",       name = "VERDANT_TRI_LEG_RECOVERED", mean = "VERDANT_TRI_MEAN_RECOVERED" },
@@ -2300,8 +2323,8 @@ local function render_view5()
   local canvas = controls.canvas
   local cw, ch = canvas:GetWidth(), canvas:GetHeight()
   if cw <= 180 or ch <= TRI_L.HEADER_H + TRI_L.STRIP_H + TRI_L.ROW_H then return end
-  local top = ULT_L.CHIP
-  if ch - top < 160 then top = 0 end
+  local compact = tri_compact()
+  local top = compact and 0 or ULT_L.CHIP
 
   local BT = Verdant.BuffTracker
   local recording = Verdant.TemporalBuffer.is_recording()
@@ -2436,8 +2459,13 @@ local function render_view5()
   local Donut = Verdant.lib.plot.Donut
   if not controls.tri_donut then
     controls.tri_donut = Donut.new("VerdantTriDonut", canvas, TRI_L.DONUT, { mode = "stack" })
-    controls.tri_donut:control():SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, list_y)
     for i = 1, #TRI_LEGEND do tri_hit.cols[i] = C_TRI_CLASS[TRI_LEGEND[i].cls] end
+  end
+  if tri_hit.donut_y ~= list_y then
+    tri_hit.donut_y = list_y
+    local dc = controls.tri_donut:control()
+    dc:ClearAnchors()
+    dc:SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, list_y)
   end
   for i = 1, #TRI_LEGEND do tri_hit.vals[i] = counts[TRI_LEGEND[i].key] or 0 end
   controls.tri_donut:set(tri_hit.vals, tri_hit.cols)
@@ -2540,15 +2568,23 @@ local function render_view5()
 
     local mw = cw - (lx + 150) - 4
     if mw > 40 then
+      local mtext = GetString(rawget(_G, L.mean))
       local ml = controls.pool_buff_lbl:AcquireObject()
       ml:ClearAnchors()
-      ml:SetText(GetString(rawget(_G, L.mean)))
+      ml:SetText(mtext)
       ml:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
       ml:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, 0.7)
       ml:SetDimensions(mw, TRI_L.LEG_H)
       ml:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx + 150, y)
-      ml:SetHidden(ml:GetTextWidth() > mw)
+      ml:SetHidden(ml:GetStringWidth(mtext) > mw)
     end
+  end
+
+  if compact then
+    tri_hit.matches = 0
+    tri_hit.fit     = 0
+    tri_hit.scroll  = 0
+    return
   end
 
   local cap_y = list_y + TRI_L.DONUT + 8
@@ -2713,6 +2749,7 @@ function render_current_view()
     controls.pool_marker_line_top:ReleaseAllObjects()
     controls.pool_marker_icon_top:ReleaseAllObjects()
   end
+  chip_collapse(current_view == VIEW.TRIAGE and tri_compact())
   if current_view == VIEW.EMS then
     render_view1()
   elseif current_view == VIEW.CRIT then
@@ -2832,6 +2869,12 @@ local function update_summary_chip()
     chip.help:SetHidden(false)
     chip.hit:SetHidden(false)
     ULT_L.CHIP = 18 * lines + 2 + 8
+    ULT_L.CHIP_W = w + 34
+    if ULT_L.COLLAPSED then
+      chip.label:SetHidden(true)
+      chip.bg:SetWidth(28)
+      chip.bg:SetHeight(20)
+    end
   else
     chip.bg:SetHidden(true)
     chip.label:SetHidden(true)

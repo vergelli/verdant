@@ -121,8 +121,26 @@ return function(H)
   local chip = VerdantGraphSummaryLabel
   ok(chip._text and chip._text:find("RT"), "summary chip must include RT when episodes responded")
 
+  local w0, h0 = VerdantGraphWindow:GetDimensions()
+  local cw0, ch0 = canvas:GetDimensions()
+  VerdantGraphWindow:SetDimensions(360, 240)
+  canvas:SetDimensions(332, 126)
+  Verdant.Graph.on_resize_stop()
+  ok(VerdantGraphSummaryLabel._hidden == true, "at the minimum size TRIAGE folds the chip into its icon")
+  ok(VerdantGraphSummaryHelp._hidden == false, "the report icon stays")
+  ok(VerdantTriDonut._hidden == false, "the donut stays at the minimum size")
+  local dy = VerdantTriDonut._anchor_list and VerdantTriDonut._anchor_list[1].oy or 0
+  ok(dy + 68 <= canvas:GetHeight(), "the donut must sit inside the canvas, bottom at " .. (dy + 68) .. " of " .. canvas:GetHeight())
+  VerdantGraphWindow:SetDimensions(w0, h0)
+  canvas:SetDimensions(cw0, ch0)
+  Verdant.Graph.on_resize_stop()
+  ok(VerdantGraphSummaryLabel._hidden == false, "back at full size the chip returns")
+  local dy2 = VerdantTriDonut._anchor_list and VerdantTriDonut._anchor_list[1].oy or 0
+  ok(dy2 == dy + chip_h, "the donut follows the chip inset, got " .. dy2 .. " vs " .. (dy + chip_h))
+
   Verdant.Graph.next_view()
   ok(VerdantTriDonut._hidden == true, "leaving the view must hide the donut")
+  ok(VerdantGraphSummaryLabel._hidden == false, "other views keep the chip open")
 
   H.state.grouped = false
   H.state.group_size = 1

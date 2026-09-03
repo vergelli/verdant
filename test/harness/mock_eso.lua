@@ -178,6 +178,11 @@ local MOCKC = {
     elseif k == "GetCenter" then fn = function(s) local r = H.layout(s) return r.x + r.w / 2, r.y + r.h / 2 end
     elseif k == "SetText" then fn = function(s, t) s._text = t end
     elseif k == "GetText" then fn = function(s) return s._text or "" end
+    elseif k == "GetStringWidth" then
+      fn = function(s, text)
+        local t = tostring(text or ""):gsub("|c%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|t.-|t", "")
+        return #t * 7
+      end
     elseif k == "GetTextWidth" then
       fn = function(s)
         local t = tostring(s._text or "")
