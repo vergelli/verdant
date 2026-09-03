@@ -61,4 +61,15 @@ hit._onOnMouseEnter(hit)
 H.advance(200)
 print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_hover.svg"))
 hit._onOnMouseExit(hit)
+
+H.state.mouse_x, H.state.mouse_y = 1900, 1000
+Verdant.SavedVars.settings.light_mode = true
+Verdant.Graph.on_record_click()
+for _ = 1, 8 do
+  H.heal({ hit = 1200, overflow = 200 })
+  H.advance(1000)
+end
+print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_light.svg"))
+Verdant.Graph.on_stop_click()
+Verdant.SavedVars.settings.light_mode = false
 Verdant.Graph.on_flush_click()
