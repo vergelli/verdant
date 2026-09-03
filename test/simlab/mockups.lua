@@ -9,6 +9,7 @@ svg.apply_xml(SIMLAB_ROOT .. "/ui/settings.xml")
 svg.apply_xml(SIMLAB_ROOT .. "/ui/bar.xml")
 svg.apply_xml(SIMLAB_ROOT .. "/ui/watch.xml")
 svg.apply_xml(SIMLAB_ROOT .. "/ui/library.xml")
+svg.apply_xml(SIMLAB_ROOT .. "/ui/assign.xml")
 dofile(SIMLAB_ROOT .. "/test/harness/loader.lua")
 
 local H = HARNESS
@@ -85,6 +86,13 @@ VerdantGraphSummaryHit._onOnMouseEnter(VerdantGraphSummaryHit)
 H.advance(200)
 print(svg.snapshot(H, VerdantGraphWindow, OUT .. "graph_report.svg"))
 VerdantGraphSummaryHit._onOnMouseExit(VerdantGraphSummaryHit)
+
+Verdant.Assign.show()
+Verdant.Assign.open_newcat_for_test(nil)
+VerdantAssignPanelNewCatNameBoxEdit:SetText("Pets")
+print(svg.snapshot(H, VerdantAssignPanel, OUT .. "assign_newcat.svg"))
+Verdant.Assign.on_newcat_cancel()
+Verdant.Assign.hide()
 
 Verdant.SavedVars.settings.welcomed = nil
 Verdant.Visibility.set("graph", false)
