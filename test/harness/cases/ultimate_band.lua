@@ -51,6 +51,22 @@ return function(H)
 
   Verdant.Graph.on_flush_click()
   ok(not Verdant.Ultimate.has_data(), "flush must clear the ultimate session")
+
+  Verdant.Graph.on_record_click()
+  for _ = 1, 3 do
+    H.heal({ hit = 1000 })
+    H.advance(1000)
+  end
+  local ghost = false
+  for _, c in ipairs(H.controls) do
+    local name = c._name or ""
+    if c._hidden == false and name:find("^VerdantGraphUlt") and not name:find("Top") then
+      ghost = true
+    end
+  end
+  ok(not ghost, "without a single power update the band must not draw at all")
+  Verdant.Graph.on_stop_click()
+  Verdant.Graph.on_flush_click()
   Verdant.Visibility.set("graph", false)
   Verdant.Metrics.reset()
 end

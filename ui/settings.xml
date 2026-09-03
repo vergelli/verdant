@@ -384,6 +384,11 @@
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
         </Button>
 
+        <Texture name="$(parent)SepColumns">
+          <Anchor point="TOPLEFT" offsetX="300" offsetY="46"/>
+          <Dimensions x="1" y="374"/>
+        </Texture>
+
         <Button name="$(parent)ResetBtn"
                 mouseEnabled="true"
                 font="ZoFontGameSmall"

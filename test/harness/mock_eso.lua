@@ -418,6 +418,12 @@ end
 function GetSlotAbilityCost(slot, mechanic, cat)
   return H.state.ult_cost or 250
 end
+function GetUnitPower(tag, ptype)
+  if ptype == COMBAT_MECHANIC_FLAGS_ULTIMATE then
+    return H.state.ult_value or 0, 500, 500
+  end
+  return 0, 100, 100
+end
 function GetAbilityName(id) return (H.ability_names and H.ability_names[id]) or ("Ability" .. tostring(id)) end
 function GetAbilityIcon(id)
   return (H.ability_icons and H.ability_icons[id]) or "EsoUI/Art/Icons/ability_mock.dds"

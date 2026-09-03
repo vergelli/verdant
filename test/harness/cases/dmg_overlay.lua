@@ -29,7 +29,7 @@ return function(H)
 
   local canvas = VerdantGraphWindowViewportCanvas
   local hit    = VerdantGraphHitMain
-  H.state.mouse_x = canvas:GetLeft() + 10
+  H.state.mouse_x = canvas:GetLeft() + canvas:GetWidth() - 10
   H.state.mouse_y = canvas:GetTop() + 200
   hit._onOnMouseEnter(hit)
   H.advance(200)

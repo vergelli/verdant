@@ -65,6 +65,16 @@ return function(H)
   Verdant.Graph.on_stop_click()
   while view_label._text ~= "BUFFS" do Verdant.Graph.next_view() end
 
+  local function star_visible()
+    for _, c in ipairs(H.controls) do
+      if c._hidden == false and c._tex == "EsoUI/Art/Collections/Favorite_StarOnly.dds" then
+        return true
+      end
+    end
+    return false
+  end
+  ok(not star_visible(), "stars stay hidden until a row is armed or hovered")
+
   local canvas = VerdantGraphWindowViewportCanvas
   H.state.mouse_x = canvas:GetLeft() + 5
   H.state.mouse_y = canvas:GetTop() + 5
@@ -73,14 +83,7 @@ return function(H)
   ok(BW.thr("Major Courage") == 3, "clicking the star gutter must arm the watch")
   ok(H.chat_contains("recast warning below") ~= nil, "arming must confirm in chat")
 
-  local star_found = false
-  for _, c in ipairs(H.controls) do
-    if c._hidden == false and c._tex == "EsoUI/Art/Collections/Favorite_StarOnly.dds" then
-      star_found = true
-      break
-    end
-  end
-  ok(star_found, "watched rows must show the star")
+  ok(star_visible(), "armed rows must show the gold star")
 
   while BW.thr("Major Courage") do BW.toggle("Major Courage") end
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end

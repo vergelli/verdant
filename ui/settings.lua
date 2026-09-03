@@ -772,6 +772,9 @@ function M.init()
     sec[2]:SetTextureCoords(0, 1, 0, 0.05)
     sec[2]:SetColor(0.46, 0.86, 0.58, 0.22)
   end
+  VerdantSettingsPanelSepColumns:SetTexture(FILL_TEXTURE)
+  VerdantSettingsPanelSepColumns:SetTextureCoords(0, 0.05, 0, 1)
+  VerdantSettingsPanelSepColumns:SetColor(0.46, 0.86, 0.58, 0.12)
   controls.logo_btn:SetText(Verdant.Logo.is_enabled()
     and GetString(VERDANT_SETTINGS_LOGO_ON) or GetString(VERDANT_SETTINGS_LOGO_OFF))
 

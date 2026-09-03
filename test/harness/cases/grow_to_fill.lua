@@ -16,32 +16,48 @@ return function(H)
      "expected 10 samples, got " .. Verdant.TemporalBuffer.count())
 
   local cw = H.layout(VerdantGraphWindowViewportCanvas).w
-  local function max_fill_right()
-    local right = 0
+  local function fill_extents()
+    local left, right = math.huge, 0
     for _, c in ipairs(H.controls) do
       local name = c._name or ""
       if c._hidden == false and name:find("^VerdantGraphFillEhps") and c._anchor_list then
-        local edge = (c._anchor_list[1].ox or 0) + (c._w or 0)
-        if edge > right then right = edge end
+        local x = c._anchor_list[1].ox or 0
+        if x < left then left = x end
+        if x + (c._w or 0) > right then right = x + (c._w or 0) end
       end
     end
-    return right
+    return left, right
   end
 
-  local right = max_fill_right()
-  ok(right > cw * 0.25 and right < cw * 0.42,
-     string.format("10/60 samples should fill ~1/3 of a 30-slot axis, right=%d cw=%d", right, cw))
-  ok(VerdantGridEmsTR._text == "30s",
-     "growing axis should label the ladder span, got " .. tostring(VerdantGridEmsTR._text))
+  local left, right = fill_extents()
+  ok(right > cw * 0.96,
+     string.format("bars must stay pinned to the right edge, right=%d cw=%d", right, cw))
+  ok(left > cw * 0.28 and left < cw * 0.40,
+     string.format("10/60 samples on a 15-slot axis should leave the left third empty, left=%d cw=%d", left, cw))
+  ok(VerdantGridEmsTL._text == "-15s",
+     "growing axis must label the lookback span, got " .. tostring(VerdantGridEmsTL._text))
+  ok(VerdantGridEmsTR._text == "now",
+     "the right edge is now, got " .. tostring(VerdantGridEmsTR._text))
+
+  local widths = {}
+  for _, c in ipairs(H.controls) do
+    local name = c._name or ""
+    if c._hidden == false and name:find("^VerdantGraphFillEhps") and c._w then
+      widths[c._w] = true
+    end
+  end
+  local distinct = 0
+  for _ in pairs(widths) do distinct = distinct + 1 end
+  ok(distinct == 1, "bar width must be uniform (no moire), got " .. distinct .. " widths")
 
   for _ = 1, 55 do
     H.heal({ hit = 1000 })
     H.advance(1000)
   end
   ok(Verdant.TemporalBuffer.count() == 60, "buffer should be full")
-  right = max_fill_right()
-  ok(right > cw * 0.95,
-     string.format("full buffer must span the whole axis, right=%d cw=%d", right, cw))
+  left, right = fill_extents()
+  ok(left < 12 and right > cw * 0.96,
+     string.format("full buffer must span the whole axis, left=%d right=%d cw=%d", left, right, cw))
 
   Verdant.Graph.on_stop_click()
   Verdant.Graph.on_flush_click()
