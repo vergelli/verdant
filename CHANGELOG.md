@@ -89,6 +89,7 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- SKILL at small heights switches to a compact tier: the chip folds into its report icon and the ultimate band steps aside so both plots keep at least 24px.
 - Graph columns sit on a physical-pixel grid: whole-pixel pitch and bar width at any window width and UI scale, the remainder (under one pitch) left blank at the old-data edge. Behind `PIXEL_GRID` in constants and `/verdant grid` for in-game A/B.
 - TRIAGE at small heights switches to a compact tier: the chip folds into its report icon and the episode list steps aside so the donut and legend stay whole.
 - Long time windows decimate into whole-sample columns (min 6px), so large fights render as even columns.
@@ -147,6 +148,7 @@
   ultimate rows instead of across them.
 
 ### Fixed
+- SKILL: the vertical split now shares the plot area after each canvas's fixed overhead, so both plots keep the same height at any window size and the top plot no longer collapses to nothing at small heights.
 - TRIAGE: the donut follows the summary chip inset instead of keeping its first position; the legend's meaning column measures the string, not the clipped label.
 - **Stop no longer hitches** — the session autosave used to run inside
   the Stop click's frame (a measured 104ms stutter on a 12-minute

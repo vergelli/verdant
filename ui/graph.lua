@@ -61,6 +61,7 @@ local TIME_STRIP_H = 18
 local ULT_L = { PAD = 4, ROW_H = 5, GAP = 9, ICON = 14, AREA = 28, CHIP = 0 }
 local C_ULT_READY = { r = 1.00, g = 0.90, b = 0.30 }
 local function ult_inset()
+  if ULT_L.SKIP then return 0 end
   return (Verdant.Ultimate.has_data() and ULT_L.AREA or 0) + ULT_L.CHIP
 end
 local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.25 }
@@ -393,8 +394,11 @@ local function layout_skill_area()
 
   local usable = sh - LABEL_H * 2 - 4
   if usable < 2 then return end
-  local top_h = math_floor((usable + ult_inset()) / 2)
-  if usable - top_h < 60 then top_h = math_floor(usable / 2) end
+  local top_over = ult_inset()
+  local plot = usable - top_over - TIME_STRIP_H
+  if plot < 2 then plot = 2 end
+  local top_h = math_floor(plot / 2) + top_over
+  if top_h > usable - 1 then top_h = usable - 1 end
   local bot_h = usable - top_h
   local mid_y = LABEL_H + top_h + 2
 
@@ -927,6 +931,15 @@ local function tri_compact()
   local canvas = controls.canvas
   if not canvas then return false end
   return canvas:GetHeight() - ULT_L.CHIP < TRI_L.NEED
+end
+
+ULT_L.MIN_PLOT = 24
+local function skill_compact()
+  local sa = controls.skill_area
+  if not sa then return false end
+  local usable = sa:GetHeight() - LABEL_H * 2 - 4
+  local inset  = (Verdant.Ultimate.has_data() and ULT_L.AREA or 0) + ULT_L.CHIP
+  return math_floor((usable - inset - TIME_STRIP_H) / 2) < ULT_L.MIN_PLOT
 end
 
 local function chip_collapse(on)
@@ -1938,7 +1951,13 @@ local function render_view2()
   end
   draw_markers(controls.pool_marker_line_top, controls.pool_marker_icon_top,
                ec, t0x, span_ms, 0, cw)
-  draw_ult_band(controls.pool_ult_top, controls.pool_ult_icon_top, ec, t0x, span_ms, t_last)
+  if ULT_L.SKIP then
+    ULT_L.tspan = nil
+    controls.pool_ult_top:ReleaseAllObjects()
+    controls.pool_ult_icon_top:ReleaseAllObjects()
+  else
+    draw_ult_band(controls.pool_ult_top, controls.pool_ult_icon_top, ec, t0x, span_ms, t_last)
+  end
 end
 
 local function render_view3()
@@ -2789,7 +2808,9 @@ function render_current_view()
     controls.pool_marker_line_top:ReleaseAllObjects()
     controls.pool_marker_icon_top:ReleaseAllObjects()
   end
-  chip_collapse(current_view == VIEW.TRIAGE and tri_compact())
+  local skill_c = (current_view == VIEW.SKILL) and skill_compact() or false
+  chip_collapse((current_view == VIEW.TRIAGE and tri_compact()) or skill_c)
+  ULT_L.SKIP = skill_c
   if current_view == VIEW.EMS then
     render_view1()
   elseif current_view == VIEW.CRIT then

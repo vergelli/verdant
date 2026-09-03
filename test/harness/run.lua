@@ -45,6 +45,7 @@ local CASES = {
   "bar_touches",
   "legacy_session",
   "pixel_grid",
+  "skill_layout",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",
