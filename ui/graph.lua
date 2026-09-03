@@ -348,6 +348,7 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip, lookback)
 end
 
 local function release_all_pools()
+  if controls.tri_donut then controls.tri_donut:control():SetHidden(true) end
   if controls.pool_marker_line then
     controls.pool_marker_line:ReleaseAllObjects()
     controls.pool_marker_icon:ReleaseAllObjects()
@@ -770,7 +771,15 @@ local C_TRI_STRIP  = { r = 0.16, g = 0.15, b = 0.13, a = 0.90 }
 local C_TRI_FAST   = { r = 0.58, g = 0.85, b = 0.92 }
 local C_TRI_MID    = { r = 0.92, g = 0.95, b = 0.93 }
 local C_TRI_SLOW   = { r = 0.91, g = 0.58, b = 0.42 }
-local TRI_L = { HEADER_H = 20, STRIP_H = 14, STRIP_GAP = 10, ROW_H = 24, ROW_GAP = 2 }
+local TRI_L = { HEADER_H = 20, STRIP_H = 14, STRIP_GAP = 10, ROW_H = 24, ROW_GAP = 2,
+                DONUT = 68, LEG_H = 14, LIST_ROW_H = 18 }
+local TRI_LEGEND = {
+  { cls = 1, key = "s",       name = "VERDANT_TRI_LEG_SAVES",     mean = "VERDANT_TRI_MEAN_SAVE" },
+  { cls = 2, key = "o",       name = "VERDANT_TRI_LEG_RECOVERED", mean = "VERDANT_TRI_MEAN_RECOVERED" },
+  { cls = 3, key = "l",       name = "VERDANT_TRI_LEG_LATE",      mean = "VERDANT_TRI_MEAN_LATE" },
+  { cls = 4, key = "m",       name = "VERDANT_TRI_LEG_MISSED",    mean = "VERDANT_TRI_MEAN_MISSED" },
+  { cls = 6, key = "oneshot", name = "VERDANT_TRI_LEG_ONESHOT",   mean = "VERDANT_TRI_MEAN_ONESHOT" },
+}
 local TRI_RT_FAST_MS = 1000
 local TRI_RT_SLOW_MS = 2500
 
@@ -803,7 +812,10 @@ local function tri_time_str(off_ms)
   return string_format("%d:%02d", math_floor(s / 60), s % 60)
 end
 
-local tri_hit = { n = 0, y0 = {}, y1 = {}, ep = {} }
+local tri_hit = { n = 0, y0 = {}, y1 = {}, ep = {},
+                  leg_n = 0, leg_y0 = {}, leg_y1 = {}, leg_cls = {},
+                  filter = 1, scroll = 0, matches = 0, fit = 0,
+                  vals = {}, cols = {}, rt = {} }
 local tri_dot_lastx = {}
 local TRI_GLYPH_GAP = 6
 
@@ -2189,168 +2201,266 @@ local function render_view5()
   end
 
   local list_y = strip_y + TRI_L.STRIP_H + TRI_L.STRIP_GAP
-  local fit = math_floor((ch - list_y) / (TRI_L.ROW_H + TRI_L.ROW_GAP))
-  if fit < 1 then return end
-  local first = (n_eps > fit) and (n_eps - fit + 1) or 1
-  local pslot = T.player_slot()
+  local pslot  = T.player_slot()
+  local counts = s.counts
+  local denom  = counts.s + counts.o + counts.l + counts.m
+  local cov    = (denom > 0) and (counts.s / denom) or 0
 
-  if first > 1 then
-    local more = controls.pool_buff_lbl:AcquireObject()
-    more:ClearAnchors()
-    more:SetText(string_format(GetString(VERDANT_TRI_MORE), first - 1))
-    more:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-    more:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.9)
-    more:SetDimensions(160, TRI_L.HEADER_H)
-    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 164, 0)
-    more:SetHidden(false)
+  local Donut = Verdant.lib.plot.Donut
+  if not controls.tri_donut then
+    controls.tri_donut = Donut.new("VerdantTriDonut", canvas, TRI_L.DONUT, { mode = "stack" })
+    controls.tri_donut:control():SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, list_y)
+    for i = 1, #TRI_LEGEND do tri_hit.cols[i] = C_TRI_CLASS[TRI_LEGEND[i].cls] end
   end
+  for i = 1, #TRI_LEGEND do tri_hit.vals[i] = counts[TRI_LEGEND[i].key] or 0 end
+  controls.tri_donut:set(tri_hit.vals, tri_hit.cols)
+  controls.tri_donut:control():SetHidden(false)
 
-  local row_i = 0
-  for i = first, n_eps do
-    local e = eps[i]
-    local y = list_y + row_i * (TRI_L.ROW_H + TRI_L.ROW_GAP)
-    row_i = row_i + 1
-    local c = C_TRI_CLASS[e.class] or C_TRI_CLASS[5]
+  local dcx = 4 + TRI_L.DONUT / 2
+  local dcy = list_y + TRI_L.DONUT / 2
+  local pct = controls.pool_buff_lbl:AcquireObject()
+  pct:ClearAnchors()
+  pct:SetText(string_format("%d%%", math_floor(cov * 100 + 0.5)))
+  pct:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
+  pct:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, 1)
+  pct:SetDimensions(TRI_L.DONUT, 14)
+  pct:SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, dcy - 13)
+  pct:SetHidden(false)
+  local sub = controls.pool_buff_lbl:AcquireObject()
+  sub:ClearAnchors()
+  sub:SetText(GetString(VERDANT_TRI_SAVED))
+  sub:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
+  sub:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.9)
+  sub:SetDimensions(TRI_L.DONUT, 12)
+  sub:SetAnchor(TOPLEFT, canvas, TOPLEFT, 4, dcy + 1)
+  sub:SetHidden(false)
 
-    if capture then
-      tri_hit.n = tri_hit.n + 1
-      tri_hit.y0[tri_hit.n] = y
-      tri_hit.y1[tri_hit.n] = y + TRI_L.ROW_H
-      tri_hit.ep[tri_hit.n] = e
+  local lx = 4 + TRI_L.DONUT + 12
+  tri_hit.leg_n = 0
+  for i = 1, #TRI_LEGEND do
+    local L   = TRI_LEGEND[i]
+    local c   = C_TRI_CLASS[L.cls]
+    local cnt = counts[L.key] or 0
+    local y   = list_y + (i - 1) * TRI_L.LEG_H
+    local selected = (tri_hit.filter == L.cls)
+    tri_hit.leg_n = tri_hit.leg_n + 1
+    tri_hit.leg_y0[tri_hit.leg_n]  = y
+    tri_hit.leg_y1[tri_hit.leg_n]  = y + TRI_L.LEG_H
+    tri_hit.leg_cls[tri_hit.leg_n] = L.cls
+    if selected then
+      local band = controls.pool_buff_seg:AcquireObject()
+      band:ClearAnchors()
+      band:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx - 4, y)
+      band:SetWidth(cw - lx + 4)
+      band:SetHeight(TRI_L.LEG_H)
+      band:SetColor(c.r, c.g, c.b, 0.14)
+      band:SetHidden(false)
     end
-
-    local bg = controls.pool_buff_seg:AcquireObject()
-    bg:ClearAnchors()
-    bg:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y)
-    bg:SetWidth(cw)
-    bg:SetHeight(TRI_L.ROW_H)
-    bg:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.03 or 0.07)
-    bg:SetHidden(false)
-
-    local hl = controls.pool_buff_seg:AcquireObject()
-    hl:ClearAnchors()
-    hl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y)
-    hl:SetWidth(cw)
-    hl:SetHeight(1)
-    hl:SetColor(1, 1, 1, 0.05)
-    hl:SetHidden(false)
-
-    local sep = controls.pool_buff_seg:AcquireObject()
-    sep:ClearAnchors()
-    sep:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y + TRI_L.ROW_H)
-    sep:SetWidth(cw)
-    sep:SetHeight(1)
-    sep:SetColor(0, 0, 0, 0.40)
-    sep:SetHidden(false)
-
-    local tlbl = controls.pool_buff_lbl:AcquireObject()
-    tlbl:ClearAnchors()
-    tlbl:SetText(tri_time_str(e.t_start - t0))
-    tlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-    tlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, C_TRI_TIME.a)
-    tlbl:SetDimensions(38, TRI_L.ROW_H)
-    tlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, y)
-    tlbl:SetHidden(false)
-
-    local icon_path = T.slot_icon(e.slot)
-    if icon_path then
-      local ci = controls.pool_buff_icon:AcquireObject()
-      ci:ClearAnchors()
-      ci:SetTexture(icon_path)
-      ci:SetDimensions(16, 16)
-      ci:SetAnchor(TOPLEFT, canvas, TOPLEFT, 46, y + 4)
-      ci:SetColor(1, 1, 1, e.class == T.CLASS_O and 0.55 or 0.95)
-      ci:SetHidden(false)
-    end
-
-    local pname = T.slot_name(e.slot) or ("group" .. e.slot)
-    if e.slot == pslot then pname = pname .. GetString(VERDANT_TRI_YOU) end
-    local nlbl = controls.pool_buff_lbl:AcquireObject()
-    nlbl:ClearAnchors()
-    nlbl:SetText(pname)
-    nlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-    if e.class == T.CLASS_O then
-      nlbl:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.85)
+    local sw = controls.pool_buff_seg:AcquireObject()
+    sw:ClearAnchors()
+    sw:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx, y + 3)
+    sw:SetWidth(8)
+    sw:SetHeight(8)
+    sw:SetColor(c.r, c.g, c.b, (cnt > 0) and 1 or 0.35)
+    sw:SetHidden(false)
+    local nl_ = controls.pool_buff_lbl:AcquireObject()
+    nl_:ClearAnchors()
+    nl_:SetText(string_format("|c%s%d|r %s", hexc(c), cnt, GetString(rawget(_G, L.name))))
+    nl_:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    if cnt > 0 then
+      nl_:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, selected and 1 or 0.85)
     else
-      nlbl:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, C_TRI_NAME.a)
+      nl_:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.6)
     end
-    local name_w = math_max(60, cw - 320)
-    nlbl:SetDimensions(name_w, TRI_L.ROW_H)
-    nlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 66, y)
-    nlbl:SetHidden(false)
+    nl_:SetDimensions(80, TRI_L.LEG_H)
+    nl_:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx + 14, y)
+    nl_:SetHidden(false)
 
-    local dx = 66 + name_w
-    local depth = math_floor(e.min_rho * 100 + 0.5)
-    local dc = (e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH
-    local bar_y = y + math_floor((TRI_L.ROW_H - 8) / 2)
-    local bbg = controls.pool_buff_seg:AcquireObject()
-    bbg:ClearAnchors()
-    bbg:SetAnchor(TOPLEFT, canvas, TOPLEFT, dx, bar_y)
-    bbg:SetWidth(36)
-    bbg:SetHeight(8)
-    bbg:SetColor(0.05, 0.05, 0.045, 0.90)
-    bbg:SetHidden(false)
-    local fill_w = math_floor(36 * e.min_rho + 0.5)
-    if fill_w < 1 then fill_w = 1 end
-    local bfill = controls.pool_buff_seg:AcquireObject()
-    bfill:ClearAnchors()
-    bfill:SetAnchor(TOPLEFT, canvas, TOPLEFT, dx, bar_y)
-    bfill:SetWidth(fill_w)
-    bfill:SetHeight(8)
-    bfill:SetColor(dc.r, dc.g, dc.b, 0.95)
-    bfill:SetHidden(false)
-    local dlbl = controls.pool_buff_lbl:AcquireObject()
-    dlbl:ClearAnchors()
-    dlbl:SetText(string_format("%d%%", depth))
-    dlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
-    dlbl:SetColor(dc.r, dc.g, dc.b, 0.95)
-    dlbl:SetDimensions(34, TRI_L.ROW_H)
-    dlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, dx + 40, y)
-    dlbl:SetHidden(false)
-
-    local chip_x = dx + 78
-    local chip_text = GetString(rawget(_G, TRI_CHIP_KEY[e.class] or TRI_CHIP_KEY[5]))
-    local chip_w = #chip_text * 7 + 14
-    local frame = controls.pool_buff_seg:AcquireObject()
-    frame:ClearAnchors()
-    frame:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x, y + 3)
-    frame:SetWidth(chip_w)
-    frame:SetHeight(TRI_L.ROW_H - 6)
-    frame:SetColor(c.r, c.g, c.b, e.class == T.CLASS_O and 0.30 or 0.60)
-    frame:SetHidden(false)
-    local chip = controls.pool_buff_seg:AcquireObject()
-    chip:ClearAnchors()
-    chip:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x + 1, y + 4)
-    chip:SetWidth(chip_w - 2)
-    chip:SetHeight(TRI_L.ROW_H - 8)
-    chip:SetColor(0.09, 0.085, 0.075, 0.92)
-    chip:SetHidden(false)
-    local clbl = controls.pool_buff_lbl:AcquireObject()
-    clbl:ClearAnchors()
-    clbl:SetText(chip_text)
-    clbl:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
-    clbl:SetColor(c.r, c.g, c.b, 1)
-    clbl:SetDimensions(chip_w, TRI_L.ROW_H)
-    clbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, chip_x, y)
-    clbl:SetHidden(false)
-
+    local rn = 0
+    if L.cls == 1 or L.cls == 3 then
+      for k = 1, n_eps do
+        local e = eps[k]
+        if e.class == L.cls and e.rt >= 0 then rn = rn + 1; tri_hit.rt[rn] = e.rt end
+      end
+    end
     local rlbl = controls.pool_buff_lbl:AcquireObject()
     rlbl:ClearAnchors()
-    if e.rt >= 0 then
-      local rc = tri_rt_color(e.rt)
-      rlbl:SetText(string_format("RT %.1fs", e.rt / 1000))
-      rlbl:SetColor(rc.r, rc.g, rc.b, 1)
-    elseif e.responded then
-      rlbl:SetText(GetString(VERDANT_TRI_RT_HOTS))
-      rlbl:SetColor(C_TRI_FAST.r, C_TRI_FAST.g, C_TRI_FAST.b, 0.55)
+    if rn > 0 then
+      for k = rn + 1, #tri_hit.rt do tri_hit.rt[k] = nil end
+      table_sort(tri_hit.rt)
+      local i50 = math_floor(rn * 0.5 + 0.5)
+      if i50 < 1 then i50 = 1 end
+      local rt = tri_hit.rt[i50]
+      local rc = tri_rt_color(rt)
+      rlbl:SetText(string_format("RT %.1fs", rt / 1000))
+      rlbl:SetColor(rc.r, rc.g, rc.b, 0.9)
     else
-      rlbl:SetText("RT -")
-      rlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.8)
+      rlbl:SetText("")
     end
-    rlbl:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
-    rlbl:SetDimensions(70, TRI_L.ROW_H)
-    rlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 76, y)
+    rlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    rlbl:SetDimensions(50, TRI_L.LEG_H)
+    rlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx + 96, y)
     rlbl:SetHidden(false)
+
+    local mw = cw - (lx + 150) - 4
+    if mw > 40 then
+      local ml = controls.pool_buff_lbl:AcquireObject()
+      ml:ClearAnchors()
+      ml:SetText(GetString(rawget(_G, L.mean)))
+      ml:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+      ml:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.7)
+      ml:SetDimensions(mw, TRI_L.LEG_H)
+      ml:SetAnchor(TOPLEFT, canvas, TOPLEFT, lx + 150, y)
+      ml:SetHidden(ml:GetTextWidth() > mw)
+    end
+  end
+
+  local cap_y = list_y + TRI_L.DONUT + 8
+  local div = controls.pool_buff_seg:AcquireObject()
+  div:ClearAnchors()
+  div:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, cap_y - 4)
+  div:SetWidth(cw)
+  div:SetHeight(1)
+  div:SetColor(1, 1, 1, 0.06)
+  div:SetHidden(false)
+  local fname, fcol = "", C_TRI_CLASS[5]
+  for i = 1, #TRI_LEGEND do
+    if TRI_LEGEND[i].cls == tri_hit.filter then
+      fname = GetString(rawget(_G, TRI_LEGEND[i].name))
+      fcol  = C_TRI_CLASS[TRI_LEGEND[i].cls]
+    end
+  end
+  local cap = controls.pool_buff_lbl:AcquireObject()
+  cap:ClearAnchors()
+  cap:SetText(string_format(GetString(VERDANT_TRI_LIST_CAPTION), hexc(fcol), string.upper(fname)))
+  cap:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+  cap:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.9)
+  cap:SetDimensions(cw - 8, 14)
+  cap:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, cap_y)
+  cap:SetHidden(false)
+
+  local rows_y = cap_y + 18
+  local fit = math_floor((ch - rows_y) / (TRI_L.LIST_ROW_H + 1))
+  if fit < 1 then fit = 0 end
+  local matches = 0
+  for k = 1, n_eps do
+    if eps[k].class == tri_hit.filter then matches = matches + 1 end
+  end
+  tri_hit.matches = matches
+  tri_hit.fit     = fit
+  local max_scroll = matches - fit
+  if max_scroll < 0 then max_scroll = 0 end
+  if tri_hit.scroll > max_scroll then tri_hit.scroll = max_scroll end
+
+  if matches == 0 then
+    local none = controls.pool_buff_lbl:AcquireObject()
+    none:ClearAnchors()
+    none:SetText(GetString(VERDANT_TRI_LIST_EMPTY))
+    none:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    none:SetColor(C_TRI_DIM.r, C_TRI_DIM.g, C_TRI_DIM.b, 0.6)
+    none:SetDimensions(cw - 12, TRI_L.LIST_ROW_H)
+    none:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, rows_y)
+    none:SetHidden(false)
+    return
+  end
+
+  local skipped, drawn = 0, 0
+  local c = fcol
+  for k = n_eps, 1, -1 do
+    local e = eps[k]
+    if e.class == tri_hit.filter then
+      if skipped < tri_hit.scroll then
+        skipped = skipped + 1
+      elseif drawn < fit then
+        local y = rows_y + drawn * (TRI_L.LIST_ROW_H + 1)
+        drawn = drawn + 1
+        if capture then
+          tri_hit.n = tri_hit.n + 1
+          tri_hit.y0[tri_hit.n] = y
+          tri_hit.y1[tri_hit.n] = y + TRI_L.LIST_ROW_H
+          tri_hit.ep[tri_hit.n] = e
+        end
+        local bg = controls.pool_buff_seg:AcquireObject()
+        bg:ClearAnchors()
+        bg:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, y)
+        bg:SetWidth(cw)
+        bg:SetHeight(TRI_L.LIST_ROW_H)
+        bg:SetColor(c.r, c.g, c.b, (drawn % 2 == 0) and 0.05 or 0.08)
+        bg:SetHidden(false)
+
+        local tlbl = controls.pool_buff_lbl:AcquireObject()
+        tlbl:ClearAnchors()
+        tlbl:SetText(tri_time_str(e.t_start - t0))
+        tlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+        tlbl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, C_TRI_TIME.a)
+        tlbl:SetDimensions(38, TRI_L.LIST_ROW_H)
+        tlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, y)
+        tlbl:SetHidden(false)
+
+        local icon_path = T.slot_icon(e.slot)
+        if icon_path then
+          local ci = controls.pool_buff_icon:AcquireObject()
+          ci:ClearAnchors()
+          ci:SetTexture(icon_path)
+          ci:SetDimensions(14, 14)
+          ci:SetAnchor(TOPLEFT, canvas, TOPLEFT, 46, y + 2)
+          ci:SetColor(1, 1, 1, 0.95)
+          ci:SetHidden(false)
+        end
+
+        local pname = T.slot_name(e.slot) or ("group" .. e.slot)
+        if e.slot == pslot then pname = pname .. GetString(VERDANT_TRI_YOU) end
+        local nlbl = controls.pool_buff_lbl:AcquireObject()
+        nlbl:ClearAnchors()
+        nlbl:SetText(pname)
+        nlbl:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+        nlbl:SetColor(C_TRI_NAME.r, C_TRI_NAME.g, C_TRI_NAME.b, C_TRI_NAME.a)
+        nlbl:SetDimensions(math_max(60, cw - 64 - 130), TRI_L.LIST_ROW_H)
+        nlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, 64, y)
+        nlbl:SetHidden(false)
+
+        local depth = math_floor(e.min_rho * 100 + 0.5)
+        local dc = (e.min_rho < 0.15) and C_TRI_DEEP or C_TRI_DEPTH
+        local dlbl = controls.pool_buff_lbl:AcquireObject()
+        dlbl:ClearAnchors()
+        dlbl:SetText(string_format("%d%%", depth))
+        dlbl:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+        dlbl:SetColor(dc.r, dc.g, dc.b, 0.95)
+        dlbl:SetDimensions(40, TRI_L.LIST_ROW_H)
+        dlbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 124, y)
+        dlbl:SetHidden(false)
+
+        local rl = controls.pool_buff_lbl:AcquireObject()
+        rl:ClearAnchors()
+        if e.rt >= 0 then
+          local rc = tri_rt_color(e.rt)
+          rl:SetText(string_format("RT %.1fs", e.rt / 1000))
+          rl:SetColor(rc.r, rc.g, rc.b, 1)
+        elseif e.responded then
+          rl:SetText(GetString(VERDANT_TRI_RT_HOTS))
+          rl:SetColor(C_TRI_FAST.r, C_TRI_FAST.g, C_TRI_FAST.b, 0.55)
+        else
+          rl:SetText("RT -")
+          rl:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.8)
+        end
+        rl:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+        rl:SetDimensions(70, TRI_L.LIST_ROW_H)
+        rl:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 76, y)
+        rl:SetHidden(false)
+      end
+    end
+  end
+
+  local rest = matches - tri_hit.scroll - drawn
+  if rest > 0 or tri_hit.scroll > 0 then
+    local more = controls.pool_buff_lbl:AcquireObject()
+    more:ClearAnchors()
+    more:SetText(string_format(GetString(VERDANT_TRI_LIST_MORE), rest))
+    more:SetHorizontalAlignment(TEXT_ALIGN_RIGHT)
+    more:SetColor(C_TRI_TIME.r, C_TRI_TIME.g, C_TRI_TIME.b, 0.9)
+    more:SetDimensions(200, TRI_L.HEADER_H)
+    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, cw - 204, 0)
+    more:SetHidden(false)
   end
 end
 
@@ -3052,8 +3162,42 @@ function M.init()
   controls.hit_top  = make_hit("VerdantGraphHitTop",  controls.ehps_canvas)
   controls.hit_bot  = make_hit("VerdantGraphHitBot",  controls.mps_canvas)
 
+  controls.hit_main:SetHandler("OnMouseWheel", function(_, delta)
+    if current_view ~= VIEW_TRIAGE then return end
+    local dir = (delta and delta < 0) and 1 or -1
+    local max_scroll = tri_hit.matches - tri_hit.fit
+    if max_scroll < 0 then max_scroll = 0 end
+    local next_off = tri_hit.scroll + dir
+    if next_off < 0 then next_off = 0 end
+    if next_off > max_scroll then next_off = max_scroll end
+    if next_off ~= tri_hit.scroll then
+      tri_hit.scroll = next_off
+      hide_hover_ui(); hover_key = nil
+      render_current_view()
+    end
+  end)
+
   controls.hit_main:SetHandler("OnMouseUp", function(_, _, upInside)
-    if upInside == false or current_view ~= VIEW_BUFFS then return end
+    if upInside == false then return end
+    if current_view == VIEW_TRIAGE then
+      local mx, my = GetUIMousePosition()
+      local rel_y = my - controls.canvas:GetTop()
+      for i = 1, tri_hit.leg_n do
+        if rel_y >= tri_hit.leg_y0[i] and rel_y <= tri_hit.leg_y1[i] then
+          local cls = tri_hit.leg_cls[i]
+          if cls ~= tri_hit.filter then
+            tri_hit.filter = cls
+            tri_hit.scroll = 0
+            PlaySound(SOUNDS.DIALOG_ACCEPT)
+            hide_hover_ui(); hover_key = nil
+            render_current_view()
+          end
+          return
+        end
+      end
+      return
+    end
+    if current_view ~= VIEW_BUFFS then return end
     local mx, my = GetUIMousePosition()
     local rel_x = mx - controls.canvas:GetLeft()
     local rel_y = my - controls.canvas:GetTop()

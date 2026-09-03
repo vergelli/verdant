@@ -82,7 +82,9 @@ origin math for both modes.
 
 ## Recommendation
 
-Go. Once the origin unit is confirmed, delete the other unit and the stack mode
-from the widget, keep the ring texture, and the first real use is the
+Go. The first real use shipped in stacked mode: the outcome donut of the
+TRIAGE view (#107), which works whatever the origin-angle unit turns out to
+be. Once the unit is confirmed in-game, switch the widget default to origin
+mode, delete the other unit, and keep the ring texture. Next candidate: the
 per-ability share in the SKILL view hover, where a 5-slice donut beside the
 list reads faster than five percentages.
