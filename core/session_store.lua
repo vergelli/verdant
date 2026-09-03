@@ -53,14 +53,17 @@ local DESC = {
   },
   ult = {
     { name = "t", width = 4 },
-    { name = "p", width = 1, scale = 100 },
+    { name = "v", width = 2 },
   },
   ultu = {
-    { name = "t", width = 4 },
+    { name = "t",   width = 4 },
+    { name = "bar", width = 1 },
   },
   ulta = {
-    { name = "t",  width = 4 },
-    { name = "id", width = 4 },
+    { name = "t",    width = 4 },
+    { name = "bar",  width = 1 },
+    { name = "id",   width = 4 },
+    { name = "cost", width = 2 },
   },
 }
 
@@ -183,25 +186,27 @@ function M.capture()
     }
   end
 
-  local ust, usp, usn = Verdant.Ultimate.steps()
+  local ust, usv, usn = Verdant.Ultimate.steps()
   local ult_recs = {}
   for i = 1, usn do
-    local p = usp[i]
-    if p > 1 then p = 1 end
-    if p < 0 then p = 0 end
-    ult_recs[i] = { t = ust[i] - t0, p = p }
+    local v = math_floor(usv[i] + 0.5)
+    if v < 0 then v = 0 end
+    if v > 65535 then v = 65535 end
+    ult_recs[i] = { t = ust[i] - t0, v = v }
   end
-  local uut, uun = Verdant.Ultimate.used()
+  local uut, uub, uun = Verdant.Ultimate.used()
   local ultu_recs = {}
   for i = 1, uun do
-    ultu_recs[i] = { t = uut[i] - t0 }
+    ultu_recs[i] = { t = uut[i] - t0, bar = uub[i] or 1 }
   end
-  local uat, uai, uan = Verdant.Ultimate.abilities()
+  local uat, uab, uai, uac, uan = Verdant.Ultimate.abilities()
   local ulta_recs = {}
   for i = 1, uan do
     local rel = uat[i] - t0
     if rel < 0 then rel = 0 end
-    ulta_recs[i] = { t = rel, id = uai[i] }
+    local cost = uac[i] or 0
+    if cost > 65535 then cost = 65535 end
+    ulta_recs[i] = { t = rel, bar = uab[i] or 1, id = uai[i], cost = cost }
   end
 
   local ms, mn = TB.markers()

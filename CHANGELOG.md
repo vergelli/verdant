@@ -16,17 +16,16 @@
   recording (and on library sessions) now reads `WASTED n%`: overhealing
   integrated over the whole session against effective healing. The chip folds
   to two lines when the window is too narrow for one.
-- **Ultimate icon on the band** — the ultimate slotted while recording shows
-  its icon at the left edge of the band; a bar swap mid-fight adds the other
-  bar's ultimate where it took over. Saved with the session.
 - **OHEAL view** — overhealing finally gets its place: effective healing
   stacked under the wasted overflow, sharing one axis so the proportion
   reads at a glance. Hover shows the wasted percentage per moment. Context,
   not a score — it never becomes a headline number.
-- **Ultimate band** — a thin strip under the timeline markers on every
-  graph view: green while the ultimate charges (brighter as it fills), gold
-  while it sits ready unspent, a white tick at each cast. Saved with the
-  session, so library sessions bring the band back.
+- **Ultimate rows** — a strip at the top of every graph view with one row
+  per bar: the ultimate slotted on each bar, its icon, the charge against
+  that bar's own cost (soft green ramp), bright gold once it is ready, a
+  white tick at each cast on the row that cast. The plot scales below the
+  strip so nothing overlaps. Saved with the session, so library sessions
+  bring the rows back.
 - **Light Mode** (Settings > Recording, off by default) — while recording,
   the window sheds its border, title and buttons and dims to a configurable
   opacity; hover restores it and reveals stop + view navigation. Stopping
@@ -67,6 +66,8 @@
   title text.
 - **Hover card widens to fit** — long ability names no longer truncate in
   the per-skill breakdown.
+- **Cards are solid** — opaque body, a frame on all four sides, and the
+  explanation text no longer clips.
 
 ### Fixed
 - **A new recording no longer inherits the previous one** — rates from
