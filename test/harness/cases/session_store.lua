@@ -18,6 +18,7 @@ return function(H)
   H.heal({ hit = 700, target_name = "Ally2", target_unit_id = 602 })
   H.advance(1500)
   Verdant.Graph.on_stop_click()
+  H.advance(400)
   ok(SS.count() == 0, "autosave off must not store sessions")
 
   sv.settings.session_autosave = true
@@ -35,8 +36,29 @@ return function(H)
   H.effect(EFFECT_RESULT_FADED, 111, 602, 0)
   H.advance(1500)
   Verdant.Graph.on_stop_click()
+  H.advance(400)
 
   ok(SS.count() == 1, "autosave on must store the session, got " .. SS.count())
+  ok(not SS.autosave_pending(), "the deferred autosave must have finished within a few frames")
+
+  Verdant.Graph.on_record_click()
+  for _ = 1, 30 do
+    H.heal({ hit = 1000, overflow = 100 })
+    H.advance(1000)
+  end
+  Verdant.Graph.on_stop_click()
+  ok(SS.count() == 1 and SS.autosave_pending(), "right after stop the autosave is still pending, nothing stored yet")
+  Verdant.Graph.on_record_click()
+  ok(SS.count() == 2 and not SS.autosave_pending(), "starting a new recording finishes the pending autosave first, got " .. SS.count())
+  local last = SS.get(2)
+  ok(last and last.streams.series.n == 30, "the finished session kept its 30 samples, got " .. tostring(last and last.streams.series.n))
+  for _ = 1, 5 do
+    H.heal({ hit = 1000 })
+    H.advance(1000)
+  end
+  Verdant.Graph.on_stop_click()
+  H.advance(400)
+  ok(SS.count() == 3, "the recording that interrupted the autosave autosaves too")
   local s = SS.get(1)
   ok(s.head.zone == "Fungal Grotto", "zone wrong: " .. tostring(s.head.zone))
   ok(s.head.dur_ms > 4000, "duration wrong: " .. tostring(s.head.dur_ms))

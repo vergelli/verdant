@@ -33,6 +33,7 @@ return function(H)
   H.advance(500)
 
   Verdant.Graph.on_stop_click()
+  H.advance(400)
   ok(SS.count() == 1, "session must autosave")
   local saved = SS.get(1)
   ok(#saved.roster == 3, "roster must survive mid-session disband, got " .. #saved.roster)
@@ -95,6 +96,7 @@ return function(H)
   ok(Verdant.Graph.load_session(SS.get(1)) == false,
      "loading while recording must be refused")
   Verdant.Graph.on_stop_click()
+  H.advance(400)
 
   Verdant.Library.show()
   Verdant.Library.on_row_enter(1)

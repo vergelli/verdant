@@ -123,7 +123,7 @@ local function scan_slotted()
       end
     end
   end
-  log:info("slotted scan:", n, "ability names")
+  if n > 0 then log:info("slotted scan:", n, "ability names") end
 end
 
 local function resolve_desc(id, tag)

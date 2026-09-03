@@ -24,6 +24,7 @@ Verdant.Graph.on_record_click()
 spec.build(sim, H)
 sim:run(spec.duration)
 Verdant.Graph.on_stop_click()
+H.advance(400)
 
 if Verdant.SessionStore.count() ~= 1 then
   print("FAIL reina: session not autosaved")

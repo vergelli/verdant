@@ -107,6 +107,11 @@
   ultimate rows instead of across them.
 
 ### Fixed
+- **Stop no longer hitches** — the session autosave used to run inside
+  the Stop click's frame (a measured 104ms stutter on a 12-minute
+  recording). The encoder is several times leaner and the capture now runs
+  as a cooperative job over the following frames; Record, New and library
+  loads finish it first so nothing is lost.
 - **A new recording no longer inherits the previous one** — rates from
   heals that landed before you pressed Record leaked into the first
   samples (and into PEAK / ACTIVE / WASTED). Record now starts from zero.
