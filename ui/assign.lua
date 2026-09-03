@@ -92,6 +92,8 @@ local function row_factory(row, counter)
   name:SetVerticalAlignment(TEXT_ALIGN_CENTER)
   name:SetAnchor(LEFT,  icon, RIGHT, 8, 0)
   name:SetAnchor(RIGHT, pick, LEFT, -8, 0)
+  name:SetMaxLineCount(1)
+  name:SetWrapMode(TEXT_WRAP_MODE_ELLIPSIS)
   name:SetColor(0.92, 0.92, 0.92, 1)
   row.vm_name = name
 end

@@ -71,6 +71,7 @@ ABILITY_TYPE_HEAL       = 2
 TOPLEFT = 41 TOP = 42 TOPRIGHT = 43 LEFT = 44 CENTER = 45 RIGHT = 46
 BOTTOMLEFT = 47 BOTTOM = 48 BOTTOMRIGHT = 49
 CT_CONTROL = 51 CT_LABEL = 52 CT_TEXTURE = 53 CT_BACKDROP = 54 CT_COOLDOWN = 55
+TEXT_WRAP_MODE_ELLIPSIS = 2 TEXT_WRAP_MODE_TRUNCATE = 1
 CD_TYPE_RADIAL = 1 CD_TYPE_VERTICAL = 2
 CD_TIME_TYPE_TIME_UNTIL = 0 CD_TIME_TYPE_TIME_REMAINING = 1
 TEXT_ALIGN_LEFT = 61 TEXT_ALIGN_CENTER = 62 TEXT_ALIGN_RIGHT = 63
@@ -197,6 +198,7 @@ local MOCKC = {
     elseif k == "SetColor" then fn = function(s, r, g, b, a) s._r, s._g, s._b, s._a = r, g, b, a end
     elseif k == "SetAlpha" then fn = function(s, a) s._alpha = a end
     elseif k == "SetTexture" then fn = function(s, path) s._tex = path end
+    elseif k == "SetMaxLineCount" then fn = function(s, n) s._max_lines = n end
     elseif k == "StartFixedCooldown" then
       fn = function(s, pct, ctype, ttype, edge)
         s._cd_pct, s._cd_type, s._cd_time_type, s._cd_edge = pct, ctype, ttype, edge

@@ -128,6 +128,9 @@
   title text.
 - **Hover card widens to fit** — long ability names no longer truncate in
   the per-skill breakdown.
+- **Long names no longer spill into the next row** — buff, rescue,
+  library, assign and banner names stay on one line with an ellipsis.
+  The BUFFS name column is wider.
 - **Cards are solid** — opaque body, dark warm ground with a thin gold
   frame instead of the green tint, drawn above every label of the window,
   and the explanation text no longer clips.
