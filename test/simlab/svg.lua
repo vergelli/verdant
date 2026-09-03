@@ -103,6 +103,33 @@ local function esc(s)
   return tostring(s):gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")
 end
 
+local function rich(s)
+  local out = {}
+  local pos = 1
+  local open = false
+  s = tostring(s)
+  while true do
+    local a, b, hex = s:find("|c(%x%x%x%x%x%x)", pos)
+    local ra, rb = s:find("|r", pos, true)
+    if not a and not ra then break end
+    if a and (not ra or a < ra) then
+      out[#out + 1] = esc(s:sub(pos, a - 1))
+      if open then out[#out + 1] = "</tspan>" end
+      out[#out + 1] = '<tspan fill="#' .. hex .. '">'
+      open = true
+      pos = b + 1
+    else
+      out[#out + 1] = esc(s:sub(pos, ra - 1))
+      if open then out[#out + 1] = "</tspan>" end
+      open = false
+      pos = rb + 1
+    end
+  end
+  out[#out + 1] = esc(s:sub(pos))
+  if open then out[#out + 1] = "</tspan>" end
+  return table.concat(out)
+end
+
 local function col(r, g, b)
   return string.format("rgb(%d,%d,%d)",
     math.floor((r or 1) * 255), math.floor((g or 1) * 255), math.floor((b or 1) * 255))
@@ -205,7 +232,9 @@ function M.snapshot(H, root, out_path)
       local name = esc(c._name or "?")
       if is_backdrop(c) then
         local fill, fop
-        if c._cr then
+        if c._cr and c._center_file then
+          fill, fop = col(c._cr * 0.22, c._cg * 0.22, c._cb * 0.22), math.min(1, (c._ca or 1) * alpha + 0.85)
+        elseif c._cr then
           fill, fop = col(c._cr, c._cg, c._cb), (c._ca or 1) * alpha
         elseif c._center_file then
           fill, fop = "#2b2622", 0.95 * alpha
@@ -225,7 +254,7 @@ function M.snapshot(H, root, out_path)
           elseif ha == TEXT_ALIGN_RIGHT or ha == "RIGHT" then anchor, tx = "end", r.x + r.w end
           out[#out + 1] = string.format(
             '<text x="%.1f" y="%.1f" font-size="%d" data-w="%.0f" fill="%s" fill-opacity="%.2f" text-anchor="%s" dominant-baseline="middle"><title>%s</title>%s</text>',
-            tx, r.y + r.h / 2, px, r.w, col(c._r, c._g, c._b), (c._a or 1) * alpha, anchor, name, esc(txt))
+            tx, r.y + r.h / 2, px, r.w, col(c._r, c._g, c._b), (c._a or 1) * alpha, anchor, name, rich(txt))
         end
       elseif is_cooldown(c) then
         local pct = c._cd_pct or 0
