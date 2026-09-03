@@ -429,6 +429,7 @@ local SCR = {
   r2_xs_top = {}, r2_colh_top = {}, r2_xs_bot = {}, r2_colh_bot = {},
   r3_xs = {}, r3_top_hs = {},
   donut_vals = {}, donut_cols = {},
+  hex = setmetatable({}, { __mode = "k" }),
 }
 
 local MIN_COL_PX = 4
@@ -508,8 +509,17 @@ local function fade_out(f)
 end
 
 local function hexc(c)
-  return string_format("%02x%02x%02x",
+  local cache = SCR.hex
+  local e = cache[c]
+  if e and e.r == c.r and e.g == c.g and e.b == c.b then return e.hex end
+  local hex = string_format("%02x%02x%02x",
     math_floor(c.r * 255 + 0.5), math_floor(c.g * 255 + 0.5), math_floor(c.b * 255 + 0.5))
+  if e then
+    e.r, e.g, e.b, e.hex = c.r, c.g, c.b, hex
+  else
+    cache[c] = { r = c.r, g = c.g, b = c.b, hex = hex }
+  end
+  return hex
 end
 
 local function hover_allowed()
@@ -909,7 +919,8 @@ end
 local tri_hit = { n = 0, y0 = {}, y1 = {}, ep = {},
                   leg_n = 0, leg_y0 = {}, leg_y1 = {}, leg_cls = {},
                   filter = 1, scroll = 0, matches = 0, fit = 0,
-                  vals = {}, cols = {}, rt = {} }
+                  vals = {}, cols = {}, rt = {},
+                  leg_cnt = {}, leg_text = {}, cap_filter = 0, cap_text = "", pct_v = -1, pct_text = "" }
 local tri_dot_lastx = {}
 local TRI_GLYPH_GAP = 6
 local report = { hot = 0, direct = 0 }
@@ -2430,7 +2441,12 @@ local function render_view5()
   local dcy = list_y + TRI_L.DONUT / 2
   local pct = controls.pool_buff_lbl:AcquireObject()
   pct:ClearAnchors()
-  pct:SetText(string_format("%d%%", math_floor(cov * 100 + 0.5)))
+  local cov_pct = math_floor(cov * 100 + 0.5)
+  if tri_hit.pct_v ~= cov_pct then
+    tri_hit.pct_v = cov_pct
+    tri_hit.pct_text = string_format("%d%%", cov_pct)
+  end
+  pct:SetText(tri_hit.pct_text)
   pct:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
   pct:SetColor(C_TRI.NAME.r, C_TRI.NAME.g, C_TRI.NAME.b, 1)
   pct:SetDimensions(TRI_L.DONUT, 14)
@@ -2475,7 +2491,11 @@ local function render_view5()
     sw:SetHidden(false)
     local nl_ = controls.pool_buff_lbl:AcquireObject()
     nl_:ClearAnchors()
-    nl_:SetText(string_format("|c%s%d|r %s", hexc(c), cnt, GetString(rawget(_G, L.name))))
+    if tri_hit.leg_cnt[i] ~= cnt or not tri_hit.leg_text[i] then
+      tri_hit.leg_cnt[i]  = cnt
+      tri_hit.leg_text[i] = string_format("|c%s%d|r %s", hexc(c), cnt, GetString(rawget(_G, L.name)))
+    end
+    nl_:SetText(tri_hit.leg_text[i])
     nl_:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     if cnt > 0 then
       nl_:SetColor(C_TRI.NAME.r, C_TRI.NAME.g, C_TRI.NAME.b, selected and 1 or 0.85)
@@ -2542,7 +2562,11 @@ local function render_view5()
   end
   local cap = controls.pool_buff_lbl:AcquireObject()
   cap:ClearAnchors()
-  cap:SetText(string_format(GetString(VERDANT_TRI_LIST_CAPTION), hexc(fcol), string.upper(fname)))
+  if tri_hit.cap_filter ~= tri_hit.filter then
+    tri_hit.cap_filter = tri_hit.filter
+    tri_hit.cap_text = string_format(GetString(VERDANT_TRI_LIST_CAPTION), hexc(fcol), string.upper(fname))
+  end
+  cap:SetText(tri_hit.cap_text)
   cap:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
   cap:SetColor(C_TRI.DIM.r, C_TRI.DIM.g, C_TRI.DIM.b, 0.9)
   cap:SetDimensions(cw - 8, 14)
