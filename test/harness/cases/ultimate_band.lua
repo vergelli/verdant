@@ -74,8 +74,12 @@ return function(H)
   local n_rows = 0
   for _ in pairs(rows) do n_rows = n_rows + 1 end
   ok(n_rows == 2, "two ultimates must draw two rows, got " .. n_rows)
-  ok(ready[4] == true, "the front bar row must show the bright ready state")
-  ok(ready[18] == true, "the back bar reaches its cost too and must show ready")
+  local ys = {}
+  for y in pairs(rows) do ys[#ys + 1] = y end
+  table.sort(ys)
+  ok(ready[ys[1]] == true, "the front bar row must show the bright ready state")
+  ok(ready[ys[2]] == true, "the back bar reaches its cost too and must show ready")
+  ok(ys[1] >= 4 + 20, "rows sit below the summary chip, first row at " .. tostring(ys[1]))
   ok(charging, "charging segments must render in the viewport green")
   ok(tick, "the cast must render as a tick over its row")
   ok(#icons == 2 and icons[1] == "EsoUI/Art/Icons/ult_front.dds" and icons[2] == "EsoUI/Art/Icons/ult_back.dds",
@@ -90,7 +94,9 @@ return function(H)
       if ch - 18 - c._h < top_most then top_most = ch - 18 - c._h end
     end
   end
-  ok(top_most >= 28, "bars must stay below the ultimate area, top at " .. tostring(top_most))
+  local chip_h = (VerdantGraphSummaryBg._hidden == false) and (VerdantGraphSummaryBg._h + 8) or 0
+  ok(chip_h > 0, "the chip is up after stop")
+  ok(top_most >= 28 + chip_h, "bars must stay below the chip and the ultimate area, top at " .. tostring(top_most) .. " chip " .. chip_h)
   local icon_size = 0
   for _, c in ipairs(H.controls) do
     local name = c._name or ""

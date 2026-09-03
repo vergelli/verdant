@@ -58,10 +58,10 @@ local LABEL_H        = 12
 local N_HGRID      = 3
 local N_VGRID      = 3
 local TIME_STRIP_H = 18
-local ULT_L = { PAD = 4, ROW_H = 5, GAP = 9, ICON = 14, AREA = 28 }
+local ULT_L = { PAD = 4, ROW_H = 5, GAP = 9, ICON = 14, AREA = 28, CHIP = 0 }
 local C_ULT_READY = { r = 1.00, g = 0.90, b = 0.30 }
 local function ult_inset()
-  return Verdant.Ultimate.has_data() and ULT_L.AREA or 0
+  return (Verdant.Ultimate.has_data() and ULT_L.AREA or 0) + ULT_L.CHIP
 end
 local C_GRID_LINE = { r = 0.55, g = 0.58, b = 0.70, a = 0.25 }
 local C_GRID_LBL  = { r = 0.82, g = 0.85, b = 0.90, a = 0.92 }
@@ -1442,7 +1442,7 @@ local function draw_ult_band(pool, ipool, canvas, t0, span, t_data_hi)
   for b = 1, 2 do
     local id = U.id_at(b, t_hi)
     if id > 0 or b == 1 then
-      local y = ULT_L.PAD + (b - 1) * (ULT_L.ROW_H + ULT_L.GAP)
+      local y = ULT_L.CHIP + ULT_L.PAD + (b - 1) * (ULT_L.ROW_H + ULT_L.GAP)
       local k, ka, cost = 1, 0, 0
       local min_x, max_x
       local run_x0, run_lv, run_avail = nil, -1, false
@@ -2769,11 +2769,13 @@ local function update_summary_chip()
     chip.label:SetHidden(false)
     chip.help:SetHidden(false)
     chip.hit:SetHidden(false)
+    ULT_L.CHIP = 18 * lines + 2 + 8
   else
     chip.bg:SetHidden(true)
     chip.label:SetHidden(true)
     chip.help:SetHidden(true)
     chip.hit:SetHidden(true)
+    ULT_L.CHIP = 0
   end
 end
 
@@ -3398,7 +3400,7 @@ function M.init()
   sum_bg:SetTexture(FILL_TEXTURE)
   sum_bg:SetTextureCoords(0, 1, 0, 0.05)
   sum_bg:SetColor(0.04, 0.09, 0.06, 0.55)
-  sum_bg:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -14, 88)
+  sum_bg:SetAnchor(TOPRIGHT, controls.viewport, TOPRIGHT, -4, 4)
   sum_bg:SetHeight(20)
   sum_bg:SetDrawLevel(11)
   sum_bg:SetHidden(true)
@@ -3407,7 +3409,7 @@ function M.init()
   sum_label:SetFont("ZoFontGameSmall")
   sum_label:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
   sum_label:SetVerticalAlignment(TEXT_ALIGN_CENTER)
-  sum_label:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -40, 88)
+  sum_label:SetAnchor(TOPRIGHT, controls.viewport, TOPRIGHT, -30, 4)
   sum_label:SetHeight(20)
   sum_label:SetDrawLevel(12)
   sum_label:SetHidden(true)
@@ -3415,7 +3417,7 @@ function M.init()
   local sum_help = WM:CreateControl("VerdantGraphSummaryHelp", controls.window, CT_TEXTURE)
   sum_help:SetTexture("EsoUI/Art/Miscellaneous/help_icon.dds")
   sum_help:SetDimensions(16, 16)
-  sum_help:SetAnchor(TOPRIGHT, controls.window, TOPRIGHT, -18, 90)
+  sum_help:SetAnchor(TOPRIGHT, controls.viewport, TOPRIGHT, -8, 6)
   sum_help:SetColor(0.75, 0.90, 0.80, 0.9)
   sum_help:SetDrawLevel(12)
   sum_help:SetHidden(true)
