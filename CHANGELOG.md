@@ -32,6 +32,10 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- **Every button explains itself** — one-sentence tooltips on all 32
+  buttons across the graph, bar, library and settings, and the same sound
+  vocabulary everywhere: windows open and close with their sounds, record
+  and stop confirm, flush and delete decline.
 - **Render pass allocates nothing per tick** — the bar views no longer
   create closures on every sample, so long recordings put less pressure
   on the garbage collector. Offline tripwire keeps it that way.

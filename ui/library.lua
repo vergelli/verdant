@@ -7,6 +7,8 @@ local M = Verdant.Library
 local string_format = string.format
 local math_floor    = math.floor
 local d             = d
+local zui           = Verdant.zenimax.ui
+local PlaySound     = zui.PlaySound
 
 local ROW_H   = 30
 local ROW_GAP = 2
@@ -234,6 +236,7 @@ function M.on_open_click()
   if not selected then return end
   local sess = Verdant.SessionStore.get(row_session[selected])
   if sess and Verdant.Graph.load_session(sess) then
+    PlaySound(SOUNDS.DIALOG_ACCEPT)
     M.hide()
   end
 end
@@ -244,6 +247,7 @@ function M.on_lock_click()
   local s = Verdant.SessionStore.get(idx)
   if s then
     Verdant.SessionStore.set_locked(idx, not s.head.locked)
+    PlaySound(SOUNDS.DIALOG_ACCEPT)
     M.refresh()
   end
 end
@@ -265,10 +269,12 @@ function M.on_delete_click()
   if s and s.head.locked then return end
   if not delete_armed then
     delete_armed = true
+    PlaySound(SOUNDS.NEGATIVE_CLICK)
     set_buttons()
     return
   end
   delete_armed = false
+  PlaySound(SOUNDS.DIALOG_DECLINE)
   Verdant.SessionStore.delete(row_session[selected])
   selected = nil
   M.refresh()
@@ -294,9 +300,11 @@ function M.show()
   dock_window()
   M.refresh()
   controls.window:SetHidden(false)
+  PlaySound(SOUNDS.ARMORY_OPEN)
 end
 
 function M.hide()
+  if not controls.window:IsHidden() then PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED) end
   controls.window:SetHidden(true)
 end
 
@@ -314,6 +322,10 @@ function M.init()
   controls.open_btn   = VerdantLibraryOpenBtn
   controls.lock_btn   = VerdantLibraryLockBtn
   controls.delete_btn = VerdantLibraryDeleteBtn
+  zui.tooltip(controls.open_btn,   VERDANT_TIP_LIB_OPEN,   TOP)
+  zui.tooltip(controls.lock_btn,   VERDANT_TIP_LIB_LOCK,   TOP)
+  zui.tooltip(controls.delete_btn, VERDANT_TIP_LIB_DELETE, TOP)
+  zui.tooltip(VerdantLibraryCloseBtn, VERDANT_TIP_CLOSE)
 
   controls.title:SetText(GetString(VERDANT_LIB_TITLE))
   controls.open_btn:SetText(GetString(VERDANT_LIB_OPEN))
