@@ -408,20 +408,25 @@ local r2_xs_bot, r2_colh_bot       = {}, {}
 local r3_xs, r3_top_hs             = {}, {}
 
 local MIN_COL_PX = 4
-local dec_cols   = {}
+local dec_cols   = { denom = 1 }
 
 local function decimate(cw)
   local TB       = Verdant.TemporalBuffer
   local capacity = TB.capacity()
   local n        = TB.count()
+  local denom    = capacity
+  while true do
+    local h = math_floor(denom / 2)
+    if h >= n and h >= 30 then denom = h else break end
+  end
+  dec_cols.denom = denom
   local num_cols = math_floor(cw / MIN_COL_PX)
   if num_cols < 1 then num_cols = 1 end
-  if num_cols > capacity then num_cols = capacity end
-  local offset   = capacity - n
+  if num_cols > denom then num_cols = denom end
   local m, cur_c = 0, -1
   local col
   TB.iterate(function(i, s)
-    local c   = math_floor((offset + i - 1) * num_cols / capacity)
+    local c   = math_floor((i - 1) * num_cols / denom)
     local ems = s.eHPS + s.MPS
     if c ~= cur_c then
       m = m + 1
@@ -454,6 +459,11 @@ local function dec_rect(c, num_cols, cw)
   local left  = math_floor(c       * cw / num_cols + 0.5)
   local right = math_floor((c + 1) * cw / num_cols + 0.5)
   return left, right
+end
+
+local function axis_span(span_ms, n)
+  if n < 2 or n >= dec_cols.denom then return span_ms end
+  return span_ms * dec_cols.denom / (n - 1)
 end
 
 local function make_fader(control)
@@ -1119,10 +1129,9 @@ local function render_view1()
   end)
   if max_ems <= 0 then return end
 
-  draw_grid(controls.grid_ems, canvas, max_ems, t_last - t_first)
-
-
   local m, num_cols, col_w, bar_gap = decimate(cw)
+  local span = axis_span(t_last - t_first, n)
+  draw_grid(controls.grid_ems, canvas, max_ems, span)
   local xs          = r1_xs
   local ehps_hs     = r1_ehps_hs
   local ems_hs      = r1_ems_hs
@@ -1211,7 +1220,7 @@ local function render_view1()
   end
 
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
-               canvas, t_first, t_last - t_first, 0, cw)
+               canvas, t_first, span, 0, cw)
 end
 
 local function render_view2()
@@ -1242,11 +1251,10 @@ local function render_view2()
     if i == 1 then t_first = s.t end
     t_last = s.t
   end)
-  local span_ms    = t_last - t_first
+  local m, num_cols, col_w, bar_gap = decimate(cw)
+  local span_ms = axis_span(t_last - t_first, n)
   draw_grid(controls.grid_top, ec, max_ehps, 0)
   draw_grid(controls.grid_bot, mc, max_mps, span_ms, shield_down)
-
-  local m, num_cols, col_w, bar_gap = decimate(cw)
   local capture = not Verdant.TemporalBuffer.is_recording()
   local hk = hover_key
 
@@ -1430,9 +1438,10 @@ local function render_view3()
     return
   end
 
-  draw_grid(controls.grid_ems, canvas, max_ehps, t_last - t_first)
-
   local m, num_cols, col_w, bar_gap = decimate(cw)
+  local span = axis_span(t_last - t_first, n)
+  draw_grid(controls.grid_ems, canvas, max_ehps, span)
+
   local xs          = r3_xs
   local top_hs      = r3_top_hs
   local capture = not Verdant.TemporalBuffer.is_recording()
@@ -1485,7 +1494,7 @@ local function render_view3()
     end
   end
   draw_markers(controls.pool_marker_line, controls.pool_marker_icon,
-               canvas, t_first, t_last - t_first, 0, cw)
+               canvas, t_first, span, 0, cw)
 end
 
 local BUFF_MAX_ROW_H = 26

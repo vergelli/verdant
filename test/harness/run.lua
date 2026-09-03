@@ -32,6 +32,7 @@ local CASES = {
   "session_store",
   "library_flow",
   "render_bounds",
+  "grow_to_fill",
 }
 
 local passed, failed = 0, 0
