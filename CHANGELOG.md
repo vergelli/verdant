@@ -102,6 +102,10 @@
   buttons across the graph, bar, library and settings, and the same sound
   vocabulary everywhere: windows open and close with their sounds, record
   and stop confirm, flush and delete decline.
+- **Shield bookkeeping stops allocating** — the registry keyed active
+  shields by a string built per event and rebuilt the record on every
+  refresh; numeric keys and record reuse leave the event path with
+  nothing to collect.
 - **The compact bar stops allocating** — its refresh built fresh tables
   every second in every mode; it now reuses them (0.6 to 1.5 KB per
   tick down to under 150 B). The tripwire covers all four bar modes.
