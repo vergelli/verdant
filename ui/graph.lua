@@ -127,7 +127,7 @@ local card_fader, crosshair_fader
 
 local CARD_W, CARD_H = 210, 56
 local CARD_ROW_H     = 16
-local CARD_MAX_ROWS  = 5
+local CARD_MAX_ROWS  = 7
 local CARD_ROWS_Y0   = 54
 local C_CARD_BG     = { r = 0.05, g = 0.11, b = 0.07, a = 0.96 }
 local C_CARD_ACCENT = { r = 0.40, g = 0.85, b = 0.52, a = 1.0 }
@@ -912,9 +912,40 @@ local function show_report_card()
   r2.name:SetHidden(false)
   r2.val:SetText(string_format("%d%%", math_floor(direct_pct * 100 + 0.5)))
   r2.val:SetHidden(false)
+  local n_rows = 2
+
+  local function add_row(label, value, col)
+    if n_rows >= CARD_MAX_ROWS then return end
+    n_rows = n_rows + 1
+    local r = rows[n_rows]
+    r.name:SetText(label)
+    r.name:SetColor(col.r, col.g, col.b, 1.0)
+    r.name:SetHidden(false)
+    r.val:SetText(value)
+    r.val:SetHidden(false)
+  end
+
+  local us = Verdant.Ultimate.summary()
+  if us.dur_ms > 0 then
+    add_row(GetString(VERDANT_REPORT_ULT_READY),
+      string_format("%d%%", math_floor(us.ready_pct * 100 + 0.5)),
+      (us.ready_pct > 0.25) and C_TRI.SLOW or C_CARD_STAT)
+    local casts = (us.casts > 1)
+      and string_format(GetString(VERDANT_REPORT_APART), us.casts, fmt_secs(us.mean_gap_ms))
+      or tostring(us.casts)
+    add_row(GetString(VERDANT_REPORT_ULT_CASTS), casts, C_CARD_STAT)
+  end
+  if s.peak_ems > 0 then
+    add_row(GetString(VERDANT_REPORT_PEAK), fmt_secs(s.peak_t_off), C_CARD_STAT)
+  end
+  local ts = Verdant.Triage.summary()
+  local tdenom = ts.counts.s + ts.counts.o + ts.counts.l + ts.counts.m
+  if tdenom > 0 then
+    add_row(GetString(VERDANT_REPORT_SAVES), string_format("%d / %d", ts.counts.s, tdenom), C_TRI_CLASS[1])
+  end
 
   local desc = card.desc
-  local desc_y = CARD_ROWS_Y0 + 2 * CARD_ROW_H + 6
+  local desc_y = CARD_ROWS_Y0 + n_rows * CARD_ROW_H + 6
   desc:ClearAnchors()
   desc:SetAnchor(TOPLEFT, card.root, TOPLEFT, 12, desc_y)
   desc:SetWidth(250 - 20)

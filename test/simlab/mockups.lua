@@ -43,9 +43,13 @@ Verdant.BuffWatch.toggle("Minor Berserk", 9002)
 
 Verdant.SavedVars.settings.session_autosave = true
 Verdant.Visibility.set("graph", true)
+H.slotted = { [HOTBAR_CATEGORY_PRIMARY] = { [8] = 40223 } }
+Verdant.Ultimate.refresh_cost()
 Verdant.Graph.on_record_click()
-for _ = 1, 20 do
+for i = 1, 20 do
   H.heal({ hit = 1000, overflow = 300 })
+  H.heal({ hit = 400, overflow = 300, result = ACTION_RESULT_HOT_TICK, ability_id = 61305 })
+  H.ult_power(i * 20)
   H.advance(1000)
 end
 Verdant.Graph.on_stop_click()
