@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- **Landed ring in the library** — every saved session shows a small ring
+  of landed versus overflowed healing, so nights compare at a glance
+  without opening them.
 - **Copy the report** — click the summary chip and the report opens as
   plain text in the copy box, ready to paste in group chat.
 - **Ability donut on the SKILL hover** — hovering a group shows its

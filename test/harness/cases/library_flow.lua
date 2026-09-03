@@ -51,6 +51,15 @@ return function(H)
   ok(VerdantLibrary._hidden == false, "library window must show")
   ok(VerdantLibraryRow1Name._text == "Direfrost Keep",
      "row must show the zone, got " .. tostring(VerdantLibraryRow1Name._text))
+  local sum1 = saved.head.sum or {}
+  ok(sum1.total_overheal ~= nil, "session head must carry the overheal total for the ring")
+  if (sum1.total_heal or 0) + (sum1.total_overheal or 0) > 0 then
+    ok(VerdantLibraryRow1Ring._hidden == false, "a session with output shows its landed ring")
+    ok(VerdantLibraryRow1RingSlice1._cd_pct and VerdantLibraryRow1RingSlice1._cd_pct > 0,
+       "the ring's first slice is the landed share")
+  else
+    ok(VerdantLibraryRow1Ring._hidden == true, "a session without output hides its ring")
+  end
   Verdant.Library.on_row_click(1)
   Verdant.Library.on_open_click()
   ok(VerdantLibrary._hidden == true, "library must hide after open")

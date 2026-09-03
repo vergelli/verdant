@@ -22,6 +22,8 @@ local C_NAME      = { r = 0.86, g = 0.92, b = 0.88 }
 local C_DIM       = { r = 0.55, g = 0.58, b = 0.55 }
 local C_SEL       = { r = 0.55, g = 0.92, b = 0.62 }
 local C_STAR      = { r = 0.91, g = 0.72, b = 0.29 }
+local RING_COLS   = { { r = 0.42, g = 0.78, b = 0.50 }, { r = 0.64, g = 0.66, b = 0.58 } }
+local ring_vals   = { 0, 0 }
 
 local controls = {}
 local rows = {}
@@ -106,12 +108,16 @@ local function make_row(i)
   pip:SetDimensions(3, ROW_H - 12)
   pip:SetAnchor(LEFT, row, LEFT, 4, 0)
 
+  local ring = Verdant.lib.plot.Donut.new(nm .. "Ring", row, 16, { mode = "stack" })
+  ring:control():SetAnchor(LEFT, row, LEFT, 10, 0)
+  ring:set_hidden(true)
+
   local name = WM:CreateControl(nm .. "Name", row, CT_LABEL)
   name:SetFont("ZoFontGameSmall")
   name:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
   name:SetVerticalAlignment(TEXT_ALIGN_CENTER)
-  name:SetDimensions(126, ROW_H)
-  name:SetAnchor(LEFT, row, LEFT, 14, 0)
+  name:SetDimensions(110, ROW_H)
+  name:SetAnchor(LEFT, row, LEFT, 30, 0)
 
   local stats = WM:CreateControl(nm .. "Stats", row, CT_LABEL)
   stats:SetFont("ZoFontGameSmall")
@@ -134,7 +140,7 @@ local function make_row(i)
   star:SetColor(C_STAR.r, C_STAR.g, C_STAR.b, 0.95)
   star:SetHidden(true)
 
-  return { root = row, bg = bg, sel = sel, pip = pip,
+  return { root = row, bg = bg, sel = sel, pip = pip, ring = ring,
            name = name, stats = stats, when = when, star = star }
 end
 
@@ -196,6 +202,15 @@ function M.refresh()
       (pc == C_PIP_LOST) and "f26b56" or "8cea9e",
       sum.saves or 0, denom))
     row.stats:SetColor(1, 1, 1, 1)
+    local th, to = sum.total_heal or 0, sum.total_overheal
+    if to and (th + to) > 0 then
+      ring_vals[1] = th
+      ring_vals[2] = to
+      row.ring:set(ring_vals, RING_COLS)
+      row.ring:set_hidden(false)
+    else
+      row.ring:set_hidden(true)
+    end
     row.when:SetText(fmt_dur(h.dur_ms) .. "  " .. fmt_ago(h.ts))
     row.when:SetColor(C_DIM.r, C_DIM.g, C_DIM.b, 1)
     row.star:SetHidden(not h.locked)
