@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- **Ability donut on the SKILL hover** — hovering a group shows its
+  abilities as a ring beside the list, shades of the group colour, small
+  ones merged into grey.
 - **Healing report card** — hover the summary chip (it now wears a help
   icon) for the report: how much of your healing landed, how much
   overflowed, and the overflow split into HoT ticks on full targets
