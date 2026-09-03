@@ -42,6 +42,7 @@ local CASES = {
   "view_tabs",
   "assign_scroll",
   "hitch",
+  "bar_touches",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",

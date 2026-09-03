@@ -6,6 +6,11 @@
 - **The summary chip lives inside the viewport** now, top right, and the
   plot makes room below it while it is up, so it no longer straddles the
   viewport border.
+- **Hover the ultimate rows** — after a recording, hovering a row names
+  the ultimate and says how charged it was at that moment, or that it
+  was ready to cast.
+- **Compact bar touches** — click the metric name to move to the next
+  metric, and a small red dot on the bar says a recording is running.
 - **Record and Stop wear their icons** (red dot, white square), Flush is
   now called New, and the tab strip has some air below the buttons.
 - **`/verdant hitch` also opens the copy box** and the hitch log is part
