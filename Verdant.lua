@@ -191,6 +191,7 @@ local function on_addon_loaded()
   Verdant.SessionStore.init()
   Verdant.GC.init()            -- GC pacing (ported): smooth the incremental collector
   Verdant.Pipeline.init()
+  Verdant.Ultimate.init()
   Verdant.Bar.init()
   Verdant.Logo.init()
   Verdant.Settings.init()

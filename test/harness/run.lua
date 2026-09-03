@@ -34,6 +34,7 @@ local CASES = {
   "render_bounds",
   "grow_to_fill",
   "overheal_view",
+  "ultimate_band",
 }
 
 local passed, failed = 0, 0
