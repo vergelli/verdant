@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **Active and shield share in the report** — the summary chip also says
+  how much of the recording you were actually healing (`ACTIVE n%`) and,
+  when shields were involved, how much of your output they were
+  (`SHIELD n%`).
 - **Wasted healing in the report** — the summary chip that appears after a
   recording (and on library sessions) now reads `WASTED n%`: overhealing
   integrated over the whole session against effective healing. The chip folds

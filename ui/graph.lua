@@ -2385,6 +2385,8 @@ local C_SUM = {
   CRIT = C_CRIT,
   VAL  = { r = 0.92, g = 0.95, b = 0.93 },
   RT   = { r = 0.58, g = 0.85, b = 0.92 },
+  ACTIVE = { r = 0.80, g = 0.88, b = 0.62 },
+  SHIELD = C_LINE_EMS,
 }
 
 local function build_summary_text()
@@ -2396,7 +2398,15 @@ local function build_summary_text()
     string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM.AVG),  GetString(VERDANT_SUMMARY_AVG),  vc, fmt_val(s.avg_ems)),
     string_format("|c%s%s|r |c%s%s|r", hexc(C_SUM.PEAK), GetString(VERDANT_SUMMARY_PEAK), vc, fmt_val(s.peak_ems)),
     string_format("|c%s%s|r |c%s%d%%|r", hexc(C_SUM.CRIT), GetString(VERDANT_SUMMARY_CRIT), vc, crit_pct),
+    string_format("|c%s%s|r |c%s%d%%|r", hexc(C_SUM.ACTIVE), GetString(VERDANT_SUMMARY_ACTIVE), vc,
+      math_floor(s.active_pct * 100 + 0.5)),
   }
+  local out_total = s.total_heal + s.total_shield
+  if s.total_shield > 0 and out_total > 0 then
+    parts[#parts + 1] = string_format("|c%s%s|r |c%s%d%%|r",
+      hexc(C_SUM.SHIELD), GetString(VERDANT_SUMMARY_SHIELD), vc,
+      math_floor(s.total_shield / out_total * 100 + 0.5))
+  end
   if s.total_overheal > 0 then
     parts[#parts + 1] = string_format("|c%s%s|r |c%s%d%%|r",
       hexc(C_OVERHEAL), GetString(VERDANT_SUMMARY_WASTED), vc,

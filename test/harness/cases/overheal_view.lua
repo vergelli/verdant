@@ -27,6 +27,9 @@ return function(H)
   local chip = VerdantGraphSummaryLabel._text or ""
   ok(chip:find("WASTED") ~= nil, "summary chip must carry the wasted headline: " .. chip)
   ok(chip:find("33%%") ~= nil, "summary chip must read 33%% wasted: " .. chip)
+  ok(chip:find("ACTIVE") ~= nil, "summary chip must show the active share: " .. chip)
+  ok(chip:find("ACTIVE|r |c%x%x%x%x%x%x100%%") ~= nil, "six healed ticks out of six must read 100%% active: " .. chip)
+  ok(chip:find("SHIELD") == nil, "no shields means no shield share on the chip: " .. chip)
 
   while view_label._text ~= "OHEAL" do Verdant.Graph.next_view() end
 
@@ -68,6 +71,23 @@ return function(H)
 
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
   Verdant.Graph.on_flush_click()
+
+  Verdant.Metrics.reset()
+  Verdant.ShieldRegistry.reset()
+  H.effect(EFFECT_RESULT_GAINED, 88, 600, 0)
+  Verdant.Graph.on_record_click()
+  for _ = 1, 6 do
+    H.heal({ hit = 1000, target_unit_id = 600 })
+    H.shield({ hit = 1000, target_unit_id = 600, ability_id = 88 })
+    H.advance(1000)
+  end
+  Verdant.Graph.on_stop_click()
+  local chip2 = VerdantGraphSummaryLabel._text or ""
+  local share = tonumber(chip2:match("SHIELD|r |c%x%x%x%x%x%x(%d+)%%"))
+  ok(share and share >= 20 and share <= 80, "shields alongside heals must show a shield share on the chip: " .. chip2)
+  ok(chip2:find("WASTED") == nil, "no overheal means no wasted headline: " .. chip2)
+  Verdant.Graph.on_flush_click()
   Verdant.Visibility.set("graph", false)
+  Verdant.ShieldRegistry.reset()
   Verdant.Metrics.reset()
 end
