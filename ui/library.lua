@@ -235,6 +235,9 @@ function M.on_row_enter(i)
   local sum = s.head.sum or {}
   local text = string_format(GetString(VERDANT_LIB_ROW_TIP),
     sum.saves or 0, sum.o or 0, (sum.l or 0) + (sum.m or 0))
+  if s.head.label and s.head.zone and s.head.zone ~= "" then
+    text = s.head.zone .. "\n" .. text
+  end
   if s.head.locked then
     text = text .. "\n" .. GetString(VERDANT_LIB_ROW_TIP_LOCKED)
   end

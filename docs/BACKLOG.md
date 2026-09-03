@@ -1,11 +1,20 @@
 # Verdant — Backlog
 
-> Status 2026-09-03: the whole 2.5.0 cycle landed on develop (issues
-> #79–#84 → PRs #85–#95): grow-to-fill with right-anchored growth, the
-> OHEAL view, the ultimate band, two-column settings, light mode, the
-> buff-watch POC, plus the SVG layout auditor and the offline CI suite.
-> Pending in-game validation before tagging v2.5.0. Items 1–3 below
-> shipped back in 2.3/2.4 and stay for reference.
+> Status 2026-09-03 (night): 2.5.0 is feature complete on develop
+> (PRs #85–#138): the report chip and card, OHEAL, per-bar ultimate
+> rows, TRIAGE rebuilt around a donut, view tabs, tooltips and sounds on
+> every button, custom categories, session names and rings in the
+> library, buff-watch chimes, keybinds, the hitch watcher, a stop path
+> that no longer stutters. First in-game rounds done by Fede; still
+> pending before tagging: his TRIAGE / tabs verdict and the joint pass
+> over every explanation string. Listing materials are drafted in
+> `VerdantWorkingdir/esoui/2.5.0/`. Items 1–3 below shipped back in
+> 2.3/2.4 and stay for reference.
+>
+> Open after 2.5.0: #99 (switch the donut to origin mode only if the
+> in-game probe ever proves the unit), #103 part 2 (diff-based anchoring,
+> only if in-game profiling asks for it), #110 predictive layer
+> (deprioritized by Fede).
 
 Engineering backlog for Verdant. Items here are committed intent, not
 speculation; ideas that have not earned a slot yet live in
