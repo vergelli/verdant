@@ -35,6 +35,7 @@ local CASES = {
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",
+  "settings_columns",
 }
 
 local passed, failed = 0, 0
