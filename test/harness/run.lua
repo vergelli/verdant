@@ -40,6 +40,8 @@ local CASES = {
   "categories",
   "new_category_ui",
   "view_tabs",
+  "assign_scroll",
+  "hitch",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",

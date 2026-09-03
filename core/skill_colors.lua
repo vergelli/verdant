@@ -180,7 +180,7 @@ local function classify_by_skill_tree_api(abilityId)
   return SKILL_LINE_TO_GROUP[skillLineId]
 end
 
-local function lookup_group(abilityId)
+local function lookup_group(abilityId, quiet)
   if not abilityId or abilityId <= 0 then return "other" end
 
   local g = ability_cache[abilityId]
@@ -217,6 +217,7 @@ local function lookup_group(abilityId)
 
   local name = GetAbilityName(abilityId) or "?"
   local icon = GetAbilityIcon(abilityId) or "?"
+  if quiet then return "other" end
   unknown_log[abilityId] = name .. "  | icon=" .. icon
   ability_cache[abilityId] = "other"
   return "other"
@@ -268,6 +269,10 @@ end
 
 function M.group_of(abilityId)
   return lookup_group(abilityId)
+end
+
+function M.group_of_quiet(abilityId)
+  return lookup_group(abilityId, true)
 end
 
 function M.group_color(group)

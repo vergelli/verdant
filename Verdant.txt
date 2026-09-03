@@ -16,6 +16,7 @@ locales/default.lua
 locales/$(language).lua
 core/constants.lua
 core/gc.lua
+core/hitch.lua
 lib/mem/buffer_pool.lua
 lib/mem/ring_buffer.lua
 lib/mem/event.lua

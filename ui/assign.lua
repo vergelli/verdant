@@ -65,14 +65,13 @@ local pending   = {}
 local open_flyout_for
 local assign_active
 local fly_entries = {}
+local scroll_off = 0
 local newcat_for
 local newcat_color = 1
 local swatches = {}
 
 local function row_factory(row, counter)
   local nm = "VerdantAssignRow" .. counter
-  row:SetMouseEnabled(false)
-
   local icon = WINDOW_MANAGER:CreateControl(nm .. "Icon", row, CT_TEXTURE)
   icon:SetDimensions(24, 24)
   icon:SetAnchor(LEFT, row, LEFT, 2, 0)
@@ -82,6 +81,9 @@ local function row_factory(row, counter)
   pick:SetDimensions(130, 24)
   pick:SetAnchor(RIGHT, row, RIGHT, 0, 0)
   pick:SetHandler("OnClicked", function() open_flyout_for(row) end)
+  pick:SetHandler("OnMouseWheel", function(_, delta) M.on_scroll(delta) end)
+  row:SetMouseEnabled(true)
+  row:SetHandler("OnMouseWheel", function(_, delta) M.on_scroll(delta) end)
   row.vm_pick = pick
 
   local name = WINDOW_MANAGER:CreateControl(nm .. "Name", row, CT_LABEL)
@@ -269,9 +271,14 @@ function M.refresh()
   local lh      = list:GetHeight()
   local max_rows = (lh > 0) and math_floor(lh / ROW_H) or FALLBACK_MAXROWS
 
+  local max_off = (#unknowns > max_rows) and (#unknowns - max_rows) or 0
+  if scroll_off > max_off then scroll_off = max_off end
+  if scroll_off < 0 then scroll_off = 0 end
   local shown = 0
   for i = 1, #unknowns do
-    if i > max_rows then break end
+    local slot = i - scroll_off
+    if slot > max_rows then break end
+    if slot >= 1 then
     local u   = unknowns[i]
     local row = row_pool:AcquireObject()
     row.vm_id = u.id
@@ -285,16 +292,26 @@ function M.refresh()
       row.vm_pick:SetText(GetString(VERDANT_ASSIGN_PICK))
     end
     row:ClearAnchors()
-    row:SetAnchor(TOPLEFT,  list, TOPLEFT,  0, (i - 1) * ROW_H)
-    row:SetAnchor(TOPRIGHT, list, TOPRIGHT, 0, (i - 1) * ROW_H)
+    row:SetAnchor(TOPLEFT,  list, TOPLEFT,  0, (slot - 1) * ROW_H)
+    row:SetAnchor(TOPRIGHT, list, TOPRIGHT, 0, (slot - 1) * ROW_H)
     row:SetHeight(ROW_H - 2)
     row:SetHidden(false)
     shown = shown + 1
+    end
   end
 
-  if #unknowns > shown then
-    controls.help:SetText(string_format(GetString(VERDANT_ASSIGN_MORE), #unknowns - shown))
+  local rest = #unknowns - scroll_off - shown
+  if rest > 0 or scroll_off > 0 then
+    controls.help:SetText(string_format(GetString(VERDANT_ASSIGN_MORE), rest, scroll_off))
   end
+end
+
+function M.on_scroll(delta)
+  local dir = (delta and delta < 0) and 1 or -1
+  local before = scroll_off
+  scroll_off = scroll_off + dir
+  M.refresh()
+  if scroll_off ~= before then PlaySound(SOUNDS.DEFAULT_CLICK) end
 end
 
 local CONFIRM_W       = 420
@@ -332,6 +349,10 @@ local function show_confirm()
 
   controls.window:SetHidden(true)
   controls.confirm:SetHidden(false)
+end
+
+function M.show_reset_scroll()
+  scroll_off = 0
 end
 
 function M.show()
@@ -454,6 +475,8 @@ function M.init()
   controls.newcat_cancel:SetText(GetString(VERDANT_ASSIGN_CANCEL))
   controls.newcat:SetHidden(true)
   build_swatches()
+  controls.list:SetMouseEnabled(true)
+  controls.list:SetHandler("OnMouseWheel", function(_, delta) M.on_scroll(delta) end)
   zui.tooltip(controls.newcat_create, VERDANT_TIP_ASSIGN_CREATE)
   zui.tooltip(controls.newcat_cancel, VERDANT_TIP_ASSIGN_CANCEL)
   zui.tooltip(controls.assign_btn,    VERDANT_TIP_ASSIGN_DONE)
