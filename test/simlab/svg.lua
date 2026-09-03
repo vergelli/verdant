@@ -225,7 +225,13 @@ function M.snapshot(H, root, out_path)
   out[#out + 1] = "</svg>"
 
   local dir = out_path:match("^(.*)[/\\][^/\\]+$")
-  if dir then os.execute('mkdir "' .. dir:gsub("/", "\\") .. '" 2>nul') end
+  if dir then
+    if package.config:sub(1, 1) == "\\" then
+      os.execute('mkdir "' .. dir:gsub("/", "\\") .. '" 2>nul')
+    else
+      os.execute('mkdir -p "' .. dir .. '" 2>/dev/null')
+    end
+  end
   local f = assert(io.open(out_path, "w"))
   f:write(table.concat(out, "\n"))
   f:close()

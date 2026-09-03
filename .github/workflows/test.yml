@@ -1,0 +1,35 @@
+name: Tests
+
+# Offline validation on every push and PR: the mock-ESO harness in both
+# DEBUG shapes, the SimLab scenarios against the oracle, and the SVG
+# layout audit over every rendered window.
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Lua
+        run: sudo apt-get update -q && sudo apt-get install -y -q lua5.4
+
+      - name: Harness (DEBUG on)
+        run: lua5.4 test/harness/run.lua .
+
+      - name: Harness (release shape)
+        run: lua5.4 test/harness/run.lua . 0
+
+      - name: SimLab scenarios + snapshots
+        run: lua5.4 test/simlab/run.lua . --svg
+
+      - name: Window mockups
+        run: lua5.4 test/simlab/mockups.lua .
+
+      - name: Layout audit
+        run: lua5.4 test/simlab/audit.lua .
