@@ -77,8 +77,12 @@
 - **Hover card widens to fit** — long ability names no longer truncate in
   the per-skill breakdown.
 - **Cards are solid** — opaque body, dark warm ground with a thin gold
-  frame instead of the green tint, and the explanation text no longer
-  clips.
+  frame instead of the green tint, drawn above every label of the window,
+  and the explanation text no longer clips.
+- **Less to read** — the window title drops its subtitle and the healing
+  report drops its explanation paragraph; the rows say it.
+- **Ultimate icons are 14px** and the OHEAL legend sits below the
+  ultimate rows instead of across them.
 
 ### Fixed
 - **A new recording no longer inherits the previous one** — rates from

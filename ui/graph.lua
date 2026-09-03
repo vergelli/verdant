@@ -58,7 +58,7 @@ local LABEL_H        = 12
 local N_HGRID      = 3
 local N_VGRID      = 3
 local TIME_STRIP_H = 18
-local ULT_L = { PAD = 3, ROW_H = 5, GAP = 5, ICON = 10, AREA = 22 }
+local ULT_L = { PAD = 4, ROW_H = 5, GAP = 9, ICON = 14, AREA = 28 }
 local C_ULT_READY = { r = 1.00, g = 0.90, b = 0.30 }
 local function ult_inset()
   return Verdant.Ultimate.has_data() and ULT_L.AREA or 0
@@ -663,6 +663,17 @@ local function build_hover_card()
     rows[i] = { icon = icon, name = rn, val = rv }
   end
 
+  local pieces = { root, base, border_top, border_bot, border_r, border_l, bg, accent, swatch, name, stat, time, desc }
+  for i = 1, #pieces do
+    pieces[i]:SetDrawTier(DT_HIGH)
+    pieces[i]:SetDrawLayer(DL_OVERLAY)
+  end
+  for i = 1, CARD_MAX_ROWS do
+    local r = rows[i]
+    r.icon:SetDrawTier(DT_HIGH); r.icon:SetDrawLayer(DL_OVERLAY)
+    r.name:SetDrawTier(DT_HIGH); r.name:SetDrawLayer(DL_OVERLAY)
+    r.val:SetDrawTier(DT_HIGH);  r.val:SetDrawLayer(DL_OVERLAY)
+  end
   controls.card = { root = root, swatch = swatch, name = name, stat = stat, time = time, desc = desc, rows = rows }
 end
 
@@ -722,7 +733,7 @@ local function card_donut()
   local card = controls.card
   if not controls.card_donut then
     local Donut = Verdant.lib.plot.Donut
-    controls.card_donut = Donut.new("VerdantReportDonut", card.root, 44, { mode = "stack" })
+    controls.card_donut = Donut.new("VerdantReportDonut", card.root, 44, { mode = "stack", tier = DT_HIGH, layer = DL_OVERLAY })
     controls.card_donut:control():SetAnchor(TOPRIGHT, card.root, TOPRIGHT, -10, 8)
     controls.card_donut:control():SetDrawLevel(21)
     for i = 1, #DONUT_SHADES + 1 do
@@ -988,17 +999,7 @@ local function show_report_card()
     add_row(GetString(VERDANT_REPORT_SAVES), string_format("%d / %d", ts.counts.s, tdenom), C_TRI_CLASS[1])
   end
 
-  local desc = card.desc
-  local desc_y = CARD_ROWS_Y0 + n_rows * CARD_ROW_H + 6
-  desc:ClearAnchors()
-  desc:SetAnchor(TOPLEFT, card.root, TOPLEFT, 12, desc_y)
-  desc:SetWidth(250 - 20)
-  desc:SetHeight(400)
-  desc:SetText(GetString((wasted > 0) and VERDANT_REPORT_DESC or VERDANT_REPORT_CLEAN))
-  desc:SetHidden(false)
-  local dh = desc_height(desc)
-  desc:SetHeight(dh)
-  card.root:SetHeight(desc_y + dh + 8)
+  card.root:SetHeight(CARD_ROWS_Y0 + n_rows * CARD_ROW_H + 6)
   position_card(chip.bg:GetLeft() - 16, chip.bg:GetBottom() - 14)
 end
 
@@ -1953,7 +1954,11 @@ local function render_view_oh()
   local span = axis_span(t_last - t_first, n)
   local t0x  = t_last - span
   draw_grid(controls.grid_ems, canvas, max_tot, span, nil, true, ult_inset())
-  if controls.oh_legend then controls.oh_legend:SetHidden(false) end
+  if controls.oh_legend then
+    controls.oh_legend:ClearAnchors()
+    controls.oh_legend:SetAnchor(TOPRIGHT, canvas, TOPRIGHT, -2, 2 + ult_inset())
+    controls.oh_legend:SetHidden(false)
+  end
 
   local xs     = SCR.r3_xs
   local eff_hs = SCR.r3_top_hs
@@ -2731,7 +2736,6 @@ local function report_text()
       lines[#lines + 1] = plain(r.name:GetText()) .. ": " .. plain(r.val:GetText())
     end
   end
-  lines[#lines + 1] = plain(card.desc:GetText())
   return table.concat(lines, "\n")
 end
 
@@ -3241,8 +3245,7 @@ function M.init()
     end,
     function(c) c:SetHidden(true) end)
 
-  controls.title:SetText(string_format("%s |c6f8a76%s|r",
-    GetString(VERDANT_GRAPH_TITLE), GetString(VERDANT_GRAPH_TITLE_TAG)))
+  controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)
 
   controls.view_label:SetMouseEnabled(true)

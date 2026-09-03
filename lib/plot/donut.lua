@@ -24,8 +24,12 @@ function M.new(name, parent, size, opts)
   self.clockwise   = opts.clockwise ~= false
   self.texture     = opts.texture or RING_TEXTURE
   self.gap         = opts.gap or 0
+  self.tier        = opts.tier
+  self.layer       = opts.layer
   self.root        = WINDOW_MANAGER:CreateControl(name, parent, CT_CONTROL)
   self.root:SetDimensions(size, size)
+  if self.tier then self.root:SetDrawTier(self.tier) end
+  if self.layer then self.root:SetDrawLayer(self.layer) end
   self.slices      = {}
   self.n           = 0
   return self
@@ -38,6 +42,8 @@ local function slice(self, i)
   c:SetAnchorFill(self.root)
   c:SetTexture(self.texture)
   c:SetRadialCooldownClockwise(self.clockwise)
+  if self.tier then c:SetDrawTier(self.tier) end
+  if self.layer then c:SetDrawLayer(self.layer) end
   self.slices[i] = c
   return c
 end
