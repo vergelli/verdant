@@ -162,7 +162,9 @@ local function on_slash(input)
   if cmd == "hitch" then
     local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
     if sub == "reset" then Verdant.Hitch.reset(); d("[V] hitch log cleared") return end
-    for _, line in ipairs(Verdant.Hitch.lines()) do d("[V] " .. line) end
+    local lines = Verdant.Hitch.lines()
+    for _, line in ipairs(lines) do d("[V] " .. line) end
+    Verdant.CopyBox.show("Verdant hitch", table.concat(lines, "\n"))
     return
   end
 

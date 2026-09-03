@@ -3,6 +3,10 @@
 ## [Unreleased]
 
 ### Added
+- **Record and Stop wear their icons** (red dot, white square), Flush is
+  now called New, and the tab strip has some air below the buttons.
+- **`/verdant hitch` also opens the copy box** and the hitch log is part
+  of `/verdant report`.
 - **Unknown Contributions scrolls** — wheel through the list instead of
   assigning blind; the help line counts what is above and below. Buffs
   no longer show up there: only skills that actually healed or shielded
