@@ -90,3 +90,14 @@ autosave runs as a coroutine driven by a per-frame update. Record, New and
 library loads call `finish_autosave()` first, so a capture never reads a
 buffer being cleared under it. `/verdant hitch` tags those frames as `stop`.
 
+## The compact bar
+
+Measured the same way with the bar visible (`scratchpad/barcost.lua`
+pattern, now part of the `zero_alloc` case): the refresh allocated 578,
+952, 632 and 1528 bytes per tick in EMS, eHPS, MPS and ALL. Three
+sources: `Metrics.contribution()` returned a fresh table, the bar used the
+allocating `group_shares` instead of the `_into` variant, and ALL mode
+built its three value tables per refresh. All reuse scratch tables now
+(80 to 138 bytes per tick, the rest is the sample path). The stacked bar
+honours `segments.count` so the `_into` output can be handed to it.
+
