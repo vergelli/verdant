@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Added
+- **Copy the report** — click the summary chip and the report opens as
+  plain text in the copy box, ready to paste in group chat.
 - **Ability donut on the SKILL hover** — hovering a group shows its
   abilities as a ring beside the list, shades of the group colour, small
   ones merged into grey.
