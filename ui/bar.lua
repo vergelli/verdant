@@ -49,7 +49,7 @@ local BORDER_SIZE  = 2
 
 local MIN_W_SINGLE, MAX_W_SINGLE = 60,  140
 local MIN_W_ALL,    MAX_W_ALL    = 110, 200
-local MIN_H,        MAX_H        = 180, 440
+local MIN_H,        MAX_H        = 200, 440
 
 
 local TRI_COL_W   = 26
@@ -206,7 +206,7 @@ local function setup_triple_view()
 
   local container = WM:CreateControl("VerdantBarTriContainer", win, CT_CONTROL)
   container:ClearAnchors()
-  container:SetAnchor(TOP,    win, TOP,    0, 52)
+  container:SetAnchor(TOP,    win, TOP,    0, 78)
   container:SetAnchor(BOTTOM, win, BOTTOM, 0, -70)
   container:SetWidth(TRI_TOTAL_W)
   container:SetHidden(true)
@@ -525,7 +525,6 @@ function M.init()
   VerdantBarWindowBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantBarWindowBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
 
-  controls.title_label   = VerdantBarWindowTitleLabel
   controls.metric_label  = VerdantBarWindowMetricLabel
   controls.value_label   = VerdantBarWindowValueLabel
   controls.bar_area      = VerdantBarWindowBarArea
@@ -536,12 +535,12 @@ function M.init()
   controls.next_btn      = VerdantBarWindowNextBtn
   controls.settings_btn  = VerdantBarWindowSettingsBtn
 
-  controls.title_label:SetText("Verdant")
-  controls.title_label:SetColor(0.55, 0.55, 0.55, 0.70)
-
-
   controls.api_label:SetHidden(true)
-  controls.version_label:SetText(string_format("v%s  API %d", C.VERSION, GetAPIVersion()))
+  if C.DEBUG then
+    controls.version_label:SetText(string_format("v%s  API %d", C.VERSION, GetAPIVersion()))
+  else
+    controls.version_label:SetText("v" .. C.VERSION)
+  end
   controls.version_label:SetColor(0.40, 0.40, 0.40, 1)
 
   local is_all = (DISPLAY_METRICS[metric_idx] == "ALL")

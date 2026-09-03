@@ -164,6 +164,7 @@ local MOCKC = {
     elseif k == "SetDimensions" then fn = function(s, w, h) s._w, s._h = w, h end
     elseif k == "SetWidth" then fn = function(s, w) s._w = w end
     elseif k == "SetHeight" then fn = function(s, h) s._h = h end
+    elseif k == "SetThickness" then fn = function(s, th) s._h = th end
     elseif k == "GetWidth" then fn = function(s) if s._w then return s._w end local r = H.layout(s) return r.w end
     elseif k == "GetHeight" then fn = function(s) if s._h then return s._h end local r = H.layout(s) return r.h end
     elseif k == "GetDimensions" then fn = function(s) return s:GetWidth(), s:GetHeight() end

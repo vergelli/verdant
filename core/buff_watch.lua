@@ -62,6 +62,13 @@ local function tick()
       end
     end
   end
+  for i = 2, n do
+    local j = i
+    while j > 1 and alerts[j].remaining < alerts[j - 1].remaining do
+      alerts[j], alerts[j - 1] = alerts[j - 1], alerts[j]
+      j = j - 1
+    end
+  end
   alerts.n = n
   if Verdant.Watch then Verdant.Watch.render(alerts) end
 end

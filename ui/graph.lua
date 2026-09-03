@@ -288,11 +288,15 @@ local function draw_grid(grid, canvas, max_val, span_ms, flip, lookback)
       lbl:SetText(fmt_val(max_val * frac))
       lbl:SetHidden(false)
     end
-    local ymax_y = flip and (y_base + 2) or (y_base + ch_plot - 12)
-    grid.ymax:ClearAnchors()
-    grid.ymax:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, -ymax_y)
-    grid.ymax:SetText(fmt_val(max_val))
-    grid.ymax:SetHidden(false)
+    if ch_plot >= 96 then
+      local ymax_y = flip and (y_base + 2) or (y_base + ch_plot - 12)
+      grid.ymax:ClearAnchors()
+      grid.ymax:SetAnchor(BOTTOMLEFT, canvas, BOTTOMLEFT, 2, -ymax_y)
+      grid.ymax:SetText(fmt_val(max_val))
+      grid.ymax:SetHidden(false)
+    else
+      grid.ymax:SetHidden(true)
+    end
   else
     for i = 1, N_HGRID do
       grid.hlines[i]:SetHidden(true)
@@ -1756,7 +1760,7 @@ local function render_view_oh()
 end
 
 local BUFF_MAX_ROW_H = 26
-local BUFF_GUTTER_W = 140
+local BUFF_GUTTER_W = 156
 local BUFF_ROW_GAP  = 3
 local BUFF_MIN_ROW  = 10
 local BUFF_PCT_W    = 34
@@ -2334,6 +2338,7 @@ local function update_summary_chip()
             and Verdant.TemporalBuffer.count() > 0
   if show then
     chip.label:SetText(summary_text)
+    chip.label:SetWidth(chip.label:GetTextWidth())
     chip.bg:SetWidth(chip.label:GetTextWidth() + 16)
     chip.bg:SetHidden(false)
     chip.label:SetHidden(false)

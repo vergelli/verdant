@@ -202,8 +202,8 @@ function M.snapshot(H, root, out_path)
           if ha == TEXT_ALIGN_CENTER or ha == "CENTER" then anchor, tx = "middle", r.x + r.w / 2
           elseif ha == TEXT_ALIGN_RIGHT or ha == "RIGHT" then anchor, tx = "end", r.x + r.w end
           out[#out + 1] = string.format(
-            '<text x="%.1f" y="%.1f" font-size="%d" fill="%s" fill-opacity="%.2f" text-anchor="%s" dominant-baseline="middle"><title>%s</title>%s</text>',
-            tx, r.y + r.h / 2, px, col(c._r, c._g, c._b), (c._a or 1) * alpha, anchor, name, esc(txt))
+            '<text x="%.1f" y="%.1f" font-size="%d" data-w="%.0f" fill="%s" fill-opacity="%.2f" text-anchor="%s" dominant-baseline="middle"><title>%s</title>%s</text>',
+            tx, r.y + r.h / 2, px, r.w, col(c._r, c._g, c._b), (c._a or 1) * alpha, anchor, name, esc(txt))
         end
       elseif is_texture(c) then
         local fill, fop
