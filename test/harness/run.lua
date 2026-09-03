@@ -37,6 +37,7 @@ local CASES = {
   "report_card",
   "record_isolation",
   "skill_donut",
+  "categories",
   "grow_to_fill",
   "overheal_view",
   "ultimate_band",

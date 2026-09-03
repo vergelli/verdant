@@ -178,7 +178,7 @@ local function on_addon_loaded()
   local world = GetWorldName()
   Verdant.SavedVars = Verdant.zenimax.savedvars.new_account_wide(
     C.SV_TABLE, C.SV_VERSION, world,
-    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {}, skill_overrides = {}, logo = {}, assign = {}, library = {} })
+    { probe = {}, bar = {}, temporal = {}, copybox = {}, settings = {}, skill_overrides = {}, custom_groups = {}, logo = {}, assign = {}, library = {} })
 
   Verdant.SkillColors.load_persisted(Verdant.SavedVars)
 
