@@ -35,14 +35,6 @@
           <Dimensions y="18"/>
         </Label>
 
-        <Label name="$(parent)CountLabel"
-               font="ZoFontGameSmall"
-               horizontalAlignment="RIGHT"
-               verticalAlignment="CENTER">
-          <Anchor point="TOPRIGHT" offsetX="-34" offsetY="12"/>
-          <Dimensions x="70" y="14"/>
-        </Label>
-
         <Button name="$(parent)CloseBtn" mouseEnabled="true"
                 mouseOverBlendMode="ADD" inherits="ZO_ButtonBehaviorClickSound">
           <Anchor point="TOPRIGHT" offsetX="-8" offsetY="8"/>
@@ -56,16 +48,26 @@
         <Texture name="$(parent)ListFill"
                  textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds">
           <Anchor point="TOPLEFT"     offsetX="15"  offsetY="45"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-15" offsetY="-47"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-15" offsetY="-93"/>
         </Texture>
 
         <Backdrop name="$(parent)ListBg">
           <Anchor point="TOPLEFT"     offsetX="14"  offsetY="44"/>
-          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-46"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-92"/>
           <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
                 edgeFileWidth="128" edgeFileHeight="16" edgeSize="4"/>
           <Insets left="4" top="4" right="-4" bottom="-4"/>
         </Backdrop>
+
+        <Texture name="$(parent)ScrollUp" textureFile="EsoUI/Art/Buttons/scrollbox_upArrow_up.dds" hidden="true">
+          <Anchor point="TOPRIGHT" relativeTo="$(parent)ListBg" relativePoint="TOPRIGHT" offsetX="-4" offsetY="4"/>
+          <Dimensions x="16" y="16"/>
+        </Texture>
+
+        <Texture name="$(parent)ScrollDown" textureFile="EsoUI/Art/Buttons/scrollbox_downArrow_up.dds" hidden="true">
+          <Anchor point="BOTTOMRIGHT" relativeTo="$(parent)ListBg" relativePoint="BOTTOMRIGHT" offsetX="-4" offsetY="-4"/>
+          <Dimensions x="16" y="16"/>
+        </Texture>
 
         <Control name="$(parent)List" mouseEnabled="false">
           <Anchor point="TOPLEFT"  offsetX="20"  offsetY="50"/>
@@ -82,11 +84,20 @@
         </Control>
 
         <Backdrop name="$(parent)LabelBox" inherits="ZO_EditBackdrop">
-          <Anchor point="BOTTOMLEFT" offsetX="14" offsetY="-44"/>
-          <Dimensions x="296" y="24"/>
+          <Anchor point="BOTTOMLEFT"  offsetX="14"   offsetY="-52"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-132" offsetY="-52"/>
+          <Dimensions y="26"/>
           <Controls>
+            <Texture name="$(parent)Fill" textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds">
+              <Anchor point="TOPLEFT"     offsetX="2"  offsetY="2"/>
+              <Anchor point="BOTTOMRIGHT" offsetX="-2" offsetY="-2"/>
+            </Texture>
             <EditBox name="$(parent)Edit" inherits="ZO_DefaultEditForBackdrop" maxInputCharacters="32">
+              <Anchor point="TOPLEFT"     offsetX="8"  offsetY="0"/>
+              <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="0"/>
               <OnEnter>Verdant.Library.on_label_save()</OnEnter>
+              <OnFocusGained>Verdant.Library.on_label_focus(true)</OnFocusGained>
+              <OnFocusLost>Verdant.Library.on_label_focus(false)</OnFocusLost>
             </EditBox>
           </Controls>
         </Backdrop>
@@ -95,8 +106,8 @@
                 mouseEnabled="true"
                 font="ZoFontGameSmall"
                 inherits="ZO_DefaultButton">
-          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-44"/>
-          <Dimensions x="110" y="24"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-52"/>
+          <Dimensions x="110" y="26"/>
           <OnClicked>Verdant.Library.on_label_save()</OnClicked>
         </Button>
 

@@ -177,11 +177,9 @@ function M.refresh()
   if scroll_off > max_off then scroll_off = max_off end
   if scroll_off < 0 then scroll_off = 0 end
 
-  local count_text = string_format(GetString(VERDANT_LIB_COUNT), n, SS.cap())
-  if scroll_off > 0 then count_text = count_text .. "  ^" .. scroll_off end
   local below = max_off - scroll_off
-  if below > 0 then count_text = count_text .. "  v" .. below end
-  controls.count:SetText(count_text)
+  controls.scroll_up:SetHidden(scroll_off <= 0)
+  controls.scroll_down:SetHidden(below <= 0)
   controls.empty:SetHidden(n > 0)
   controls.empty:SetText(GetString(VERDANT_LIB_EMPTY))
   controls.empty:SetColor(0.5, 0.5, 0.5, 1)
@@ -244,6 +242,17 @@ function M.on_row_enter(i)
     text = text .. "\n" .. GetString(VERDANT_LIB_ROW_TIP_LOCKED)
   end
   ZO_Tooltips_ShowTextTooltip(rows[i].root, TOP, text)
+end
+
+function M.on_label_focus(on)
+  local box = controls.label_box
+  if not box then return end
+  if on then
+    box:SetEdgeColor(0.62, 1.00, 0.74, 0.95)
+    if controls.label_edit.SelectAll then controls.label_edit:SelectAll() end
+  else
+    box:SetEdgeColor(0.42, 1.00, 0.60, 0.45)
+  end
 end
 
 local function sync_label_box()
@@ -368,7 +377,9 @@ function M.init()
   log = Verdant.Log.for_module("library")
   controls.window     = VerdantLibrary
   controls.title      = VerdantLibraryWindowTitle
-  controls.count      = VerdantLibraryCountLabel
+  controls.scroll_up  = VerdantLibraryScrollUp
+  controls.scroll_down = VerdantLibraryScrollDown
+  controls.label_box  = VerdantLibraryLabelBox
   controls.list       = VerdantLibraryList
   controls.empty      = VerdantLibraryListEmpty
   controls.open_btn   = VerdantLibraryOpenBtn
@@ -395,5 +406,11 @@ function M.init()
   VerdantLibraryListBg:SetCenterColor(0, 0, 0, 0)
   VerdantLibraryListFill:SetTextureCoords(0, 1, 0, 0.05)
   VerdantLibraryListFill:SetColor(0.055, 0.052, 0.046, 0.92)
+  controls.scroll_up:SetColor(0.62, 1.00, 0.74, 0.8)
+  controls.scroll_down:SetColor(0.62, 1.00, 0.74, 0.8)
+  VerdantLibraryLabelBoxFill:SetTextureCoords(0, 1, 0, 0.05)
+  VerdantLibraryLabelBoxFill:SetColor(0.055, 0.052, 0.046, 0.92)
+  controls.label_box:SetCenterColor(0, 0, 0, 0)
+  M.on_label_focus(false)
   set_buttons()
 end

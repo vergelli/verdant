@@ -89,6 +89,7 @@
   drop, and calls for a recast if it falls off mid-combat.
 
 ### Changed
+- Session Library: the rename box has its own row with room above the buttons, a Verdant fill and a focus glow; the corner counter is gone, replaced by chevrons on the list when there are more sessions above or below.
 - SKILL at small heights switches to a compact tier: the chip folds into its report icon and the ultimate band steps aside so both plots keep at least 24px.
 - Graph columns sit on a physical-pixel grid: whole-pixel pitch and bar width at any window width and UI scale, the remainder (under one pitch) left blank at the old-data edge. Behind `PIXEL_GRID` in constants and `/verdant grid` for in-game A/B.
 - TRIAGE at small heights switches to a compact tier: the chip folds into its report icon and the episode list steps aside so the donut and legend stay whole.

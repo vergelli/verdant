@@ -130,14 +130,19 @@ return function(H)
   end
   Verdant.Library.show()
   ok(VerdantLibraryRow1Name._text == "Scroll14", "top row must be newest")
-  ok(VerdantLibraryCountLabel._text:find("v4", 1, true),
-     "count must show hidden-below indicator, got " .. tostring(VerdantLibraryCountLabel._text))
+  ok(VerdantLibraryScrollDown._hidden == false and VerdantLibraryScrollUp._hidden == true,
+     "with newer rows on top only the down chevron shows")
   Verdant.Library.on_scroll(-1)
   Verdant.Library.on_scroll(-1)
   ok(VerdantLibraryRow1Name._text == "Scroll12",
      "scrolling down must reveal older sessions, got " .. tostring(VerdantLibraryRow1Name._text))
-  ok(VerdantLibraryCountLabel._text:find("^2", 1, true),
-     "count must show hidden-above indicator, got " .. tostring(VerdantLibraryCountLabel._text))
+  ok(VerdantLibraryScrollUp._hidden == false and VerdantLibraryScrollDown._hidden == false,
+     "mid-list both chevrons show")
+  Verdant.Library.on_scroll(-1)
+  Verdant.Library.on_scroll(-1)
+  ok(VerdantLibraryScrollDown._hidden == true, "at the oldest row the down chevron hides")
+  Verdant.Library.on_label_focus(true)
+  Verdant.Library.on_label_focus(false)
   Verdant.Library.hide()
 
   sv.settings.session_autosave = false
