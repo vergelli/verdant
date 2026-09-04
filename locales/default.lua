@@ -91,6 +91,7 @@ ZO_CreateStringId("VERDANT_HELP_GRAPH",   "  /verdant graph   toggle the tempora
 ZO_CreateStringId("VERDANT_HELP_HELP",    "  /verdant help    show this list")
 ZO_CreateStringId("VERDANT_HELP_HITCH",   "  /verdant hitch   frame hitches seen, and whether Verdant was busy")
 ZO_CreateStringId("VERDANT_HELP_GRID",    "  /verdant grid    toggle the pixel-aligned column grid (A/B test)")
+ZO_CreateStringId("VERDANT_HELP_CARD",    "  /verdant card    state of the hover card (for a stuck card report)")
 
 -- Graph window
 ZO_CreateStringId("VERDANT_GRAPH_TITLE",          "Healing Analysis")

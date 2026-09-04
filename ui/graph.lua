@@ -753,6 +753,24 @@ local function clear_card_rows(card)
   if controls.card_donut then controls.card_donut:control():SetHidden(true) end
 end
 
+local function card_guard()
+  local f = card_fader
+  local root = f.control
+  if root:IsHidden() then
+    zev.unregister_update("VerdantCardGuard")
+    return
+  end
+  if f.visible then
+    if f.report and not api.MouseIsOver(controls.summary.hit) then fade_out(f) end
+    return
+  end
+  if f.anim:IsPlaying() then return end
+  log:info("card guard forced a hide: alpha=", root:GetAlpha(), "report=", tostring(f.report))
+  root:SetAlpha(0)
+  root:SetHidden(true)
+  zev.unregister_update("VerdantCardGuard")
+end
+
 local function position_card(mx, my)
   local card = controls.card
   local sw, sh = GuiRoot:GetDimensions()
@@ -766,7 +784,9 @@ local function position_card(mx, my)
   if y < 4 then y = 4 end
   card.root:ClearAnchors()
   card.root:SetAnchor(TOPLEFT, GuiRoot, TOPLEFT, x, y)
+  card_fader.report = false
   fade_in(card_fader)
+  zev.register_update("VerdantCardGuard", 100, card_guard)
 end
 
 local function size_card(w)
@@ -1019,12 +1039,6 @@ local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, 
   position_card(mx, my)
 end
 
-local function card_guard()
-  if card_fader.visible and api.MouseIsOver(controls.summary.hit) then return end
-  zev.unregister_update("VerdantCardGuard")
-  fade_out(card_fader)
-end
-
 local function show_report_card()
   local card = controls.card
   local chip = controls.summary
@@ -1108,7 +1122,7 @@ local function show_report_card()
 
   card.root:SetHeight(CARD_ROWS_Y0 + n_rows * CARD_ROW_H + 6)
   position_card(chip.bg:GetLeft() - 16, chip.bg:GetBottom() - 14)
-  zev.register_update("VerdantCardGuard", 100, card_guard)
+  card_fader.report = true
 end
 
 local function hit_begin(H, n) H.n = n end
@@ -3251,9 +3265,17 @@ function M.on_close_click()
   release_all_pools()
 end
 
+function M.card_state()
+  local f = card_fader
+  if not f then return "no card" end
+  local root = f.control
+  return string_format("hidden=%s alpha=%.2f flag=%s report=%s playing=%s over_chip=%s",
+    tostring(root:IsHidden()), root:GetAlpha(), tostring(f.visible), tostring(f.report),
+    tostring(f.anim:IsPlaying()), tostring(controls.summary ~= nil and api.MouseIsOver(controls.summary.hit)))
+end
+
 function M.on_move_start()
   stop_hover_poll()
-  zev.unregister_update("VerdantCardGuard")
   hide_hover_ui()
   if hover_key ~= nil then hover_key = nil; render_current_view() end
 end
@@ -3639,7 +3661,6 @@ function M.init()
     show_report_card()
   end)
   sum_hit:SetHandler("OnMouseExit", function()
-    zev.unregister_update("VerdantCardGuard")
     fade_out(card_fader)
   end)
   sum_hit:SetHandler("OnMouseUp", function(_, _, upInside)

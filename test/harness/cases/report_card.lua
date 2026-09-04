@@ -71,10 +71,23 @@ return function(H)
   ok(VerdantHoverCard._hidden == false, "the report reopens")
   Verdant.Graph.on_move_start()
   ok(VerdantHoverCard._hidden == true, "dragging the window closes the report at once")
-  ok(not H.update_registered("VerdantCardGuard"), "dragging stops the watch")
+  H.advance(200)
+  ok(not H.update_registered("VerdantCardGuard"), "the watch stops once the card is gone")
   local xml = assert(io.open("ui/graph.xml")):read("*a")
   ok(xml:find("<OnMoveStart>Verdant.Graph.on_move_start()", 1, true) ~= nil, "the window wires OnMoveStart")
   ok(xml:find("<OnResizeStart>Verdant.Graph.on_move_start()", 1, true) ~= nil, "the window wires OnResizeStart")
+
+  hit._onOnMouseEnter(hit)
+  ok(VerdantHoverCard._hidden == false, "the report reopens for the watchdog check")
+  local state = Verdant.Graph.card_state()
+  ok(state:find("hidden=false", 1, true) and state:find("report=true", 1, true), "the card probe reads the open report: " .. state)
+  H.state.hold_fade = true
+  hit._onOnMouseExit(hit)
+  ok(VerdantHoverCard._hidden == false, "a fade whose callback never fires leaves the card on screen")
+  H.advance(300)
+  ok(VerdantHoverCard._hidden == true and (VerdantHoverCard._alpha or 0) == 0, "the watchdog forces the stuck card off")
+  ok(not H.update_registered("VerdantCardGuard"), "the watchdog stops once the card is hidden")
+  H.state.hold_fade = nil
   H.state.mouse_x, H.state.mouse_y = nil, nil
 
   H.sounds = {}
