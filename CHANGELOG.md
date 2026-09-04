@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [2.5.0] - 2026-09-04
 
 ### Added
 - Settings: the sample-rate and time-window sliders turn red when the combination exceeds 1500 samples, and a confirmation explains the cost and the recommended 1 Hz / 1-10 minute range; Go back restores the previous values.
