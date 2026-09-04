@@ -141,6 +141,27 @@ return function(H)
   Verdant.Library.on_scroll(-1)
   Verdant.Library.on_scroll(-1)
   ok(VerdantLibraryScrollDown._hidden == true, "at the oldest row the down chevron hides")
+
+  local track = VerdantLibraryScrollTrack
+  local thumb = VerdantLibraryScrollTrackThumb
+  ok(track._hidden == false, "the scrollbar shows when rows overflow")
+  ok((thumb._h or 0) >= 16 and (thumb._h or 0) < track:GetHeight(), "the thumb is proportional")
+  H.state.mouse_x = track:GetLeft() + 4
+  H.state.mouse_y = track:GetTop() + 1
+  Verdant.Library.on_track_click()
+  ok(VerdantLibraryRow1Name._text == "Scroll14", "clicking the top of the track jumps to the newest, got " .. tostring(VerdantLibraryRow1Name._text))
+  H.state.mouse_y = track:GetTop() + track:GetHeight() - 1
+  Verdant.Library.on_track_click()
+  ok(VerdantLibraryRow1Name._text == "Scroll10", "clicking the bottom of the track jumps to the oldest, got " .. tostring(VerdantLibraryRow1Name._text))
+  Verdant.Library.on_thumb_down()
+  ok(VerdantLibrary._onOnUpdate ~= nil, "dragging arms the update handler")
+  H.state.mouse_y = track:GetTop() + 1
+  VerdantLibrary._onOnUpdate(VerdantLibrary)
+  ok(VerdantLibraryRow1Name._text == "Scroll14", "dragging the thumb to the top reaches the newest, got " .. tostring(VerdantLibraryRow1Name._text))
+  Verdant.Library.on_thumb_up()
+  ok(VerdantLibrary._onOnUpdate == nil, "releasing the thumb disarms the update handler")
+  Verdant.Library.on_scroll(-1)
+  ok(VerdantLibraryRow1Name._text == "Scroll13", "the chevron path still steps one row")
   Verdant.Library.on_label_focus(true)
   Verdant.Library.on_label_focus(false)
   Verdant.Library.hide()

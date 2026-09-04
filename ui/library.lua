@@ -7,6 +7,7 @@ local M = Verdant.Library
 local string_format = string.format
 local math_floor    = math.floor
 local d             = d
+local api = Verdant.zenimax.api
 local zui           = Verdant.zenimax.ui
 local PlaySound     = zui.PlaySound
 
@@ -30,6 +31,7 @@ local row_session = {}
 local selected = nil
 local delete_armed = false
 local scroll_off = 0
+local drag = { on = false, y0 = 0, off0 = 0 }
 local log
 
 local function pip_color(sum)
@@ -180,6 +182,20 @@ function M.refresh()
   local below = max_off - scroll_off
   controls.scroll_up:SetHidden(scroll_off <= 0)
   controls.scroll_down:SetHidden(below <= 0)
+  local track = controls.scroll_track
+  if max_off > 0 then
+    local th = track:GetHeight()
+    local thumb_h = math.floor(th * MAX_ROWS / n + 0.5)
+    if thumb_h < 16 then thumb_h = 16 end
+    if thumb_h > th then thumb_h = th end
+    local thumb_y = math.floor((th - thumb_h) * scroll_off / max_off + 0.5)
+    controls.scroll_thumb:SetHeight(thumb_h)
+    controls.scroll_thumb:ClearAnchors()
+    controls.scroll_thumb:SetAnchor(TOPLEFT, track, TOPLEFT, 0, thumb_y)
+    track:SetHidden(false)
+  else
+    track:SetHidden(true)
+  end
   controls.empty:SetHidden(n > 0)
   controls.empty:SetText(GetString(VERDANT_LIB_EMPTY))
   controls.empty:SetColor(0.5, 0.5, 0.5, 1)
@@ -248,10 +264,10 @@ function M.on_label_focus(on)
   local box = controls.label_box
   if not box then return end
   if on then
-    box:SetEdgeColor(0.62, 1.00, 0.74, 0.95)
+    box:SetEdgeColor(0.62, 1.00, 0.74, 0.80)
     if controls.label_edit.SelectAll then controls.label_edit:SelectAll() end
   else
-    box:SetEdgeColor(0.42, 1.00, 0.60, 0.45)
+    box:SetEdgeColor(0.42, 1.00, 0.60, 0.30)
   end
 end
 
@@ -312,15 +328,58 @@ function M.on_lock_click()
   end
 end
 
-function M.on_scroll(delta)
-  local dir = (delta and delta < 0) and 1 or -1
-  local new_off = scroll_off + dir
-  if new_off ~= scroll_off then
-    scroll_off = new_off
+local function max_offset()
+  local n = Verdant.SessionStore.count()
+  return (n > MAX_ROWS) and (n - MAX_ROWS) or 0
+end
+
+local function set_scroll(off)
+  local max_off = max_offset()
+  if off < 0 then off = 0 end
+  if off > max_off then off = max_off end
+  if off ~= scroll_off then
+    scroll_off = off
     selected = nil
     delete_armed = false
     M.refresh()
   end
+end
+
+function M.on_scroll(delta)
+  local dir = (delta and delta < 0) and 1 or -1
+  set_scroll(scroll_off + dir)
+end
+
+function M.on_track_click()
+  if drag.on then return end
+  local track = controls.scroll_track
+  local _, my = api.GetUIMousePosition()
+  local th = track:GetHeight()
+  if th <= 0 then return end
+  local rel = (my - track:GetTop()) / th
+  set_scroll(math.floor(rel * (max_offset() + 1)))
+end
+
+local function drag_update()
+  if not drag.on then return end
+  local track = controls.scroll_track
+  local free = track:GetHeight() - controls.scroll_thumb:GetHeight()
+  local max_off = max_offset()
+  if free <= 0 or max_off <= 0 then return end
+  local _, my = api.GetUIMousePosition()
+  set_scroll(drag.off0 + math.floor((my - drag.y0) * max_off / free + 0.5))
+end
+
+function M.on_thumb_down()
+  local _, my = api.GetUIMousePosition()
+  drag.on, drag.y0, drag.off0 = true, my, scroll_off
+  controls.window:SetHandler("OnUpdate", drag_update)
+end
+
+function M.on_thumb_up()
+  if not drag.on then return end
+  drag.on = false
+  controls.window:SetHandler("OnUpdate", nil)
 end
 
 function M.on_delete_click()
@@ -365,6 +424,7 @@ function M.show()
 end
 
 function M.hide()
+  M.on_thumb_up()
   if not controls.window:IsHidden() then PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED) end
   controls.window:SetHidden(true)
 end
@@ -380,6 +440,8 @@ function M.init()
   controls.scroll_up  = VerdantLibraryScrollUp
   controls.scroll_down = VerdantLibraryScrollDown
   controls.label_box  = VerdantLibraryLabelBox
+  controls.scroll_track = VerdantLibraryScrollTrack
+  controls.scroll_thumb = VerdantLibraryScrollTrackThumb
   controls.list       = VerdantLibraryList
   controls.empty      = VerdantLibraryListEmpty
   controls.open_btn   = VerdantLibraryOpenBtn
@@ -390,7 +452,6 @@ function M.init()
   controls.label_edit:SetDefaultText(GetString(VERDANT_LIB_LABEL_HINT))
   controls.label_btn:SetText(GetString(VERDANT_LIB_LABEL_SAVE))
   controls.label_btn:SetEnabled(false)
-  zui.tooltip(controls.label_btn, VERDANT_TIP_LIB_LABEL, TOP)
   zui.tooltip(controls.open_btn,   VERDANT_TIP_LIB_OPEN,   TOP)
   zui.tooltip(controls.lock_btn,   VERDANT_TIP_LIB_LOCK,   TOP)
   zui.tooltip(controls.delete_btn, VERDANT_TIP_LIB_DELETE, TOP)
@@ -408,9 +469,12 @@ function M.init()
   VerdantLibraryListFill:SetColor(0.055, 0.052, 0.046, 0.92)
   controls.scroll_up:SetColor(0.62, 1.00, 0.74, 0.8)
   controls.scroll_down:SetColor(0.62, 1.00, 0.74, 0.8)
-  VerdantLibraryLabelBoxFill:SetTextureCoords(0, 1, 0, 0.05)
-  VerdantLibraryLabelBoxFill:SetColor(0.055, 0.052, 0.046, 0.92)
   controls.label_box:SetCenterColor(0, 0, 0, 0)
+  controls.label_edit:SetDefaultTextColor(0.62, 0.70, 0.64, 0.45)
+  VerdantLibraryScrollTrackBg:SetTextureCoords(0, 1, 0, 0.05)
+  VerdantLibraryScrollTrackBg:SetColor(0.42, 1.00, 0.60, 0.12)
+  controls.scroll_thumb:SetTextureCoords(0, 1, 0, 0.05)
+  controls.scroll_thumb:SetColor(0.62, 1.00, 0.74, 0.55)
   M.on_label_focus(false)
   set_buttons()
 end
