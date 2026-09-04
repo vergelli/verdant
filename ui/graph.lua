@@ -547,13 +547,26 @@ end
 local function fade_in(f)
   if not f or f.visible then return end
   f.visible = true
-  f.anim:FadeIn(0, FADE_MS)
+  local control = f.control
+  if control:GetAlpha() >= 0.99 then
+    f.anim:Stop()
+    control:SetAlpha(1)
+    control:SetHidden(false)
+  else
+    f.anim:FadeIn(0, FADE_MS)
+  end
 end
 local function fade_out(f)
   if not f or not f.visible then return end
   f.visible = false
   local control = f.control
-  f.anim:FadeOut(0, FADE_MS, nil, function() control:SetHidden(true) end)
+  if control:GetAlpha() <= 0.01 then
+    f.anim:Stop()
+    control:SetAlpha(0)
+    control:SetHidden(true)
+  else
+    f.anim:FadeOut(0, FADE_MS, nil, function() if not f.visible then control:SetHidden(true) end end)
+  end
 end
 
 local function hexc(c)

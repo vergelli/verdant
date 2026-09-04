@@ -153,6 +153,7 @@
 ### Fixed
 - The healing report card no longer stays behind on screen when the window is dragged or resized while it is open; it also closes by itself if the mouse leaves the chip without an exit event.
 - A hover card whose fade-out never completes is now forced off by a watchdog; `/verdant card` prints the card's state for bug reports.
+- Leaving the chip before the card's fade-in has ticked no longer queues a zero-length fade-out (which never fires its hide callback); the card is hidden outright.
 - Session Library failed to initialise (and took the slash command with it) after the chevrons became buttons: buttons have no SetColor in ESO. The scrollbar thumb is now a real hit-box, since textures never receive mouse input.
 - SKILL: the vertical split now shares the plot area after each canvas's fixed overhead, so both plots keep the same height at any window size and the top plot no longer collapses to nothing at small heights.
 - TRIAGE: the donut follows the summary chip inset instead of keeping its first position; the legend's meaning column measures the string, not the clipped label.
