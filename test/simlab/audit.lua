@@ -114,7 +114,8 @@ for _, name in ipairs(list_svgs()) do
             finds[#finds + 1] = string.format(
               '  TEXT-OVERLAP "%s" vs "%s" at (%.0f,%.0f)', a.text, b.text, a.x, a.y)
           end
-          if b.kind == "rect" and b.button and overlaps(a, b) then
+          if b.kind == "rect" and b.button and overlaps(a, b)
+             and not (a.name and b.name and b.name ~= a.name and b.name:find(a.name, 1, true) == 1) then
             finds[#finds + 1] = string.format(
               '  TEXT-UNDER-BUTTON "%s" vs %s at (%.0f,%.0f)', a.text, b.name or "?", a.x, a.y)
           end

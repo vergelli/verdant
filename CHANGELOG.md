@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Session Library: Open, Lock and Delete wear icons, and the Delete key deletes the selected session with the same two-press confirmation as the button.
 - Session Library scrollbar: a slim track with a proportional thumb you can drag, click-to-jump, and clickable chevrons, so the list works without a mouse wheel.
 - Session Library: sessions record the dungeon difficulty; veteran runs show a small badge and the row tooltip leads with date, place, difficulty, group size and duration.
 - **The summary chip lives inside the viewport** now, top right, and the

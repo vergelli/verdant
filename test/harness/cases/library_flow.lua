@@ -122,6 +122,36 @@ return function(H)
   Verdant.Library.on_delete_click()
   ok(SS.count() == before - 1, "second delete click must delete after unlock")
 
+  ok(VerdantLibraryOpenBtnIcon and VerdantLibraryLockBtnIcon and VerdantLibraryDeleteBtnIcon, "the action buttons carry icons")
+  for _, z in ipairs({ "Keyed", "Keyed2" }) do
+    SS.store({ head = { locked = false, zone = z, ts = 1755900000, dur_ms = 1000, group_size = 0,
+                        sum = { avg = 0, peak = 0, saves = 0, o = 0, l = 0, m = 0 } }, streams = {} })
+  end
+  Verdant.Library.refresh()
+  Verdant.Library.on_row_click(1)
+  local keyed = SS.count()
+  VerdantLibraryLabelBoxEdit._has_focus = true
+  Verdant.Library.on_key(KEY_DELETE)
+  Verdant.Library.on_key(KEY_DELETE)
+  ok(SS.count() == keyed, "Delete does nothing while the name box has focus")
+  VerdantLibraryLabelBoxEdit._has_focus = false
+  ok(Verdant.Library.on_key(KEY_DELETE) == true, "the first Delete press arms")
+  ok(SS.count() == keyed and VerdantLibraryDeleteBtn._text == "Delete?", "the first Delete press only arms")
+  Verdant.Library.on_key(KEY_DELETE)
+  ok(SS.count() == keyed - 1, "the second Delete press deletes")
+  ok(Verdant.Library.on_key(KEY_DELETE + 1) == false, "other keys pass through")
+  local xml = assert(io.open("ui/library.xml")):read("*a")
+  ok(xml:find('keyboardEnabled="true"', 1, true) and xml:find("<OnKeyDown>Verdant.Library.on_key(key)", 1, true),
+     "the library window listens for keys")
+  Verdant.Library.on_row_click(1)
+  Verdant.Library.on_lock_click()
+  ok(VerdantLibraryLockBtnIcon._tex == "EsoUI/Art/Miscellaneous/unlocked_up.dds", "a locked row offers the unlock icon")
+  Verdant.Library.on_lock_click()
+  ok(VerdantLibraryLockBtnIcon._tex == "EsoUI/Art/Miscellaneous/locked_up.dds", "an unlocked row offers the lock icon")
+  Verdant.Library.on_delete_click()
+  Verdant.Library.on_delete_click()
+  ok(SS.count() == keyed - 2, "the second keyed session leaves by mouse")
+
   for i = 1, 14 do
     SS.store({ head = { locked = false, zone = "Scroll" .. i, ts = 1755900000,
                         dur_ms = 1000, group_size = 0,
