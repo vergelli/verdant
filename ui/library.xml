@@ -5,12 +5,14 @@
                      hidden="true"
                      clampedToScreen="true"
                      movable="true"
-                     mouseEnabled="true">
+                     mouseEnabled="true"
+                     keyboardEnabled="true">
 
       <Dimensions x="440" y="470"/>
       <Anchor point="CENTER" relativeTo="GuiRoot" relativePoint="CENTER" offsetX="120" offsetY="0"/>
 
       <OnMouseWheel>Verdant.Library.on_scroll(delta)</OnMouseWheel>
+      <OnKeyDown>Verdant.Library.on_key(key)</OnKeyDown>
 
       <Controls>
 
@@ -146,6 +148,12 @@
           <Anchor point="BOTTOMLEFT" offsetX="14" offsetY="-12"/>
           <Dimensions x="110" y="24"/>
           <OnClicked>Verdant.Library.on_open_click()</OnClicked>
+          <Controls>
+            <Texture name="$(parent)Icon" textureFile="EsoUI/Art/Buttons/rightArrow_up.dds">
+              <Anchor point="LEFT" offsetX="10" offsetY="0"/>
+              <Dimensions x="16" y="16"/>
+            </Texture>
+          </Controls>
         </Button>
 
         <Button name="$(parent)LockBtn"
@@ -155,6 +163,12 @@
           <Anchor point="BOTTOM" offsetX="0" offsetY="-12"/>
           <Dimensions x="110" y="24"/>
           <OnClicked>Verdant.Library.on_lock_click()</OnClicked>
+          <Controls>
+            <Texture name="$(parent)Icon" textureFile="EsoUI/Art/Miscellaneous/locked_up.dds">
+              <Anchor point="LEFT" offsetX="10" offsetY="0"/>
+              <Dimensions x="16" y="16"/>
+            </Texture>
+          </Controls>
         </Button>
 
         <Button name="$(parent)DeleteBtn"
@@ -164,6 +178,12 @@
           <Anchor point="BOTTOMRIGHT" offsetX="-14" offsetY="-12"/>
           <Dimensions x="110" y="24"/>
           <OnClicked>Verdant.Library.on_delete_click()</OnClicked>
+          <Controls>
+            <Texture name="$(parent)Icon" textureFile="EsoUI/Art/Buttons/decline_up.dds">
+              <Anchor point="LEFT" offsetX="10" offsetY="0"/>
+              <Dimensions x="16" y="16"/>
+            </Texture>
+          </Controls>
         </Button>
 
       </Controls>

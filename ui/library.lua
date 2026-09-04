@@ -154,6 +154,13 @@ local function make_row(i)
            name = name, stats = stats, when = when, star = star }
 end
 
+local ICON_LOCK   = "EsoUI/Art/Miscellaneous/locked_up.dds"
+local ICON_UNLOCK = "EsoUI/Art/Miscellaneous/unlocked_up.dds"
+
+local function tint_icon(icon, on, r, g, b)
+  icon:SetColor(r, g, b, on and 0.9 or 0.25)
+end
+
 local function set_buttons()
   local has = selected ~= nil
   local locked = false
@@ -165,11 +172,15 @@ local function set_buttons()
   else
     controls.lock_btn:SetText(GetString(VERDANT_LIB_LOCK))
   end
+  controls.lock_icon:SetTexture(locked and ICON_UNLOCK or ICON_LOCK)
   controls.open_btn:SetEnabled(has)
   controls.lock_btn:SetEnabled(has)
   controls.delete_btn:SetEnabled(has and not locked)
   controls.delete_btn:SetText(delete_armed and GetString(VERDANT_LIB_CONFIRM)
                                             or GetString(VERDANT_LIB_DELETE))
+  tint_icon(controls.open_icon,   has, 0.62, 1.00, 0.74)
+  tint_icon(controls.lock_icon,   has, 0.62, 1.00, 0.74)
+  tint_icon(controls.delete_icon, has and not locked, 1.00, 0.55, 0.50)
 end
 
 function M.refresh()
@@ -382,6 +393,13 @@ function M.on_thumb_up()
   controls.window:SetHandler("OnUpdate", nil)
 end
 
+function M.on_key(key)
+  if key ~= KEY_DELETE then return false end
+  if controls.label_edit and controls.label_edit:HasFocus() then return false end
+  M.on_delete_click()
+  return true
+end
+
 function M.on_delete_click()
   if not selected then return end
   local s = Verdant.SessionStore.get(row_session[selected])
@@ -447,6 +465,9 @@ function M.init()
   controls.open_btn   = VerdantLibraryOpenBtn
   controls.lock_btn   = VerdantLibraryLockBtn
   controls.delete_btn = VerdantLibraryDeleteBtn
+  controls.open_icon  = VerdantLibraryOpenBtnIcon
+  controls.lock_icon  = VerdantLibraryLockBtnIcon
+  controls.delete_icon = VerdantLibraryDeleteBtnIcon
   controls.label_edit = VerdantLibraryLabelBoxEdit
   controls.label_btn  = VerdantLibraryLabelBtn
   controls.label_edit:SetDefaultText(GetString(VERDANT_LIB_LABEL_HINT))
@@ -461,6 +482,7 @@ function M.init()
   controls.open_btn:SetText(GetString(VERDANT_LIB_OPEN))
   controls.lock_btn:SetText(GetString(VERDANT_LIB_LOCK))
   controls.delete_btn:SetText(GetString(VERDANT_LIB_DELETE))
+  set_buttons()
   VerdantLibraryBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantLibraryBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
   VerdantLibraryListBg:SetEdgeColor(0.42, 1.00, 0.60, 0.55)
