@@ -9,6 +9,8 @@ Verdant.Constants = {
 
   DEBUG         = false,
   PIXEL_GRID    = true,
+  GRAPH_DEFAULT_W = 420,
+  GRAPH_DEFAULT_H = 312,
 
   SV_TABLE   = "VerdantSavedVars",
   SV_VERSION = 1,

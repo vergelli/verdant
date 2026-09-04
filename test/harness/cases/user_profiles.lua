@@ -30,6 +30,12 @@ return function(H)
   ok(sv.settings.user_profiles["Raid Night"], "empty-name save must overwrite selected user profile")
 
   S.on_profile_delete_click()
+  ok(VerdantSettingsConfirm._hidden == false, "deleting a profile asks first")
+  ok((VerdantSettingsConfirmMsg._text or ""):find("Raid Night", 1, true), "the question names the profile")
+  S.on_confirm_no()
+  ok(sv.settings.user_profiles["Raid Night"] and VerdantSettingsConfirm._hidden == true, "Keep leaves the profile alone")
+  S.on_profile_delete_click()
+  S.on_confirm_yes()
   eq(sv.settings.user_profiles["Raid Night"], nil, "delete must remove the profile")
   eq(S.snapshot().profile_id, "custom", "after delete fall back to custom")
 

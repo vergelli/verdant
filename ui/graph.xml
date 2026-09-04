@@ -25,6 +25,7 @@
                      resizeHandleSize="8">
 
       <Dimensions x="420" y="312"/>
+      <OnMouseDoubleClick>Verdant.Graph.on_title_double_click()</OnMouseDoubleClick>
       <OnMoveStart>Verdant.Graph.on_move_start()</OnMoveStart>
       <OnMoveStop>Verdant.Graph.on_move_stop()</OnMoveStop>
       <OnResizeStart>Verdant.Graph.on_move_start()</OnResizeStart>

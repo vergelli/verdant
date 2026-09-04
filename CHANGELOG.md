@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- Settings: the sample-rate and time-window sliders turn red when the combination exceeds 1500 samples, and a confirmation explains the cost and the recommended 1 Hz / 1-10 minute range; Go back restores the previous values.
+- Settings: deleting a saved profile asks first; the profile name box has the same border-only look as the library's, lights up on focus and saves on Enter.
+- Escape closes the Settings, Session Library and Assign windows (they are registered with the game's scene manager).
+- Session Library: Up/Down move the selection, Enter opens, Escape closes; rows highlight under the mouse; an armed Delete disarms by itself after three seconds.
+- Graph: click the view name to move to the next view (right click for the previous); double-click the title bar to restore the default window size.
 - Session Library: Open, Lock and Delete wear icons, and the Delete key deletes the selected session with the same two-press confirmation as the button.
 - Session Library scrollbar: a slim track with a proportional thumb you can drag, click-to-jump, and clickable chevrons, so the list works without a mouse wheel.
 - Session Library: sessions record the dungeon difficulty; veteran runs show a small badge and the row tooltip leads with date, place, difficulty, group size and duration.

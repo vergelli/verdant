@@ -3287,6 +3287,17 @@ function M.card_state()
     tostring(f.anim:IsPlaying()), tostring(controls.summary ~= nil and api.MouseIsOver(controls.summary.hit)))
 end
 
+function M.on_title_double_click()
+  local _, my = GetUIMousePosition()
+  if my - controls.window:GetTop() > 30 then return end
+  local C = Verdant.Constants
+  local w, h = controls.window:GetDimensions()
+  if w == C.GRAPH_DEFAULT_W and h == C.GRAPH_DEFAULT_H then return end
+  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  controls.window:SetDimensions(C.GRAPH_DEFAULT_W, C.GRAPH_DEFAULT_H)
+  M.on_resize_stop()
+end
+
 function M.on_move_start()
   stop_hover_poll()
   hide_hover_ui()
@@ -3552,6 +3563,11 @@ function M.init()
   end)
   controls.view_label:SetHandler("OnMouseExit", function()
     ZO_Tooltips_HideTextTooltip()
+  end)
+  controls.view_label:SetHandler("OnMouseUp", function(_, button, upInside)
+    if upInside == false then return end
+    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    if button == zc.MOUSE_BUTTON_INDEX_RIGHT then M.prev_view() else M.next_view() end
   end)
 
   local strip = VerdantGraphWindowTabs

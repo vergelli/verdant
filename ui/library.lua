@@ -9,6 +9,9 @@ local math_floor    = math.floor
 local d             = d
 local api = Verdant.zenimax.api
 local zui           = Verdant.zenimax.ui
+local zc            = Verdant.zenimax.constants
+local zev           = Verdant.zenimax.events
+local Scene         = Verdant.zenimax.scene
 local PlaySound     = zui.PlaySound
 
 local ROW_H   = 30
@@ -81,7 +84,7 @@ local function make_row(i)
     M.on_open_click()
   end)
   row:SetHandler("OnMouseEnter", function() M.on_row_enter(i) end)
-  row:SetHandler("OnMouseExit", function() ZO_Tooltips_HideTextTooltip() end)
+  row:SetHandler("OnMouseExit", function() M.on_row_exit(i) end)
 
   local bg = WM:CreateControl(nm .. "Bg", row, CT_TEXTURE)
   solidify(bg)
@@ -101,6 +104,12 @@ local function make_row(i)
   sh:SetAnchor(BOTTOMRIGHT, row, BOTTOMRIGHT, 0, 0)
   sh:SetHeight(1)
   sh:SetColor(0, 0, 0, 0.40)
+
+  local hov = WM:CreateControl(nm .. "Hov", row, CT_TEXTURE)
+  solidify(hov)
+  hov:SetAnchorFill(row)
+  hov:SetColor(C_SEL.r, C_SEL.g, C_SEL.b, 0.05)
+  hov:SetHidden(true)
 
   local sel = WM:CreateControl(nm .. "Sel", row, CT_TEXTURE)
   solidify(sel)
@@ -150,7 +159,7 @@ local function make_row(i)
   star:SetColor(C_STAR.r, C_STAR.g, C_STAR.b, 0.95)
   star:SetHidden(true)
 
-  return { root = row, bg = bg, sel = sel, pip = pip, vet = vet,
+  return { root = row, bg = bg, sel = sel, hov = hov, pip = pip, vet = vet,
            name = name, stats = stats, when = when, star = star }
 end
 
@@ -248,9 +257,15 @@ function M.refresh()
   set_buttons()
 end
 
+function M.on_row_exit(i)
+  ZO_Tooltips_HideTextTooltip()
+  if rows[i] then rows[i].hov:SetHidden(true) end
+end
+
 function M.on_row_enter(i)
   local idx = row_session[i]
   if not idx then return end
+  rows[i].hov:SetHidden(false)
   local s = Verdant.SessionStore.get(idx)
   if not s then return end
   local sum = s.head.sum or {}
@@ -290,10 +305,23 @@ local function sync_label_box()
   controls.label_btn:SetEnabled(selected ~= nil)
 end
 
+local function disarm_delete()
+  zev.unregister_update("VerdantLibDisarm")
+  if delete_armed then
+    delete_armed = false
+    set_buttons()
+  end
+end
+
+local function arm_delete()
+  delete_armed = true
+  zev.register_update("VerdantLibDisarm", 3000, disarm_delete)
+end
+
 function M.on_row_click(i)
   if not row_session[i] then return end
   selected = i
-  delete_armed = false
+  disarm_delete()
   for k = 1, #rows do
     rows[k].sel:SetHidden(k ~= i)
   end
@@ -393,10 +421,38 @@ function M.on_thumb_up()
   controls.window:SetHandler("OnUpdate", nil)
 end
 
+local function shown_rows()
+  local n = 0
+  for i = 1, #rows do
+    if row_session[i] and not rows[i].root:IsHidden() then n = i end
+  end
+  return n
+end
+
 function M.on_key(key)
-  if key ~= KEY_DELETE then return false end
   if controls.label_edit and controls.label_edit:HasFocus() then return false end
-  M.on_delete_click()
+  if key == zc.KEY_DELETE then
+    M.on_delete_click()
+  elseif key == zc.KEY_ENTER then
+    M.on_open_click()
+  elseif key == zc.KEY_ESCAPE then
+    M.hide()
+  elseif key == zc.KEY_UPARROW or key == zc.KEY_DOWNARROW then
+    local n = shown_rows()
+    if n == 0 then return true end
+    local step = (key == zc.KEY_UPARROW) and -1 or 1
+    local i = selected and (selected + step) or ((step < 0) and n or 1)
+    if i < 1 then
+      set_scroll(scroll_off + 1)
+      i = 1
+    elseif i > n then
+      set_scroll(scroll_off - 1)
+      i = n
+    end
+    M.on_row_click(i)
+  else
+    return false
+  end
   return true
 end
 
@@ -405,12 +461,12 @@ function M.on_delete_click()
   local s = Verdant.SessionStore.get(row_session[selected])
   if s and s.head.locked then return end
   if not delete_armed then
-    delete_armed = true
+    arm_delete()
     PlaySound(SOUNDS.NEGATIVE_CLICK)
     set_buttons()
     return
   end
-  delete_armed = false
+  disarm_delete()
   PlaySound(SOUNDS.DIALOG_DECLINE)
   Verdant.SessionStore.delete(row_session[selected])
   selected = nil
@@ -432,19 +488,20 @@ end
 
 function M.show()
   selected = nil
-  delete_armed = false
+  disarm_delete()
   scroll_off = 0
   dock_window()
   M.refresh()
   sync_label_box()
-  controls.window:SetHidden(false)
+  Scene.show_top_level(controls.window)
   PlaySound(SOUNDS.ARMORY_OPEN)
 end
 
 function M.hide()
   M.on_thumb_up()
-  if not controls.window:IsHidden() then PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED) end
-  controls.window:SetHidden(true)
+  if controls.window:IsHidden() then return end
+  PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+  Scene.hide_top_level(controls.window)
 end
 
 function M.toggle()
@@ -454,6 +511,7 @@ end
 function M.init()
   log = Verdant.Log.for_module("library")
   controls.window     = VerdantLibrary
+  Scene.register_top_level(controls.window)
   controls.title      = VerdantLibraryWindowTitle
   controls.scroll_up  = VerdantLibraryScrollUp
   controls.scroll_down = VerdantLibraryScrollDown

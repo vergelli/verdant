@@ -79,7 +79,14 @@
           <Anchor point="TOPLEFT" offsetX="14" offsetY="98"/>
           <Dimensions x="134" y="24"/>
           <Controls>
-            <EditBox name="$(parent)Edit" inherits="ZO_DefaultEditForBackdrop" maxInputCharacters="20"/>
+            <EditBox name="$(parent)Edit" inherits="ZO_DefaultEditForBackdrop" maxInputCharacters="20"
+                     defaultTextColor="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_DISABLED">
+              <Anchor point="TOPLEFT"     offsetX="8"  offsetY="0"/>
+              <Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="0"/>
+              <OnEnter>Verdant.Settings.on_profile_save_click()</OnEnter>
+              <OnFocusGained>Verdant.Settings.on_pname_focus(true)</OnFocusGained>
+              <OnFocusLost>Verdant.Settings.on_pname_focus(false)</OnFocusLost>
+            </EditBox>
           </Controls>
         </Backdrop>
 
@@ -407,6 +414,58 @@
           <OnClicked>Verdant.Settings.on_reset_click()</OnClicked>
         </Button>
 
+      </Controls>
+    </TopLevelControl>
+
+    <TopLevelControl name="VerdantSettingsConfirm"
+                     hidden="true"
+                     clampedToScreen="true"
+                     mouseEnabled="true">
+      <Dimensions x="420" y="200"/>
+      <Anchor point="CENTER" relativeTo="GuiRoot" relativePoint="CENTER"/>
+
+      <Controls>
+        <Backdrop name="$(parent)Bg">
+          <AnchorFill/>
+          <Edge file="EsoUI/Art/Tooltips/UI-Border.dds"
+                edgeFileWidth="128" edgeFileHeight="16" edgeSize="6"/>
+          <Center file="EsoUI/Art/Tooltips/UI-TooltipCenter.dds"/>
+          <Insets left="6" top="6" right="-6" bottom="-6"/>
+        </Backdrop>
+
+        <Label name="$(parent)Title"
+               font="ZoFontWindowTitle"
+               horizontalAlignment="LEFT"
+               verticalAlignment="CENTER">
+          <Anchor point="TOPLEFT" offsetX="16" offsetY="14"/>
+          <Dimensions y="18"/>
+        </Label>
+
+        <Label name="$(parent)Msg"
+               font="ZoFontGame"
+               horizontalAlignment="LEFT"
+               verticalAlignment="TOP">
+          <Anchor point="TOPLEFT"     offsetX="16"  offsetY="44"/>
+          <Anchor point="BOTTOMRIGHT" offsetX="-16" offsetY="-44"/>
+        </Label>
+
+        <Button name="$(parent)NoBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMLEFT" offsetX="16" offsetY="-12"/>
+          <Dimensions x="152" y="24"/>
+          <OnClicked>Verdant.Settings.on_confirm_no()</OnClicked>
+        </Button>
+
+        <Button name="$(parent)YesBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="BOTTOMRIGHT" offsetX="-16" offsetY="-12"/>
+          <Dimensions x="152" y="24"/>
+          <OnClicked>Verdant.Settings.on_confirm_yes()</OnClicked>
+        </Button>
       </Controls>
     </TopLevelControl>
 
