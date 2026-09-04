@@ -75,7 +75,8 @@ TEXT_WRAP_MODE_ELLIPSIS = 2 TEXT_WRAP_MODE_TRUNCATE = 1
 CD_TYPE_RADIAL = 1 CD_TYPE_VERTICAL = 2
 CD_TIME_TYPE_TIME_UNTIL = 0 CD_TIME_TYPE_TIME_REMAINING = 1
 TEXT_ALIGN_LEFT = 61 TEXT_ALIGN_CENTER = 62 TEXT_ALIGN_RIGHT = 63
-KEY_DELETE = 118
+KEY_DELETE = 118 KEY_UPARROW = 119 KEY_DOWNARROW = 120 KEY_ENTER = 121 KEY_ESCAPE = 122
+MOUSE_BUTTON_INDEX_LEFT = 1 MOUSE_BUTTON_INDEX_RIGHT = 2
 TEXT_ALIGN_TOP = 64 TEXT_ALIGN_BOTTOM = 65
 SCENE_SHOWN = "shown" SCENE_HIDDEN = "hidden"
 SOUNDS = setmetatable({}, { __index = function(_, k) return "sound:" .. tostring(k) end })
@@ -245,7 +246,7 @@ local MOCKC = {
         return 14 * (n + 1)
       end
     elseif k == "SetHidden" then fn = function(s, h) s._hidden = h and true or false end
-    elseif k == "IsHidden" then fn = function(s) return s._hidden == true end
+    elseif k == "IsHidden" or k == "IsControlHidden" then fn = function(s) return s._hidden == true end
     elseif k == "SetColor" then fn = function(s, r, g, b, a) s._r, s._g, s._b, s._a = r, g, b, a end
     elseif k == "SetAlpha" then fn = function(s, a) s._alpha = a end
     elseif k == "SetTexture" then fn = function(s, path) s._tex = path end
@@ -452,13 +453,28 @@ ZO_SavedVars = {
 
 SCENE_MANAGER = {
   callbacks = {},
+  top_levels = {},
   RegisterCallback = function(self, name, cb)
     self.callbacks[name] = self.callbacks[name] or {}
     local list = self.callbacks[name]
     list[#list + 1] = cb
   end,
   UnregisterCallback = function() end,
+  RegisterTopLevel = function(self, c) self.top_levels[c] = true end,
+  ShowTopLevel = function(self, c)
+    if self.top_levels[c] then c:SetHidden(false); H.ui_mode = true end
+  end,
+  HideTopLevel = function(self, c)
+    if self.top_levels[c] and not c._hidden then
+      c:SetHidden(true)
+      if c._onOnEffectivelyHidden then c._onOnEffectivelyHidden(c) end
+    end
+  end,
+  HideTopLevels = function(self)
+    for c in pairs(self.top_levels) do self:HideTopLevel(c) end
+  end,
 }
+function H.escape() SCENE_MANAGER:HideTopLevels() end
 
 function ZO_CreateStringId(id, str) rawset(_G, id, str) end
 function ZO_Tooltips_ShowTextTooltip(control, side, text)

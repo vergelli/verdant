@@ -8,6 +8,7 @@ local api = Verdant.zenimax.api
 local zui = Verdant.zenimax.ui
 local PlaySound = zui.PlaySound
 local zc  = Verdant.zenimax.constants
+local Scene = Verdant.zenimax.scene
 local GetUIMousePosition = api.GetUIMousePosition
 local GetString          = api.GetString
 local WINDOW_MANAGER     = zui.WINDOW_MANAGER
@@ -255,6 +256,58 @@ local function reinit_buffer()
   warn_if_heavy(capacity, current_twindow, hz)
 end
 
+local C_FILL_OK     = { 0.40, 0.82, 0.50, 0.92 }
+local C_FILL_HEAVY  = { 0.92, 0.30, 0.28, 0.92 }
+local C_LABEL_OK    = { 0.75, 0.75, 0.75, 1 }
+local C_LABEL_HEAVY = { 1.00, 0.45, 0.42, 1 }
+
+local function capacity_of(sample_ms, twindow_s)
+  return twindow_s * math_floor(1000 / sample_ms)
+end
+
+local function is_heavy(sample_ms, twindow_s)
+  return capacity_of(sample_ms, twindow_s) > CAPACITY_WARN_THRESHOLD
+end
+
+local function tint_temporal()
+  local heavy = is_heavy(current_sample, current_twindow)
+  local f = heavy and C_FILL_HEAVY or C_FILL_OK
+  local l = heavy and C_LABEL_HEAVY or C_LABEL_OK
+  for _, k in ipairs({ "sample", "twindow" }) do
+    local fill, label = controls["fill_" .. k], controls["label_" .. k]
+    if fill then fill:SetColor(f[1], f[2], f[3], f[4]) end
+    if label then label:SetColor(l[1], l[2], l[3], l[4]) end
+  end
+end
+
+function M.is_heavy_combo() return is_heavy(current_sample, current_twindow) end
+
+local confirm = { kind = nil }
+
+local function show_confirm(kind, title, msg, yes, no)
+  confirm.kind = kind
+  controls.confirm_title:SetText(GetString(title))
+  controls.confirm_msg:SetText(msg)
+  controls.confirm_yes:SetText(GetString(yes))
+  controls.confirm_no:SetText(GetString(no))
+  controls.confirm:SetHidden(false)
+  PlaySound(SOUNDS.NEGATIVE_CLICK)
+end
+
+local function ask_heavy(prev_sample, prev_twindow)
+  local was_heavy = is_heavy(prev_sample, prev_twindow)
+  local heavy = is_heavy(current_sample, current_twindow)
+  if not heavy then return end
+  if was_heavy and capacity_of(current_sample, current_twindow) <= capacity_of(prev_sample, prev_twindow) then return end
+  confirm.prev_sample  = prev_sample
+  confirm.prev_twindow = prev_twindow
+  local hz = math_floor(1000 / current_sample)
+  show_confirm("heavy", VERDANT_SETTINGS_HEAVY_TITLE,
+    string.format(GetString(VERDANT_SETTINGS_HEAVY_MSG), TWINDOW_LABELS[current_twindow] or (current_twindow .. "s"), hz,
+      capacity_of(current_sample, current_twindow)),
+    VERDANT_SETTINGS_HEAVY_YES, VERDANT_SETTINGS_HEAVY_NO)
+end
+
 local profile_combo
 
 local function persist_profile(id)
@@ -308,6 +361,7 @@ local function refresh_all_sliders()
   update_slider(c.track_vpalpha, c.fill_vpalpha, c.thumb_vpalpha, c.label_vpalpha, VPALPHA_PRESETS, VPALPHA_LABELS, current_vpalpha)
   update_slider(c.track_triage,  c.fill_triage,  c.thumb_triage,  c.label_triage,  THETA_PRESETS,   THETA_LABELS,   current_theta)
   update_slider(c.track_lighta,  c.fill_lighta,  c.thumb_lighta,  c.label_lighta,  LIGHTA_PRESETS,  LIGHTA_LABELS,  current_lighta)
+  tint_temporal()
 end
 
 function M.refresh_unknown_count()
@@ -338,12 +392,14 @@ function M.toggle()
   local hidden = win:IsHidden()
   if hidden then
     dock_window()
-    win:SetHidden(false)
+    Scene.show_top_level(win)
     refresh_all_sliders()
     M.refresh_unknown_count()
     PlaySound(SOUNDS.ARMORY_OPEN)
   else
-    win:SetHidden(true)
+    Scene.hide_top_level(win)
+    controls.confirm:SetHidden(true)
+    confirm.kind = nil
     PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
   end
 end
@@ -528,6 +584,13 @@ function M.on_profile_delete_click()
     d("[V] " .. GetString(VERDANT_PROFILE_DELETE_HINT))
     return
   end
+  show_confirm("pdelete", VERDANT_SETTINGS_PDEL_TITLE,
+    string.format(GetString(VERDANT_SETTINGS_PDEL_MSG), user_profile_name(current_profile)),
+    VERDANT_SETTINGS_PDEL_YES, VERDANT_SETTINGS_PDEL_NO)
+end
+
+local function delete_profile_now()
+  if not is_user_profile(current_profile) then return end
   local up = user_profiles()
   if not up then return end
   local name = user_profile_name(current_profile)
@@ -587,12 +650,15 @@ function M.on_sample_track_click(control)
   if track_w <= 0 then return end
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#SAMPLE_PRESETS, math_floor(pct * (#SAMPLE_PRESETS - 1) + 0.5) + 1))
+  local prev_sample, prev_twindow = current_sample, current_twindow
   current_sample = SAMPLE_PRESETS[idx]
   log:info("sample_rate ->", current_sample, "ms")
   persist_temporal("sample_rate_ms", current_sample)
   reinit_buffer()
   mark_custom()
   update_slider(controls.track_sample, controls.fill_sample, controls.thumb_sample, controls.label_sample, SAMPLE_PRESETS, SAMPLE_LABELS, current_sample)
+  tint_temporal()
+  ask_heavy(prev_sample, prev_twindow)
 end
 
 function M.on_twindow_track_click(control)
@@ -601,12 +667,48 @@ function M.on_twindow_track_click(control)
   if track_w <= 0 then return end
   local pct = math_max(0, math_min(1, (cx - control:GetLeft()) / track_w))
   local idx = math_max(1, math_min(#TWINDOW_PRESETS, math_floor(pct * (#TWINDOW_PRESETS - 1) + 0.5) + 1))
+  local prev_sample, prev_twindow = current_sample, current_twindow
   current_twindow = TWINDOW_PRESETS[idx]
   log:info("time_window ->", current_twindow, "s")
   persist_temporal("time_window_s", current_twindow)
   reinit_buffer()
   mark_custom()
   update_slider(controls.track_twindow, controls.fill_twindow, controls.thumb_twindow, controls.label_twindow, TWINDOW_PRESETS, TWINDOW_LABELS, current_twindow)
+  tint_temporal()
+  ask_heavy(prev_sample, prev_twindow)
+end
+
+function M.on_confirm_yes()
+  local kind = confirm.kind
+  confirm.kind = nil
+  controls.confirm:SetHidden(true)
+  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  if kind == "pdelete" then delete_profile_now() end
+end
+
+function M.on_confirm_no()
+  local kind = confirm.kind
+  confirm.kind = nil
+  controls.confirm:SetHidden(true)
+  PlaySound(SOUNDS.DIALOG_DECLINE)
+  if kind == "heavy" then
+    current_sample  = confirm.prev_sample
+    current_twindow = confirm.prev_twindow
+    persist_temporal("sample_rate_ms", current_sample)
+    persist_temporal("time_window_s", current_twindow)
+    reinit_buffer()
+    refresh_all_sliders()
+  end
+end
+
+function M.on_pname_focus(on)
+  local box = VerdantSettingsPanelPNameBox
+  if on then
+    box:SetEdgeColor(0.62, 1.00, 0.74, 0.95)
+    if controls.pname_edit.SelectAll then controls.pname_edit:SelectAll() end
+  else
+    box:SetEdgeColor(0.42, 1.00, 0.60, 0.45)
+  end
 end
 
 function M.on_vpalpha_track_click(control)
@@ -718,6 +820,17 @@ function M.init()
   reinit_buffer()
 
   controls.window         = VerdantSettingsPanel
+  Scene.register_top_level(controls.window)
+  controls.confirm        = VerdantSettingsConfirm
+  controls.confirm_title  = VerdantSettingsConfirmTitle
+  controls.confirm_msg    = VerdantSettingsConfirmMsg
+  controls.confirm_yes    = VerdantSettingsConfirmYesBtn
+  controls.confirm_no     = VerdantSettingsConfirmNoBtn
+  controls.confirm:SetDrawTier(DT_HIGH)
+  VerdantSettingsConfirmBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
+  VerdantSettingsConfirmBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
+  controls.confirm_title:SetColor(0.55, 0.85, 0.55, 1)
+  controls.confirm_msg:SetColor(0.90, 0.90, 0.90, 1)
 
   VerdantSettingsPanelBg:SetCenterColor(0.62, 1.00, 0.74, 1.0)
   VerdantSettingsPanelBg:SetEdgeColor(0.42, 1.00, 0.60, 1.0)
@@ -779,6 +892,9 @@ function M.init()
   controls.psave_btn:SetText(GetString(VERDANT_SETTINGS_SAVE_PROFILE))
   controls.pdelete_btn:SetText(GetString(VERDANT_SETTINGS_DELETE_PROFILE))
   controls.pname_edit:SetDefaultText(GetString(VERDANT_PROFILE_NAME_DEFAULT))
+  controls.pname_edit:SetDefaultTextColor(0.62, 0.70, 0.64, 0.45)
+  VerdantSettingsPanelPNameBox:SetCenterColor(0, 0, 0, 0)
+  M.on_pname_focus(false)
 
   controls.window_title:SetText(GetString(VERDANT_SETTINGS_TITLE))
   VerdantSettingsPanelVersionLabel:SetText("v" .. Verdant.Constants.VERSION)

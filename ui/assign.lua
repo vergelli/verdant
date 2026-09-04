@@ -5,6 +5,7 @@ local M = Verdant.Assign
 local api = Verdant.zenimax.api
 local zui = Verdant.zenimax.ui
 local zc  = Verdant.zenimax.constants
+local Scene = Verdant.zenimax.scene
 local GetString               = api.GetString
 local GetAbilityName          = api.GetAbilityName
 local WINDOW_MANAGER          = zui.WINDOW_MANAGER
@@ -360,7 +361,7 @@ end
 function M.show()
   controls.confirm:SetHidden(true)
   clear_pending()
-  controls.window:SetHidden(false)
+  Scene.show_top_level(controls.window)
   M.refresh()
 end
 
@@ -368,7 +369,7 @@ function M.hide()
   controls.flyout:SetHidden(true)
   controls.confirm:SetHidden(true)
   clear_pending()
-  controls.window:SetHidden(true)
+  Scene.hide_top_level(controls.window)
   row_pool:ReleaseAllObjects()
 end
 
@@ -418,6 +419,7 @@ end
 -- ── init ────────────────────────────────────────────────────────────────────
 function M.init()
   controls.window     = VerdantAssignPanel
+  Scene.register_top_level(controls.window)
   controls.title      = VerdantAssignPanelWindowTitle
   controls.help       = VerdantAssignPanelHelpLabel
   controls.list       = VerdantAssignPanelList

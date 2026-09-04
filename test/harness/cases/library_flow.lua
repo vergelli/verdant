@@ -139,7 +139,7 @@ return function(H)
   ok(SS.count() == keyed and VerdantLibraryDeleteBtn._text == "Delete?", "the first Delete press only arms")
   Verdant.Library.on_key(KEY_DELETE)
   ok(SS.count() == keyed - 1, "the second Delete press deletes")
-  ok(Verdant.Library.on_key(KEY_DELETE + 1) == false, "other keys pass through")
+  ok(Verdant.Library.on_key(999) == false, "other keys pass through")
   local xml = assert(io.open("ui/library.xml")):read("*a")
   ok(xml:find('keyboardEnabled="true"', 1, true) and xml:find("<OnKeyDown>Verdant.Library.on_key(key)", 1, true),
      "the library window listens for keys")
