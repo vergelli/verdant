@@ -88,6 +88,13 @@ return function(H)
   ok(VerdantHoverCard._hidden == true and (VerdantHoverCard._alpha or 0) == 0, "the watchdog forces the stuck card off")
   ok(not H.update_registered("VerdantCardGuard"), "the watchdog stops once the card is hidden")
   H.state.hold_fade = nil
+
+  hit._onOnMouseEnter(hit)
+  VerdantHoverCard:SetAlpha(0)
+  H.state.hold_fade = true
+  hit._onOnMouseExit(hit)
+  ok(VerdantHoverCard._hidden == true, "leaving before the fade-in ticks hides the card without an animation")
+  H.state.hold_fade = nil
   H.state.mouse_x, H.state.mouse_y = nil, nil
 
   H.sounds = {}
