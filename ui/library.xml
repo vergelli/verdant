@@ -86,12 +86,17 @@
             <Texture name="$(parent)Bg" textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds">
               <AnchorFill/>
             </Texture>
-            <Texture name="$(parent)Thumb" textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds" mouseEnabled="true">
+            <Control name="$(parent)Thumb" mouseEnabled="true">
               <Anchor point="TOPLEFT" offsetX="0" offsetY="0"/>
               <Dimensions x="8" y="24"/>
               <OnMouseDown>Verdant.Library.on_thumb_down()</OnMouseDown>
               <OnMouseUp>Verdant.Library.on_thumb_up()</OnMouseUp>
-            </Texture>
+              <Controls>
+                <Texture name="$(parent)Tex" textureFile="EsoUI/Art/UnitAttributeVisualizer/attributeBar_dynamic_fill.dds">
+                  <AnchorFill/>
+                </Texture>
+              </Controls>
+            </Control>
           </Controls>
         </Control>
 

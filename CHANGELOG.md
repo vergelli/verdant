@@ -151,6 +151,7 @@
   ultimate rows instead of across them.
 
 ### Fixed
+- Session Library failed to initialise (and took the slash command with it) after the chevrons became buttons: buttons have no SetColor in ESO. The scrollbar thumb is now a real hit-box, since textures never receive mouse input.
 - SKILL: the vertical split now shares the plot area after each canvas's fixed overhead, so both plots keep the same height at any window size and the top plot no longer collapses to nothing at small heights.
 - TRIAGE: the donut follows the summary chip inset instead of keeping its first position; the legend's meaning column measures the string, not the clipped label.
 - **Stop no longer hitches** — the session autosave used to run inside
