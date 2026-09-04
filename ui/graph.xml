@@ -25,7 +25,9 @@
                      resizeHandleSize="8">
 
       <Dimensions x="420" y="312"/>
+      <OnMoveStart>Verdant.Graph.on_move_start()</OnMoveStart>
       <OnMoveStop>Verdant.Graph.on_move_stop()</OnMoveStop>
+      <OnResizeStart>Verdant.Graph.on_move_start()</OnResizeStart>
       <OnResizeStop>Verdant.Graph.on_resize_stop()</OnResizeStop>
 
       <Controls>

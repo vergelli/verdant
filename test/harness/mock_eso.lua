@@ -475,6 +475,12 @@ function GetGameTimeMilliseconds() return T end
 function GetAPIVersion() return 101050 end
 function GetWorldName() return H.state.world end
 function GetUIMousePosition() return H.state.mouse_x, H.state.mouse_y end
+function MouseIsOver(c)
+  local mx, my = H.state.mouse_x, H.state.mouse_y
+  if not mx or not my then return false end
+  local r = H.layout(c)
+  return mx >= r.x and mx <= r.x + r.w and my >= r.y and my <= r.y + r.h
+end
 function IsUnitGrouped() return H.state.grouped end
 function GetGroupSize() return H.state.group_size end
 function GetUnitName(tag)

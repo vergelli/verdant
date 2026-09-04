@@ -53,6 +53,29 @@ return function(H)
   ok(VerdantHoverCardRowName5._text == "Peak at" and (VerdantHoverCardRowVal5._text or ""):find("s") ~= nil, "row 5 says when the peak was")
   ok((VerdantHoverCardTime._text or ""):find("copy") ~= nil, "the card must tell the user the chip is clickable")
   hit._onOnMouseExit(hit)
+  ok(VerdantHoverCard._hidden == true, "leaving the chip closes the report")
+
+  local hr = H.layout(hit)
+  H.state.mouse_x, H.state.mouse_y = hr.x + 4, hr.y + 4
+  hit._onOnMouseEnter(hit)
+  ok(H.update_registered("VerdantCardGuard"), "the open report watches the mouse")
+  H.advance(300)
+  ok(VerdantHoverCard._hidden == false, "the report stays while the mouse rests on the chip")
+  H.state.mouse_x, H.state.mouse_y = hr.x - 200, hr.y - 200
+  H.advance(300)
+  ok(VerdantHoverCard._hidden == true, "the report closes on its own when the mouse leaves without an exit event")
+  ok(not H.update_registered("VerdantCardGuard"), "the watch stops with the report")
+
+  H.state.mouse_x, H.state.mouse_y = hr.x + 4, hr.y + 4
+  hit._onOnMouseEnter(hit)
+  ok(VerdantHoverCard._hidden == false, "the report reopens")
+  Verdant.Graph.on_move_start()
+  ok(VerdantHoverCard._hidden == true, "dragging the window closes the report at once")
+  ok(not H.update_registered("VerdantCardGuard"), "dragging stops the watch")
+  local xml = assert(io.open("ui/graph.xml")):read("*a")
+  ok(xml:find("<OnMoveStart>Verdant.Graph.on_move_start()", 1, true) ~= nil, "the window wires OnMoveStart")
+  ok(xml:find("<OnResizeStart>Verdant.Graph.on_move_start()", 1, true) ~= nil, "the window wires OnResizeStart")
+  H.state.mouse_x, H.state.mouse_y = nil, nil
 
   H.sounds = {}
   hit._onOnMouseUp(hit, nil, true)
