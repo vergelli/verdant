@@ -159,6 +159,10 @@ local function on_slash(input)
     Verdant.Library.toggle() ; return
   end
 
+  if cmd == "card" then
+    d("[V] card " .. Verdant.Graph.card_state())
+    return
+  end
   if cmd == "grid" then
     local on = not Verdant.Graph.pixel_grid()
     Verdant.Graph.set_pixel_grid(on)
@@ -181,6 +185,7 @@ local function on_slash(input)
     d(GetString(VERDANT_HELP_LIB))
     d(GetString(VERDANT_HELP_HITCH))
     d(GetString(VERDANT_HELP_GRID))
+    d(GetString(VERDANT_HELP_CARD))
     d(GetString(VERDANT_HELP_HELP))
     return
   end

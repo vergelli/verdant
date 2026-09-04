@@ -406,7 +406,9 @@ ZO_AlphaAnimation = {
         control:SetHidden(false)
         control:SetAlpha(1)
       end,
+      IsPlaying = function() return false end,
       FadeOut = function(_, _, _, _, cb)
+        if H.state.hold_fade then return end
         control:SetAlpha(0)
         if cb then cb() end
       end,
