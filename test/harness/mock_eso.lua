@@ -70,7 +70,7 @@ ABILITY_TYPE_HEAL       = 2
 
 TOPLEFT = 41 TOP = 42 TOPRIGHT = 43 LEFT = 44 CENTER = 45 RIGHT = 46
 BOTTOMLEFT = 47 BOTTOM = 48 BOTTOMRIGHT = 49
-CT_CONTROL = 51 CT_LABEL = 52 CT_TEXTURE = 53 CT_BACKDROP = 54 CT_COOLDOWN = 55
+CT_CONTROL = 51 CT_LABEL = 52 CT_TEXTURE = 53 CT_BACKDROP = 54 CT_COOLDOWN = 55 CT_BUTTON = 56
 TEXT_WRAP_MODE_ELLIPSIS = 2 TEXT_WRAP_MODE_TRUNCATE = 1
 CD_TYPE_RADIAL = 1 CD_TYPE_VERTICAL = 2
 CD_TIME_TYPE_TIME_UNTIL = 0 CD_TIME_TYPE_TIME_REMAINING = 1
@@ -139,8 +139,53 @@ function H.layout(c)
 end
 
 local mock_control
+H.xml_tags = {}
+local XML_CONTAINERS = { TopLevelControl = true, Control = true, Label = true, Texture = true,
+                         Backdrop = true, Button = true, Line = true, EditBox = true, Slider = true, StatusBar = true }
+function H.tag_xml(path)
+  local f = io.open(path, "r")
+  if not f then return end
+  local xml = f:read("*a")
+  f:close()
+  xml = xml:gsub("<!%-%-.-%-%->", "")
+  local stack = {}
+  for tag in xml:gmatch("<[^>]+>") do
+    local closing = tag:match("^</%s*([%w_]+)")
+    local self_closing = tag:match("/%s*>$") ~= nil
+    local name = tag:match("^<%s*([%w_]+)")
+    if closing then
+      if XML_CONTAINERS[closing] and stack[#stack] and stack[#stack].tag == closing then stack[#stack] = nil end
+    elseif XML_CONTAINERS[name] then
+      local parent = stack[#stack]
+      local attr_name = tag:match('name%s*=%s*"([^"]*)"')
+      local virtual = tag:match('virtual%s*=%s*"true"') ~= nil
+      local full = parent and parent.full or ""
+      if attr_name and not virtual then
+        full = attr_name:gsub("%$%(parent%)", parent and parent.full or "")
+        H.xml_tags[full] = name
+      end
+      if not self_closing then stack[#stack + 1] = { tag = name, full = full } end
+    end
+  end
+end
+
+local DENY = {
+  Button          = { SetColor = true, SetTextureCoords = true, SetTexture = true, SetFont = true },
+  Texture         = { SetText = true, SetFont = true },
+  Control         = { SetColor = true, SetText = true, SetTexture = true, SetTextureCoords = true, SetFont = true },
+  TopLevelControl = { SetColor = true, SetText = true, SetTexture = true, SetTextureCoords = true, SetFont = true },
+  Backdrop        = { SetColor = true, SetText = true, SetTexture = true, SetTextureCoords = true },
+  Label           = { SetTexture = true, SetTextureCoords = true },
+}
+local CT_TAG = { [CT_CONTROL] = "Control", [CT_LABEL] = "Label", [CT_TEXTURE] = "Texture",
+                 [CT_BACKDROP] = "Backdrop", [CT_BUTTON] = "Button" }
+
 local MOCKC = {
   __index = function(self, k)
+    local tag = rawget(self, "_xml_tag") or CT_TAG[rawget(self, "_ctype")]
+    if tag and DENY[tag] and DENY[tag][k] then
+      error(string.format("%s has no method %s on a %s control in ESO", tostring(rawget(self, "_name")), k, tag), 2)
+    end
     if type(k) ~= "string" or k:find("^[A-Z]") ~= 1 then return nil end
     local fn
     if k == "SetAnchor" then
@@ -255,6 +300,7 @@ local MOCKC = {
 mock_control = function(name)
   local c = setmetatable({}, MOCKC)
   c._name = name
+  c._xml_tag = name and H.xml_tags[name] or nil
   H.controls[#H.controls + 1] = c
   return c
 end
