@@ -53,3 +53,4 @@ M.GetSpecificSkillAbilityKeysByAbilityId = GetSpecificSkillAbilityKeysByAbilityI
 M.GetSkillLineId                         = GetSkillLineId
 
 M.GetUIMousePosition = GetUIMousePosition
+M.MouseIsOver        = MouseIsOver

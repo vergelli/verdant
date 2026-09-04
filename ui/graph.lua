@@ -1019,6 +1019,12 @@ local function show_moment_card(swatch_c, name_text, stat_text, elapsed_ms, mx, 
   position_card(mx, my)
 end
 
+local function card_guard()
+  if card_fader.visible and api.MouseIsOver(controls.summary.hit) then return end
+  zev.unregister_update("VerdantCardGuard")
+  fade_out(card_fader)
+end
+
 local function show_report_card()
   local card = controls.card
   local chip = controls.summary
@@ -1102,6 +1108,7 @@ local function show_report_card()
 
   card.root:SetHeight(CARD_ROWS_Y0 + n_rows * CARD_ROW_H + 6)
   position_card(chip.bg:GetLeft() - 16, chip.bg:GetBottom() - 14)
+  zev.register_update("VerdantCardGuard", 100, card_guard)
 end
 
 local function hit_begin(H, n) H.n = n end
@@ -3244,6 +3251,13 @@ function M.on_close_click()
   release_all_pools()
 end
 
+function M.on_move_start()
+  stop_hover_poll()
+  zev.unregister_update("VerdantCardGuard")
+  hide_hover_ui()
+  if hover_key ~= nil then hover_key = nil; render_current_view() end
+end
+
 function M.on_move_stop()
   local sv = Verdant.SavedVars
   if not sv then return end
@@ -3625,6 +3639,7 @@ function M.init()
     show_report_card()
   end)
   sum_hit:SetHandler("OnMouseExit", function()
+    zev.unregister_update("VerdantCardGuard")
     fade_out(card_fader)
   end)
   sum_hit:SetHandler("OnMouseUp", function(_, _, upInside)
