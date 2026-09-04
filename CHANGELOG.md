@@ -157,6 +157,7 @@
   ultimate rows instead of across them.
 
 ### Fixed
+- After Stop (and for sessions opened from the library) the time axis fits the recording exactly, so the plot fills the viewport instead of leaving up to half of it empty on the left. While recording, the axis still grows by doubling so the bars stay put.
 - The healing report card no longer stays behind on screen when the window is dragged or resized while it is open; it also closes by itself if the mouse leaves the chip without an exit event.
 - A hover card whose fade-out never completes is now forced off by a watchdog; `/verdant card` prints the card's state for bug reports.
 - Leaving the chip before the card's fade-in has ticked no longer queues a zero-length fade-out (which never fires its hide callback); the card is hidden outright.
