@@ -61,5 +61,19 @@ return function(H)
 
   Verdant.Graph.on_stop_click()
   Verdant.Graph.on_flush_click()
+
+  Verdant.Graph.on_record_click()
+  for _ = 1, 22 do
+    H.heal({ hit = 1000 })
+    H.advance(1000)
+  end
+  left, right = fill_extents()
+  ok(left > cw * 0.22, string.format("while recording, 22/30 samples still leave the left quarter empty, left=%d cw=%d", left, cw))
+  Verdant.Graph.on_stop_click()
+  local sl, sr = fill_extents()
+  ok(sr > cw * 0.96, string.format("frozen bars keep the right edge, right=%d cw=%d", sr, cw))
+  ok(sl < cw * 0.08, string.format("after Stop the axis fits the recording and the left gap closes, left=%d cw=%d", sl, cw))
+  ok(VerdantGridEmsTL._text == "-21s" or VerdantGridEmsTL._text == "-22s", "the frozen axis labels the recorded span, got " .. tostring(VerdantGridEmsTL._text))
+  Verdant.Graph.on_flush_click()
   Verdant.Visibility.set("graph", false)
 end

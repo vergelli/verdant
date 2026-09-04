@@ -459,9 +459,13 @@ local function decimate(cw)
   local capacity = TB.capacity()
   local n        = TB.count()
   local denom    = capacity
-  while true do
-    local h = math_floor(denom / 2)
-    if h >= n and h >= 15 then denom = h else break end
+  if n > 0 and not TB.is_recording() then
+    denom = n
+  else
+    while true do
+      local h = math_floor(denom / 2)
+      if h >= n and h >= 15 then denom = h else break end
+    end
   end
   dec_cols.denom = denom
   local grid = dec_cols.grid
