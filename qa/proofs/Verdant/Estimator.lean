@@ -39,7 +39,7 @@ theorem abs_quant_sub_le (k : ℕ) (hk : 0 < k) (x : ℝ) :
   have : (⌊x * k + 1 / 2⌋ : ℝ) / k - x = ((⌊x * k + 1 / 2⌋ : ℝ) - x * k) / k := by
     field_simp
   rw [this, abs_div, abs_of_pos hkR]
-  rw [div_le_div_iff hkR (by positivity)]
+  rw [div_le_div_iff₀ hkR (by positivity)]
   nlinarith [h]
 
 /-- The contribution estimate: shares times per-tick amounts, summed over the window. -/
