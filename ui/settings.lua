@@ -447,6 +447,17 @@ function M.on_bars_click()
                                  or GetString(VERDANT_SETTINGS_BARS_OFF))
 end
 
+local function role_label(on)
+  return on and GetString(VERDANT_SETTINGS_ROLE_ON) or GetString(VERDANT_SETTINGS_ROLE_OFF)
+end
+
+function M.on_role_click()
+  local now = not Verdant.Visibility.get_role_only()
+  Verdant.Visibility.set_role_only(now)
+  controls.role_btn:SetText(role_label(now))
+  PlaySound(now and SOUNDS.DIALOG_ACCEPT or SOUNDS.DIALOG_DECLINE)
+end
+
 function M.on_light_click()
   local sv = Verdant.SavedVars
   sv.settings = sv.settings or {}
@@ -766,6 +777,8 @@ function M.on_reset_click()
     controls.autosave_btn:SetText(GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
     Verdant.AutoRecord.set_auto_stop(false)
     controls.autostop_btn:SetText(autostop_label(false))
+    Verdant.Visibility.set_role_only(false)
+    controls.role_btn:SetText(role_label(false))
     sv.settings.light_mode = false
     sv.settings.light_alpha_pct = nil
     controls.light_btn:SetText(GetString(VERDANT_SETTINGS_LIGHT_OFF))
@@ -881,6 +894,7 @@ function M.init()
   controls.unknown_label  = VerdantSettingsPanelUnknownLabel
   controls.logo_btn       = VerdantSettingsPanelLogoBtn
   controls.bars_btn       = VerdantSettingsPanelBarsBtn
+  controls.role_btn       = VerdantSettingsPanelRoleBtn
   controls.shielddir_btn  = VerdantSettingsPanelShieldDirBtn
   controls.autorec_btn    = VerdantSettingsPanelAutoRecBtn
   controls.gdm_btn        = VerdantSettingsPanelGdmBtn
@@ -901,6 +915,7 @@ function M.init()
   zui.tooltip(controls.unknown_btn,   VERDANT_TIP_UNKNOWN)
   zui.tooltip(controls.logo_btn,      VERDANT_TIP_LOGO)
   zui.tooltip(controls.bars_btn,      VERDANT_TIP_BARS)
+  zui.tooltip(controls.role_btn,      VERDANT_TIP_ROLE)
   zui.tooltip(controls.reset_btn,     VERDANT_TIP_RESET)
   zui.tooltip(controls.sounds_btn,    VERDANT_TIP_SOUNDS)
   zui.tooltip(VerdantSettingsPanelCloseBtn, VERDANT_TIP_CLOSE)
@@ -956,6 +971,7 @@ function M.init()
   controls.autosave_btn:SetText((sv.settings.session_autosave == true)
     and GetString(VERDANT_SETTINGS_AUTOSAVE_ON) or GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
   controls.autostop_btn:SetText(autostop_label(sv.settings.auto_stop == true))
+  controls.role_btn:SetText(role_label(sv.settings.role_only == true))
   controls.light_btn:SetText((sv.settings.light_mode == true)
     and GetString(VERDANT_SETTINGS_LIGHT_ON) or GetString(VERDANT_SETTINGS_LIGHT_OFF))
   current_lighta = LIGHTA_PRESETS[nearest_idx(LIGHTA_PRESETS, sv.settings.light_alpha_pct or LIGHTA_DEFAULT)]
