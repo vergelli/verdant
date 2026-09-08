@@ -37,6 +37,7 @@ local function strings()
     shield  = GetString(VERDANT_CONTRIB_TYPE_SHIELD),
     more    = GetString(VERDANT_CONTRIB_MORE),
     est     = GetString(VERDANT_CONTRIB_TIP_EST),
+    parts   = GetString(VERDANT_CONTRIB_PARTS),
   }
   return str
 end
@@ -51,6 +52,20 @@ local function entry_for(id, ch)
     entries[key] = e
   end
   return e
+end
+
+local rows_heal, rows_shield = {}, {}
+local gen = 0
+
+local function row_for(e)
+  local bucket = (e.ch == CH_HEAL) and rows_heal or rows_shield
+  local r = bucket[e.name]
+  if not r then
+    r = { name = e.name, icon = e.icon, ch = e.ch, v = 0, n = 0, gen = -1, disp = -1, text = "",
+          r = e.r, g = e.g, b = e.b, hov_pct = -1, hov_disp = -1, hov_n = -1, hov = "" }
+    bucket[e.name] = r
+  end
+  return r
 end
 
 local function by_value_desc(a, b) return a.v > b.v end
@@ -109,23 +124,28 @@ local function aggregate()
   end
   totals.span = t_prev - t0
 
+  gen = gen + 1
   local on = 0
+  local function add(e, v)
+    local r = row_for(e)
+    if r.gen ~= gen then
+      r.gen = gen
+      r.v = 0
+      r.n = 0
+      r.icon = e.icon
+      r.r, r.g, r.b = e.r, e.g, e.b
+      on = on + 1
+      order[on] = r
+    end
+    r.v = r.v + v
+    r.n = r.n + 1
+  end
   for i = 1, ids.n do
     local id = ids[i]
     local h = acc_heal[id]
-    if h > 0 then
-      on = on + 1
-      local e = entry_for(id, CH_HEAL)
-      e.v = h
-      order[on] = e
-    end
+    if h > 0 then add(entry_for(id, CH_HEAL), h) end
     local sh = acc_shield[id]
-    if sh > 0 then
-      on = on + 1
-      local e = entry_for(id, CH_SHIELD)
-      e.v = sh
-      order[on] = e
-    end
+    if sh > 0 then add(entry_for(id, CH_SHIELD), sh) end
   end
   for k = on + 1, #order do order[k] = nil end
   order.n = on
@@ -261,11 +281,12 @@ function M.hover(mx, my)
         local heal = (e.ch == CH_HEAL)
         local tot = heal and totals.heal or totals.shield
         local pct = (tot > 0) and math_floor(e.v / tot * 100 + 0.5) or 0
-        if e.hov_pct ~= pct or e.hov_disp ~= e.disp then
-          e.hov_pct, e.hov_disp = pct, e.disp
+        if e.hov_pct ~= pct or e.hov_disp ~= e.disp or e.hov_n ~= e.n then
+          e.hov_pct, e.hov_disp, e.hov_n = pct, e.disp, e.n
           local tc = heal and C_HEAL or C_SHIELD
-          e.hov = string_format("|c%s%s %s|r  ·  %d%%  ·  %s",
-            c.hexc(tc), e.text, heal and S.heal or S.shield, pct, S.est)
+          e.hov = string_format("|c%s%s %s|r  ·  %d%%  ·  %s%s",
+            c.hexc(tc), e.text, heal and S.heal or S.shield, pct, S.est,
+            (e.n > 1) and string_format(S.parts, e.n) or "")
         end
         c.show_card(e, e.name, e.hov, totals.span, mx, my)
         return

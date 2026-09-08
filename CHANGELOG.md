@@ -8,6 +8,7 @@
 - After Stop, with Session Autosave off, the status line reads NOT SAVED until you keep the recording.
 - The library icon pulses once when a session lands in the library.
 - A manual save leaves that session selected in the library with the name box ready, without taking the keyboard. Manually saved sessions carry a small save glyph in their row, distinct from the lock.
+- CONTRIB view: a skill whose components reach the game as separate ability ids (a HoT's ticks and its burst, for example) shows as one row; hover tells how many parts were merged.
 - CONTRIB view: skills ranked by what they contributed over the active window. Each row shows the skill icon and name, whether it healed or shielded, and the amount with a bar proportional to the top row, coloured by skill line. Hover a row for its share. Works live, on a stopped recording and on library sessions; values are estimated from the sampled rates.
 
 ## [2.5.0] - 2026-09-04

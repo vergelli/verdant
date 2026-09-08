@@ -50,4 +50,3 @@ ESOUI_GUIDELINES.md
 # QA scaffold artefacts
 qa/robot/output/
 qa/proofs/.lake/
-qa/proofs/lake-manifest.json
