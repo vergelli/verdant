@@ -32,6 +32,7 @@ local controls = {}
 local rows = {}
 local row_session = {}
 local selected = nil
+local pending_idx = nil
 local delete_armed = false
 local scroll_off = 0
 local drag = { on = false, y0 = 0, off0 = 0 }
@@ -163,6 +164,7 @@ local function make_row(i)
            name = name, stats = stats, when = when, star = star }
 end
 
+local HAND_GLYPH  = "|t12:12:EsoUI/Art/Buttons/edit_save_up.dds|t "
 local ICON_LOCK   = "EsoUI/Art/Miscellaneous/locked_up.dds"
 local ICON_UNLOCK = "EsoUI/Art/Miscellaneous/unlocked_up.dds"
 
@@ -245,7 +247,7 @@ function M.refresh()
       sum.saves or 0, denom))
     row.stats:SetColor(1, 1, 1, 1)
     row.vet:SetHidden((h.difficulty or 0) ~= Verdant.zenimax.constants.DUNGEON_DIFFICULTY_VETERAN)
-    row.when:SetText(fmt_dur(h.dur_ms) .. "  " .. fmt_ago(h.ts))
+    row.when:SetText((h.manual and HAND_GLYPH or "") .. fmt_dur(h.dur_ms) .. "  " .. fmt_ago(h.ts))
     row.when:SetColor(C_DIM.r, C_DIM.g, C_DIM.b, 1)
     row.star:SetHidden(not h.locked)
   end
@@ -486,12 +488,24 @@ local function dock_window()
   end
 end
 
+local function select_pending()
+  if not pending_idx then return end
+  for k = 1, #rows do
+    if row_session[k] == pending_idx then
+      M.on_row_click(k)
+      break
+    end
+  end
+  pending_idx = nil
+end
+
 function M.show()
   selected = nil
   disarm_delete()
   scroll_off = 0
   dock_window()
   M.refresh()
+  select_pending()
   sync_label_box()
   Scene.show_top_level(controls.window)
   PlaySound(SOUNDS.ARMORY_OPEN)
@@ -508,9 +522,12 @@ function M.toggle()
   if controls.window:IsHidden() then M.show() else M.hide() end
 end
 
-function M.refresh_if_shown()
+function M.on_session_saved(manual)
+  if manual then pending_idx = Verdant.SessionStore.count() end
   if not controls.window or controls.window:IsHidden() then return end
+  scroll_off = 0
   M.refresh()
+  select_pending()
   sync_label_box()
 end
 

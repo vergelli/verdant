@@ -2991,18 +2991,34 @@ local function update_summary_chip()
   end
 end
 
-local function save_available()
+function M.save_available()
   local TB = Verdant.TemporalBuffer
   local n = TB.count()
   if TB.is_recording() or n == 0 or controls.save_locked then return false end
   return not (controls.saved_start == recording_start_ms and controls.saved_count == n)
 end
 
+function M.pulse_lib()
+  local btn = controls.btn_lib
+  if not btn then return end
+  controls.lib_pulse_t = 0
+  zev.register_update("VerdantLibPulse", 16, function()
+    local t = controls.lib_pulse_t + 16
+    controls.lib_pulse_t = t
+    if t >= 720 then
+      btn:SetAlpha(1)
+      zev.unregister_update("VerdantLibPulse")
+      return
+    end
+    btn:SetAlpha(0.35 + 0.65 * math.abs(math.cos((t % 360) / 360 * math.pi)))
+  end)
+end
+
 local function refresh_button_colors()
   local recording = Verdant.TemporalBuffer.is_recording()
   controls.btn_record:SetEnabled(not recording)
   controls.btn_stop:SetEnabled(recording)
-  if controls.btn_save then controls.btn_save:SetEnabled(save_available()) end
+  if controls.btn_save then controls.btn_save:SetEnabled(M.save_available()) end
   update_hover_gate()
   update_summary_chip()
 end
@@ -3156,6 +3172,9 @@ function M.on_stop_click()
   Verdant.BuffTracker.finalize(GetGameTimeMilliseconds())
   Verdant.Ultimate.finalize(GetGameTimeMilliseconds())
   Verdant.SessionStore.on_session_stop()
+  if not Verdant.SessionStore.autosave_pending() then
+    controls.status:SetText(GetString(VERDANT_SAVE_STATUS_UNSAVED))
+  end
   report.hot, report.direct = Verdant.Metrics.overheal_split()
   summary_text = build_summary_text()
   local s = Verdant.TemporalBuffer.summary()
@@ -3308,7 +3327,7 @@ function M.on_save_click()
     return false
   end
   Verdant.SessionStore.finish_autosave()
-  if not save_available() then
+  if not M.save_available() then
     PlaySound(SOUNDS.NEGATIVE_CLICK)
     d("[V] " .. GetString(VERDANT_SAVE_ALREADY))
     return false
@@ -3678,7 +3697,10 @@ function M.init()
     controls.status:SetText(string_format(GetString(VERDANT_SAVE_STATUS), session.head.zone or "?"))
     if session.head.manual then PlaySound(SOUNDS.BOOK_ACQUIRED) end
     refresh_button_colors()
-    if Verdant.Library and Verdant.Library.refresh_if_shown then Verdant.Library.refresh_if_shown() end
+    M.pulse_lib()
+    if Verdant.Library and Verdant.Library.on_session_saved then
+      Verdant.Library.on_session_saved(session.head.manual == true)
+    end
   end
 
   controls.welcome = VerdantGraphWindowWelcome
