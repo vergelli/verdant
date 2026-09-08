@@ -51,3 +51,4 @@ ESOUI_GUIDELINES.md
 qa/robot/output/
 qa/proofs/.lake/
 __pycache__/
+qa/proofs/lake-manifest.json
