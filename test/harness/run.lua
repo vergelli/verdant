@@ -53,6 +53,7 @@ local CASES = {
   "settings_columns",
   "light_mode",
   "buff_watch",
+  "contrib_view",
   "zero_alloc",
   "clarity",
 }

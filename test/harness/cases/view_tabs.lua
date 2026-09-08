@@ -7,8 +7,8 @@ return function(H)
   local view_label = VerdantGraphWindowViewLabel
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
 
-  local names = { "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE" }
-  for v = 1, 6 do
+  local names = { "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE", "CONTRIB" }
+  for v = 1, 7 do
     local lbl = rawget(_G, "VerdantGraphTab" .. v .. "Label")
     local hit = rawget(_G, "VerdantGraphTab" .. v)
     ok(lbl and lbl._text == names[v], "tab " .. v .. " must read " .. names[v])
@@ -30,16 +30,16 @@ return function(H)
   VerdantGraphTab3._onOnMouseUp(VerdantGraphTab3, nil, true)
   ok(#H.sounds == 0, "clicking the active tab stays silent")
 
-  VerdantGraphTab6._onOnMouseUp(VerdantGraphTab6, nil, true)
-  ok(view_label._text == "TRIAGE", "the last tab reaches TRIAGE")
+  VerdantGraphTab7._onOnMouseUp(VerdantGraphTab7, nil, true)
+  ok(view_label._text == "CONTRIB", "the last tab reaches CONTRIB")
   Verdant.Graph.next_view()
   ok(view_label._text == "EMS" and VerdantGraphTab1Line._hidden == false, "arrow navigation still updates the tabs")
 
   local strip = VerdantGraphWindowTabs
   local w = strip:GetWidth()
   ok(w > 0, "the strip must have a width")
-  local tw = math.floor(w / 6)
-  ok(VerdantGraphTab1._w == tw and VerdantGraphTab6._w == tw, "tabs share the strip evenly")
+  local tw = math.floor(w / 7)
+  ok(VerdantGraphTab1._w == tw and VerdantGraphTab7._w == tw, "tabs share the strip evenly")
 
   ok(VerdantGraphWindowPrevViewBtn._hidden ~= false, "the old arrows are not part of the chrome anymore")
 

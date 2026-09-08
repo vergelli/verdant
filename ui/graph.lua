@@ -72,13 +72,14 @@ local C_TIME_LBL  = { r = 0.68, g = 0.70, b = 0.75, a = 0.85 }
 local controls           = {}
 local recording_start_ms = 0
 
-local VIEW = { EMS = 1, SKILL = 2, CRIT = 3, OVERHEAL = 4, BUFFS = 5, TRIAGE = 6 }
-local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE" }
+local VIEW = { EMS = 1, SKILL = 2, CRIT = 3, OVERHEAL = 4, BUFFS = 5, TRIAGE = 6, CONTRIB = 7 }
+local VIEW_LABELS = { "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE", "CONTRIB" }
 local VIEW_TIPS
 local function view_tips()
   if not VIEW_TIPS then
     VIEW_TIPS = { VERDANT_VIEWTIP_EMS, VERDANT_VIEWTIP_SKILL, VERDANT_VIEWTIP_CRIT,
-                  VERDANT_VIEWTIP_OHEAL, VERDANT_VIEWTIP_BUFFS, VERDANT_VIEWTIP_TRIAGE }
+                  VERDANT_VIEWTIP_OHEAL, VERDANT_VIEWTIP_BUFFS, VERDANT_VIEWTIP_TRIAGE,
+                  VERDANT_VIEWTIP_CONTRIB }
   end
   return VIEW_TIPS
 end
@@ -1286,7 +1287,7 @@ local function hover_poll()
     buff_hover_poll(mx, my)
     return
   end
-  if current_view ~= VIEW.TRIAGE and Verdant.Ultimate.has_data() then
+  if current_view ~= VIEW.TRIAGE and current_view ~= VIEW.CONTRIB and Verdant.Ultimate.has_data() then
     local skill = (current_view == VIEW.SKILL)
     local canvas = skill and controls.ehps_canvas or controls.canvas
     local g_t0, g_span, g_xl, g_bw
@@ -1359,6 +1360,10 @@ local function hover_poll()
     else
       fade_out(card_fader)
     end
+    return
+  end
+  if current_view == VIEW.CONTRIB then
+    Verdant.ContribView.hover(mx, my)
     return
   end
   local band, col, canvas, H, unit
@@ -2859,6 +2864,8 @@ function render_current_view()
     render_view4()
   elseif current_view == VIEW.TRIAGE then
     render_view5()
+  elseif current_view == VIEW.CONTRIB then
+    Verdant.ContribView.render()
   else
     layout_skill_area()
     render_view2()
@@ -3357,14 +3364,14 @@ end
 
 function M.prev_view()
   local v = current_view - 1
-  if v < VIEW.EMS then v = VIEW.TRIAGE end
+  if v < VIEW.EMS then v = VIEW.CONTRIB end
   release_all_pools()
   set_view(v)
 end
 
 function M.next_view()
   local v = current_view + 1
-  if v > VIEW.TRIAGE then v = VIEW.EMS end
+  if v > VIEW.CONTRIB then v = VIEW.EMS end
   release_all_pools()
   set_view(v)
 end
@@ -3557,6 +3564,14 @@ function M.init()
       c:SetVerticalAlignment(TEXT_ALIGN_CENTER)
     end,
     function(c) c:SetHidden(true) end)
+  Verdant.ContribView.attach({
+    canvas = controls.canvas, grid = controls.grid_ems, no_data = controls.no_data,
+    seg = controls.pool_buff_seg, icon = controls.pool_buff_icon, lbl = controls.pool_buff_lbl,
+    layout = ULT_L, fmt_val = fmt_val, hexc = hexc, hide_grid = hide_grid,
+    show_card = show_moment_card,
+    hide_card = function() fade_out(card_fader) end,
+    hit_reset = function() hit_begin(hit_main, 0) end,
+  })
 
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
   controls.title:SetColor(0.75, 0.75, 0.75, 1)

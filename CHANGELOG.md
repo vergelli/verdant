@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- CONTRIB view: skills ranked by what they contributed over the active window. Each row shows the skill icon and name, whether it healed or shielded, and the amount with a bar proportional to the top row, coloured by skill line. Hover a row for its share. Works live, on a stopped recording and on library sessions; values are estimated from the sampled rates.
+
 ## [2.5.0] - 2026-09-04
 
 ### Added

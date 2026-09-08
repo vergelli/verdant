@@ -64,6 +64,7 @@ ui/settings.xml
 ui/settings.lua
 ui/graph.xml
 ui/graph.lua
+ui/contrib.lua
 ui/watch.xml
 ui/watch.lua
 ui/library.xml
