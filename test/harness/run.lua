@@ -55,6 +55,7 @@ local CASES = {
   "buff_watch",
   "contrib_view",
   "manual_save",
+  "auto_stop",
   "zero_alloc",
   "clarity",
 }
