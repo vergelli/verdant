@@ -14,7 +14,6 @@ M.GetString = GetString
 
 M.IsUnitGrouped           = IsUnitGrouped
 M.IsUnitInCombat          = IsUnitInCombat
-M.GetSelectedLFGRole      = GetSelectedLFGRole
 M.DoesUnitExist           = DoesUnitExist
 M.GetGroupSize            = GetGroupSize
 M.GetUnitName             = GetUnitName

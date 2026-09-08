@@ -34,14 +34,6 @@ return function(H)
     ok(r.x + r.w <= panel.x + 290, (c._name or "?") .. " must not bleed into the right column")
   end
   do
-    local a = H.layout(VerdantSettingsPanelBarsBtn)
-    local b = H.layout(VerdantSettingsPanelRoleBtn)
-    ok(b.y == a.y, "Healer only shares the Bar row")
-    ok(b.x >= a.x + a.w + 4, "Healer only starts after Bar with a gap, x=" .. b.x)
-    ok(b.x + b.w <= panel.x + 590, "Healer only stays inside the panel")
-    ok(a.w == b.w, "Bar and Healer only split the row evenly")
-  end
-  do
     local a = H.layout(VerdantSettingsPanelAutosaveBtn)
     local b = H.layout(VerdantSettingsPanelAutoStopBtn)
     ok(b.y == a.y, "Auto-stop shares the Autosave row")
