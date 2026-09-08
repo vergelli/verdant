@@ -508,6 +508,12 @@ function M.toggle()
   if controls.window:IsHidden() then M.show() else M.hide() end
 end
 
+function M.refresh_if_shown()
+  if not controls.window or controls.window:IsHidden() then return end
+  M.refresh()
+  sync_label_box()
+end
+
 function M.init()
   log = Verdant.Log.for_module("library")
   controls.window     = VerdantLibrary

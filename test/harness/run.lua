@@ -54,6 +54,7 @@ local CASES = {
   "light_mode",
   "buff_watch",
   "contrib_view",
+  "manual_save",
   "zero_alloc",
   "clarity",
 }

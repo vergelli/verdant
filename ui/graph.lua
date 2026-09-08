@@ -1472,6 +1472,7 @@ function light.chrome(hidden)
   controls.btn_record:SetHidden(hidden)
   controls.btn_flush:SetHidden(hidden)
   controls.btn_lib:SetHidden(hidden)
+  controls.btn_save:SetHidden(hidden)
   VerdantGraphWindowBarBtn:SetHidden(hidden or not Verdant.Visibility.is_bar_enabled())
 end
 
@@ -2990,10 +2991,18 @@ local function update_summary_chip()
   end
 end
 
+local function save_available()
+  local TB = Verdant.TemporalBuffer
+  local n = TB.count()
+  if TB.is_recording() or n == 0 or controls.save_locked then return false end
+  return not (controls.saved_start == recording_start_ms and controls.saved_count == n)
+end
+
 local function refresh_button_colors()
   local recording = Verdant.TemporalBuffer.is_recording()
   controls.btn_record:SetEnabled(not recording)
   controls.btn_stop:SetEnabled(recording)
+  if controls.btn_save then controls.btn_save:SetEnabled(save_available()) end
   update_hover_gate()
   update_summary_chip()
 end
@@ -3113,6 +3122,8 @@ function M.on_record_click()
   end
   summary_text = nil
   Verdant.SessionStore.finish_autosave()
+  controls.save_locked = false
+  controls.saved_start, controls.saved_count = nil, nil
   Verdant.TemporalBuffer.clear()
   Verdant.Metrics.reset()
   Verdant.Metrics.session_mark()
@@ -3255,6 +3266,7 @@ function M.load_session(sess)
   report.hot, report.direct = hs.oh_hot or 0, hs.oh_direct or 0
   controls.status:SetText(string_format(GetString(VERDANT_LIB_LOADED),
     sess.head.zone or "?"))
+  controls.save_locked = true
   Verdant.Visibility.set("graph", true)
   refresh_button_colors()
   render_current_view()
@@ -3274,11 +3286,38 @@ function M.on_flush_click()
   Verdant.Ultimate.reset()
   summary_text = nil
   Verdant.TemporalBuffer.clear()
+  controls.save_locked = false
+  controls.saved_start, controls.saved_count = nil, nil
   release_all_pools()
   hide_all_grids()
   refresh_button_colors()
   controls.status:SetText("")
   controls.no_data:SetHidden(false)
+end
+
+function M.on_save_click()
+  local TB = Verdant.TemporalBuffer
+  if TB.is_recording() then
+    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    d("[V] " .. GetString(VERDANT_SAVE_BUSY))
+    return false
+  end
+  if TB.count() == 0 then
+    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    d("[V] " .. GetString(VERDANT_SAVE_NOTHING))
+    return false
+  end
+  Verdant.SessionStore.finish_autosave()
+  if not save_available() then
+    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    d("[V] " .. GetString(VERDANT_SAVE_ALREADY))
+    return false
+  end
+  log:info("manual save")
+  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Verdant.SessionStore.save_now()
+  Verdant.Diagnostics.bump("library.manual_save")
+  return true
 end
 
 function M.on_close_click()
@@ -3445,6 +3484,7 @@ function M.init()
   controls.btn_stop      = VerdantGraphWindowStopBtn
   controls.btn_flush     = VerdantGraphWindowFlushBtn
   controls.btn_lib       = VerdantGraphWindowLibBtn
+  controls.btn_save      = VerdantGraphWindowSaveBtn
   controls.status        = VerdantGraphWindowStatusLabel
   controls.btn_prev_view = VerdantGraphWindowPrevViewBtn
   controls.view_label    = VerdantGraphWindowViewLabel
@@ -3453,6 +3493,7 @@ function M.init()
   zui.tooltip(controls.btn_stop,      VERDANT_TIP_STOP)
   zui.tooltip(controls.btn_flush,     VERDANT_TIP_FLUSH)
   zui.tooltip(controls.btn_lib,       VERDANT_TIP_LIB)
+  zui.tooltip(controls.btn_save,      VERDANT_TIP_SAVE)
   zui.tooltip(controls.btn_prev_view, VERDANT_TIP_PREV_VIEW)
   zui.tooltip(controls.btn_next_view, VERDANT_TIP_NEXT_VIEW)
   zui.tooltip(VerdantGraphWindowSettingsBtn, VERDANT_TIP_SETTINGS)
@@ -3633,6 +3674,11 @@ function M.init()
   Verdant.SessionStore.on_saved = function(session)
     d("[V] " .. string_format(GetString(VERDANT_LIB_SAVED),
       session.head.zone or "?", fmt_secs(session.head.dur_ms or 0)))
+    controls.saved_start, controls.saved_count = recording_start_ms, Verdant.TemporalBuffer.count()
+    controls.status:SetText(string_format(GetString(VERDANT_SAVE_STATUS), session.head.zone or "?"))
+    if session.head.manual then PlaySound(SOUNDS.BOOK_ACQUIRED) end
+    refresh_button_colors()
+    if Verdant.Library and Verdant.Library.refresh_if_shown then Verdant.Library.refresh_if_shown() end
   end
 
   controls.welcome = VerdantGraphWindowWelcome
