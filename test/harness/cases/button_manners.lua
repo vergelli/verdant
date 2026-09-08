@@ -10,7 +10,7 @@ return function(H)
     "VerdantBarWindowSettingsBtn", "VerdantBarWindowGraphBtn", "VerdantBarWindowCloseBtn",
     "VerdantLibraryOpenBtn", "VerdantLibraryLockBtn", "VerdantLibraryDeleteBtn", "VerdantLibraryCloseBtn",
     "VerdantSettingsPanelPSaveBtn", "VerdantSettingsPanelPDeleteBtn", "VerdantSettingsPanelAutoRecBtn",
-    "VerdantSettingsPanelAutosaveBtn", "VerdantSettingsPanelLightBtn", "VerdantSettingsPanelShieldDirBtn",
+    "VerdantSettingsPanelAutosaveBtn", "VerdantSettingsPanelAutoStopBtn", "VerdantSettingsPanelLightBtn", "VerdantSettingsPanelShieldDirBtn",
     "VerdantSettingsPanelGdmBtn", "VerdantSettingsPanelUnknownBtn", "VerdantSettingsPanelLogoBtn",
     "VerdantSettingsPanelBarsBtn", "VerdantSettingsPanelResetBtn", "VerdantSettingsPanelCloseBtn", "VerdantSettingsPanelSoundsBtn",
     "VerdantAssignPanelAssignBtn", "VerdantAssignPanelCloseBtn", "VerdantAssignConfirmYesBtn", "VerdantAssignConfirmNoBtn",

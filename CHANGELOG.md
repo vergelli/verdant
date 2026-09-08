@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Settings, RECORDING: an Auto-stop toggle next to Autosave. With it on, a recording you started by hand stops on its own a few seconds after combat ends, with the same five-second grace the auto-record uses, and cancels if you re-engage. Off by default. The Autosave button reads "Autosave" now, both sit on one row.
 - Save icon on the graph window, next to the library icon, plus a "Save Recording to Library" keybind. Press it on a stopped recording to keep it, whether or not Session Autosave is on. It refuses while recording, when there is nothing to record, and when the recording is already in the library, and it goes grey once the recording is saved. The status line reads SAVED with the zone, and a sound confirms it.
 - The empty library now explains both ways to keep a recording.
 - After Stop, with Session Autosave off, the status line reads NOT SAVED until you keep the recording.

@@ -481,6 +481,17 @@ function M.on_autosave_click()
                                     or GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
 end
 
+local function autostop_label(on)
+  return on and GetString(VERDANT_SETTINGS_AUTOSTOP_ON) or GetString(VERDANT_SETTINGS_AUTOSTOP_OFF)
+end
+
+function M.on_autostop_click()
+  local now = not Verdant.AutoRecord.get_auto_stop()
+  Verdant.AutoRecord.set_auto_stop(now)
+  controls.autostop_btn:SetText(autostop_label(now))
+  PlaySound(now and SOUNDS.DIALOG_ACCEPT or SOUNDS.DIALOG_DECLINE)
+end
+
 function M.on_gdm_click()
   local sv = Verdant.SavedVars
   sv.settings = sv.settings or {}
@@ -753,6 +764,8 @@ function M.on_reset_click()
     sv.settings.triage_theta = nil
     sv.settings.session_autosave = false
     controls.autosave_btn:SetText(GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
+    Verdant.AutoRecord.set_auto_stop(false)
+    controls.autostop_btn:SetText(autostop_label(false))
     sv.settings.light_mode = false
     sv.settings.light_alpha_pct = nil
     controls.light_btn:SetText(GetString(VERDANT_SETTINGS_LIGHT_OFF))
@@ -872,6 +885,7 @@ function M.init()
   controls.autorec_btn    = VerdantSettingsPanelAutoRecBtn
   controls.gdm_btn        = VerdantSettingsPanelGdmBtn
   controls.autosave_btn   = VerdantSettingsPanelAutosaveBtn
+  controls.autostop_btn   = VerdantSettingsPanelAutoStopBtn
   controls.pname_edit     = VerdantSettingsPanelPNameBoxEdit
   controls.psave_btn      = VerdantSettingsPanelPSaveBtn
   controls.pdelete_btn    = VerdantSettingsPanelPDeleteBtn
@@ -880,6 +894,7 @@ function M.init()
   zui.tooltip(controls.pdelete_btn,   VERDANT_TIP_PDELETE)
   zui.tooltip(controls.autorec_btn,   VERDANT_TIP_AUTOREC)
   zui.tooltip(controls.autosave_btn,  VERDANT_TIP_AUTOSAVE)
+  zui.tooltip(controls.autostop_btn,  VERDANT_TIP_AUTOSTOP)
   zui.tooltip(controls.light_btn,     VERDANT_TIP_LIGHT)
   zui.tooltip(controls.shielddir_btn, VERDANT_TIP_SHIELDDIR)
   zui.tooltip(controls.gdm_btn,       VERDANT_TIP_GDM)
@@ -940,6 +955,7 @@ function M.init()
     and GetString(VERDANT_SETTINGS_GDM_ON) or GetString(VERDANT_SETTINGS_GDM_OFF))
   controls.autosave_btn:SetText((sv.settings.session_autosave == true)
     and GetString(VERDANT_SETTINGS_AUTOSAVE_ON) or GetString(VERDANT_SETTINGS_AUTOSAVE_OFF))
+  controls.autostop_btn:SetText(autostop_label(sv.settings.auto_stop == true))
   controls.light_btn:SetText((sv.settings.light_mode == true)
     and GetString(VERDANT_SETTINGS_LIGHT_ON) or GetString(VERDANT_SETTINGS_LIGHT_OFF))
   current_lighta = LIGHTA_PRESETS[nearest_idx(LIGHTA_PRESETS, sv.settings.light_alpha_pct or LIGHTA_DEFAULT)]
