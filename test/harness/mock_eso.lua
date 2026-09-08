@@ -21,6 +21,9 @@ EVENT_BOSSES_CHANGED           = 11
 EVENT_UNIT_DEATH_STATE_CHANGED = 12
 EVENT_ACTIVE_WEAPON_PAIR_CHANGED = 13
 EVENT_POWER_UPDATE               = 14
+EVENT_GROUP_MEMBER_ROLE_CHANGED  = 15
+LFG_ROLE_INVALID = 0 LFG_ROLE_DPS = 1 LFG_ROLE_TANK = 2 LFG_ROLE_HEAL = 4
+function GetSelectedLFGRole() return H.state.lfg_role or LFG_ROLE_DPS end
 POWERTYPE_HEALTH                 = 32
 COMBAT_MECHANIC_FLAGS_ULTIMATE   = 10
 ACTION_BAR_ULTIMATE_SLOT_INDEX   = 7
@@ -825,6 +828,11 @@ end
 
 function H.ult_used()
   return H.fire(EVENT_ACTION_SLOT_ABILITY_USED, ACTION_BAR_ULTIMATE_SLOT_INDEX + 1)
+end
+
+function H.set_role(role, tag)
+  H.state.lfg_role = role
+  return H.fire(EVENT_GROUP_MEMBER_ROLE_CHANGED, tag or "player", role)
 end
 
 function H.combat_state(in_combat)

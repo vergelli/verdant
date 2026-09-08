@@ -396,8 +396,17 @@
                 font="ZoFontGameSmall"
                 inherits="ZO_DefaultButton">
           <Anchor point="TOPLEFT" offsetX="314" offsetY="368"/>
-          <Dimensions x="272" y="22"/>
+          <Dimensions x="132" y="22"/>
           <OnClicked>Verdant.Settings.on_bars_click()</OnClicked>
+        </Button>
+
+        <Button name="$(parent)RoleBtn"
+                mouseEnabled="true"
+                font="ZoFontGameSmall"
+                inherits="ZO_DefaultButton">
+          <Anchor point="TOPLEFT" offsetX="454" offsetY="368"/>
+          <Dimensions x="132" y="22"/>
+          <OnClicked>Verdant.Settings.on_role_click()</OnClicked>
         </Button>
 
         <Texture name="$(parent)SepColumns">

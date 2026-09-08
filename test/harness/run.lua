@@ -56,6 +56,7 @@ local CASES = {
   "contrib_view",
   "manual_save",
   "auto_stop",
+  "role_visibility",
   "zero_alloc",
   "clarity",
 }

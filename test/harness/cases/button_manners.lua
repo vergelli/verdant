@@ -12,7 +12,7 @@ return function(H)
     "VerdantSettingsPanelPSaveBtn", "VerdantSettingsPanelPDeleteBtn", "VerdantSettingsPanelAutoRecBtn",
     "VerdantSettingsPanelAutosaveBtn", "VerdantSettingsPanelAutoStopBtn", "VerdantSettingsPanelLightBtn", "VerdantSettingsPanelShieldDirBtn",
     "VerdantSettingsPanelGdmBtn", "VerdantSettingsPanelUnknownBtn", "VerdantSettingsPanelLogoBtn",
-    "VerdantSettingsPanelBarsBtn", "VerdantSettingsPanelResetBtn", "VerdantSettingsPanelCloseBtn", "VerdantSettingsPanelSoundsBtn",
+    "VerdantSettingsPanelBarsBtn", "VerdantSettingsPanelRoleBtn", "VerdantSettingsPanelResetBtn", "VerdantSettingsPanelCloseBtn", "VerdantSettingsPanelSoundsBtn",
     "VerdantAssignPanelAssignBtn", "VerdantAssignPanelCloseBtn", "VerdantAssignConfirmYesBtn", "VerdantAssignConfirmNoBtn",
     "VerdantAssignPanelNewCatCreateBtn", "VerdantAssignPanelNewCatCancelBtn",
   }
