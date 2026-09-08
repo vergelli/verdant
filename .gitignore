@@ -50,3 +50,4 @@ ESOUI_GUIDELINES.md
 # QA scaffold artefacts
 qa/robot/output/
 qa/proofs/.lake/
+__pycache__/
