@@ -13,6 +13,13 @@ class VerdantGate:
         self.lua = shutil.which("lua") or shutil.which("lua5.4") or "lua"
         self.luac = shutil.which("luac") or shutil.which("luac5.4") or "luac"
         self.lake = shutil.which("lake")
+        if not self.lake:
+            home = os.environ.get("USERPROFILE") or os.environ.get("HOME") or ""
+            for name in ("lake.exe", "lake"):
+                cand = os.path.join(home, ".elan", "bin", name)
+                if os.path.isfile(cand):
+                    self.lake = cand
+                    break
 
     def _run(self, args, cwd=None, timeout=600):
         proc = subprocess.run(args, cwd=cwd or self.root, capture_output=True, text=True, timeout=timeout)
@@ -97,7 +104,10 @@ class VerdantGate:
         proofs = os.path.join(self.root, "qa", "proofs")
         if not self.lake:
             raise AssertionError("lake is not installed; install elan (https://github.com/leanprover/elan) and run `lake build` in qa/proofs")
-        code, out = self._run([self.lake, "build"], cwd=proofs, timeout=3600)
+        env = dict(os.environ)
+        env["PATH"] = os.path.dirname(self.lake) + os.pathsep + env.get("PATH", "")
+        proc = subprocess.run([self.lake, "build"], cwd=proofs, capture_output=True, text=True, timeout=3600, env=env)
+        code, out = proc.returncode, (proc.stdout or "") + (proc.stderr or "")
         if code != 0:
             raise AssertionError("lake build failed:\n" + out[-4000:])
         if "sorry" in out:
