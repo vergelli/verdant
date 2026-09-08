@@ -41,6 +41,7 @@ return function(H)
   H.advance(400)
   ok(SS.count() == 0, "with autosave off, stopping stores nothing")
   ok(btn._enabled == true, "a stopped recording can be saved")
+  ok(status._text and status._text:find("NOT SAVED", 1, true), "the status line reminds that the recording is not saved, got " .. tostring(status._text))
 
   H.chat = {}
   H.sounds = {}
@@ -56,6 +57,10 @@ return function(H)
   ok(status._text and status._text:find("SAVED", 1, true) and status._text:find("Fungal Grotto", 1, true),
      "the status line reads SAVED with the zone, got " .. tostring(status._text))
   ok(btn._enabled == false, "the icon goes grey once the recording is saved")
+  ok(H.update_registered("VerdantLibPulse"), "the library icon pulses when a session lands")
+  H.advance(800)
+  ok(not H.update_registered("VerdantLibPulse"), "the pulse ends on its own")
+  ok((VerdantGraphWindowLibBtn._alpha or 1) == 1, "the library icon comes back to full alpha")
 
   H.chat = {}
   H.sounds = {}
@@ -94,6 +99,36 @@ return function(H)
 
   Verdant.Library.show()
   ok(VerdantLibraryListEmpty._hidden == true, "the library lists the sessions")
+  ok(VerdantLibraryRow1When._text:find("edit_save", 1, true) == nil, "the autosaved row carries no hand glyph")
+  ok(VerdantLibraryRow2When._text:find("edit_save", 1, true) ~= nil, "the manual row carries the hand glyph")
+  ok(VerdantLibraryRow2Sel._hidden == false, "opening the library lands on the manual session even after a later autosave")
+  ok(VerdantLibraryRow1Sel._hidden == true, "an autosave never pre-selects a row")
+  Verdant.Library.hide()
+
+  sv.settings.session_autosave = false
+  Verdant.Graph.on_flush_click()
+  Verdant.Graph.on_record_click()
+  H.heal({ hit = 700 })
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+  ok(Verdant.Graph.on_save_click() == true, "third manual save accepted")
+  H.advance(400)
+  ok(SS.count() == 3, "three sessions")
+  Verdant.Library.show()
+  ok(VerdantLibraryRow1Sel._hidden == false, "opening the library after a manual save lands on that session")
+  ok(VerdantLibraryRow1When._text:find("edit_save", 1, true) ~= nil, "and it wears the hand glyph")
+  Verdant.Library.on_row_click(2)
+  H.state.zone = "Spindleclutch"
+  Verdant.Graph.on_flush_click()
+  Verdant.Graph.on_record_click()
+  H.heal({ hit = 650 })
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+  ok(Verdant.Graph.on_save_click() == true, "manual save with the library open")
+  H.advance(400)
+  ok(SS.count() == 4, "four sessions")
+  ok(VerdantLibraryRow1Name._text == "Spindleclutch", "the open library refreshes with the new session first")
+  ok(VerdantLibraryRow1Sel._hidden == false, "and selects it, label box ready")
   Verdant.Library.hide()
 
   Verdant.Graph.on_flush_click()
