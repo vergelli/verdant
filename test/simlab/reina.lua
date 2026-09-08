@@ -32,7 +32,7 @@ if Verdant.SessionStore.count() ~= 1 then
 end
 
 local canvas = VerdantGraphWindowViewport
-local VIEWS = { "EMS", "SKILL", "CRIT", "BUFFS", "TRIAGE" }
+local VIEWS = { "EMS", "SKILL", "CRIT", "BUFFS", "TRIAGE", "CONTRIB" }
 local function goto_view(name)
   local guard = 0
   while VerdantGraphWindowViewLabel._text ~= name and guard < 8 do

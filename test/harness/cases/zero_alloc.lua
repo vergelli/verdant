@@ -41,7 +41,7 @@ return function(H)
   local baseline = H.addon_alloc(ticks) / 10
   Verdant.Visibility.set("graph", true)
   local view_label = VerdantGraphWindowViewLabel
-  for _, view in ipairs({ "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE" }) do
+  for _, view in ipairs({ "EMS", "SKILL", "CRIT", "OHEAL", "BUFFS", "TRIAGE", "CONTRIB" }) do
     while view_label._text ~= view do Verdant.Graph.next_view() end
     H.advance(1000)
     local bytes = H.addon_alloc(ticks) / 10 - baseline
