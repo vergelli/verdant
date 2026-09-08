@@ -13,6 +13,15 @@ produces the human-readable report (`log.html`, `report.html`) that a release ca
 
 ## Running the report
 
+One command from the repo root, Windows or bash:
+
+```
+qa\gate.bat --open      (Windows; --open launches report.html when done)
+bash qa/gate.sh          (Git Bash / Linux / macOS)
+```
+
+Both put elan's `lake` on the PATH and run the Robot suite. By hand:
+
 ```
 python -m pip install -r qa/robot/requirements.txt
 python -m robot --outputdir qa/robot/output qa/robot/gate.robot
