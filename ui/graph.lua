@@ -4,7 +4,7 @@ local M = Verdant.Graph
 
 local api  = Verdant.zenimax.api
 local zui  = Verdant.zenimax.ui
-local PlaySound = zui.PlaySound
+local Sound = Verdant.Sound
 local zc   = Verdant.zenimax.constants
 local zev  = Verdant.zenimax.events
 local WINDOW_MANAGER             = zui.WINDOW_MANAGER
@@ -3231,7 +3231,7 @@ end
 function M.on_record_click()
   if Verdant.TemporalBuffer.is_recording() then return end
   log:info("record click")
-  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Sound.play("record")
   if not Verdant.AutoRecord.is_auto_active() then
     Verdant.AutoRecord.notify_manual_record()
   end
@@ -3264,7 +3264,7 @@ function M.on_stop_click()
   if not Verdant.TemporalBuffer.is_recording() then return end
   log:info("stop click")
   Verdant.Hitch.mark("stop")
-  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Sound.play("stop")
   light.exit()
   Verdant.AutoRecord.notify_manual_stop()
   Verdant.TemporalBuffer.stop_recording()
@@ -3395,7 +3395,7 @@ function M.load_session(sess)
 end
 
 function M.on_flush_click()
-  PlaySound(SOUNDS.DIALOG_DECLINE)
+  Sound.play("discard")
   Verdant.SessionStore.finish_autosave()
   light.exit()
   if Verdant.TemporalBuffer.is_recording() then
@@ -3418,30 +3418,30 @@ end
 function M.on_save_click()
   local TB = Verdant.TemporalBuffer
   if TB.is_recording() then
-    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    Sound.play("deny")
     d("[V] " .. GetString(VERDANT_SAVE_BUSY))
     return false
   end
   if TB.count() == 0 then
-    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    Sound.play("deny")
     d("[V] " .. GetString(VERDANT_SAVE_NOTHING))
     return false
   end
   Verdant.SessionStore.finish_autosave()
   if not M.save_available() then
-    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    Sound.play("deny")
     d("[V] " .. GetString(VERDANT_SAVE_ALREADY))
     return false
   end
   log:info("manual save")
-  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Sound.play("confirm")
   Verdant.SessionStore.save_now()
   Verdant.Diagnostics.bump("library.manual_save")
   return true
 end
 
 function M.on_close_click()
-  PlaySound(SOUNDS.BOOK_CLOSE)
+  Sound.play("close")
   light.exit()
   Verdant.Visibility.set("graph", false)
   stop_hover_poll(); hide_hover_ui(); hover_key = nil
@@ -3463,7 +3463,7 @@ function M.on_title_double_click()
   local C = Verdant.Constants
   local w, h = controls.window:GetDimensions()
   if w == C.GRAPH_DEFAULT_W and h == C.GRAPH_DEFAULT_H then return end
-  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Sound.play("click")
   controls.window:SetDimensions(C.GRAPH_DEFAULT_W, C.GRAPH_DEFAULT_H)
   M.on_resize_stop()
 end
@@ -3526,7 +3526,7 @@ function M.toggle_buffs_fold()
   if not sv then return end
   sv.settings = sv.settings or {}
   sv.settings.buffs_unfolded = not (sv.settings.buffs_unfolded == true)
-  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Sound.play(sv.settings.buffs_unfolded and "on" or "off")
   hide_hover_ui(); hover_key = nil
   release_all_pools()
   render_current_view()
@@ -3584,7 +3584,7 @@ function M.on_welcome_ok()
   local sv = Verdant.SavedVars
   sv.settings = sv.settings or {}
   sv.settings.welcomed = true
-  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Sound.play("confirm")
   if controls.welcome then controls.welcome:SetHidden(true) end
 end
 
@@ -3592,7 +3592,7 @@ function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
   log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
-  PlaySound(now_visible and SOUNDS.BOOK_OPEN or SOUNDS.BOOK_CLOSE)
+  Sound.play(now_visible and "open" or "close")
   if now_visible then
     local sv = Verdant.SavedVars
     if controls.welcome and not (sv.settings and sv.settings.welcomed) then
@@ -3771,7 +3771,7 @@ function M.init()
   end)
   controls.view_label:SetHandler("OnMouseUp", function(_, button, upInside)
     if upInside == false then return end
-    PlaySound(SOUNDS.BOOK_PAGE_TURN)
+    Sound.play("page")
     if button == zc.MOUSE_BUTTON_INDEX_RIGHT then M.prev_view() else M.next_view() end
   end)
 
@@ -3799,7 +3799,7 @@ function M.init()
     local view = v
     hit:SetHandler("OnMouseUp", function(_, _, upInside)
       if upInside == false or view == current_view then return end
-      PlaySound(SOUNDS.BOOK_PAGE_TURN)
+      Sound.play("page")
       release_all_pools()
       set_view(view)
     end)
@@ -3821,7 +3821,7 @@ function M.init()
       session.head.zone or "?", fmt_secs(session.head.dur_ms or 0)))
     controls.saved_start, controls.saved_count = recording_start_ms, Verdant.TemporalBuffer.count()
     controls.status:SetText(string_format(GetString(VERDANT_SAVE_STATUS), session.head.zone or "?"))
-    if session.head.manual then PlaySound(SOUNDS.BOOK_ACQUIRED) end
+    if session.head.manual then Sound.play("save") end
     refresh_button_colors()
     M.pulse_lib()
     if Verdant.Library and Verdant.Library.on_session_saved then
@@ -3908,7 +3908,7 @@ function M.init()
   sum_hit:SetHandler("OnMouseUp", function(_, _, upInside)
     if upInside == false then return end
     show_report_card()
-    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    Sound.play("click")
     Verdant.CopyBox.show(GetString(VERDANT_REPORT_COPY_TITLE), report_text())
   end)
 
@@ -3987,7 +3987,7 @@ function M.init()
           if cls ~= tri_hit.filter then
             tri_hit.filter = cls
             tri_hit.scroll = 0
-            PlaySound(SOUNDS.DIALOG_ACCEPT)
+            Sound.play("click")
             hide_hover_ui(); hover_key = nil
             render_current_view()
           end
@@ -4009,7 +4009,7 @@ function M.init()
       if rel_y >= buff_hit.y0[i] and rel_y <= buff_hit.y1[i] then
         local rec = buff_hit.rec[i]
         local thr = Verdant.BuffWatch.toggle(rec.name, rec.id)
-        PlaySound(SOUNDS.ABILITY_SLOTTED)
+        Sound.play("arm")
         if thr then
           d("[V] " .. string_format(GetString(VERDANT_WATCH_ARMED), rec.name or "?", thr))
         else

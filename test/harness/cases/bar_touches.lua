@@ -20,7 +20,7 @@ return function(H)
   H.sounds = {}
   lbl._onOnMouseUp(lbl, nil, true)
   ok(lbl._text ~= before, "clicking the metric name must advance the metric, still " .. tostring(lbl._text))
-  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "advancing confirms with the accept sound")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("page")), "advancing confirms with the accept sound")
   local cycled = lbl._text
   lbl._onOnMouseUp(lbl, nil, false)
   ok(lbl._text == cycled, "releasing outside the label does nothing")

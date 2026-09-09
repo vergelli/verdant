@@ -99,7 +99,7 @@ return function(H)
 
   H.sounds = {}
   hit._onOnMouseUp(hit, nil, true)
-  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "clicking the chip must confirm with a sound")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("click")), "clicking the chip must confirm with a sound")
   ok(Verdant.CopyBox.is_visible(), "clicking the chip must open the copy box")
   local eb = rawget(_G, "VerdantCopyBoxEdit")
   local txt = eb and eb._text or ""

@@ -22,7 +22,7 @@ return function(H)
   H.chat = {}
   H.sounds = {}
   ok(Verdant.Graph.on_save_click() == false, "saving an empty graph is refused")
-  ok(H.sounds[#H.sounds] == "sound:NEGATIVE_CLICK", "refusal plays the negative click")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("deny")), "refusal plays the negative click")
   ok(H.chat_contains("Nothing to save"), "refusal explains there is nothing to save")
   ok(SS.count() == 0, "no session stored for an empty graph")
 
@@ -52,7 +52,7 @@ return function(H)
   ok(SS.get(1).head.zone == "Fungal Grotto", "the stored session carries the zone")
   ok(H.chat_contains("saved to the library"), "the chat line confirms the save")
   local heard = false
-  for _, s in ipairs(H.sounds) do if s == "sound:BOOK_ACQUIRED" then heard = true end end
+  for _, s in ipairs(H.sounds) do if s == ("sound:" .. Verdant.Sound.name("save")) then heard = true end end
   ok(heard, "a manual save is confirmed with its own sound")
   ok(status._text and status._text:find("SAVED", 1, true) and status._text:find("Fungal Grotto", 1, true),
      "the status line reads SAVED with the zone, got " .. tostring(status._text))
@@ -65,7 +65,7 @@ return function(H)
   H.chat = {}
   H.sounds = {}
   ok(Verdant.Graph.on_save_click() == false, "a second press does not save twice")
-  ok(H.sounds[#H.sounds] == "sound:NEGATIVE_CLICK", "the second press plays the negative click")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("deny")), "the second press plays the negative click")
   ok(H.chat_contains("already in the library"), "the second press explains the recording is already saved")
   ok(SS.count() == 1, "still one session")
 

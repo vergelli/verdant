@@ -84,7 +84,7 @@ return function(H)
   H.sounds = {}
   hit._onOnMouseUp(hit, nil, true)
   ok(sv.settings.buffs_unfolded == true, "clicking the strip unfolds and persists")
-  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "unfolding confirms with a sound")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("on")), "unfolding confirms with a sound")
   texts = visible_texts()
   ok(texts["[-] 3 always on"] == 1, "the strip reads unfolded")
   ok(texts["Major Sorcery"] == 1 and texts["Minor Resolve"] == 1 and texts["Major Prophecy"] == 1, "unfolded buffs get their lanes back")

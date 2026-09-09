@@ -23,7 +23,7 @@ return function(H)
   H.sounds = {}
   VerdantGraphTab3._onOnMouseUp(VerdantGraphTab3, nil, true)
   ok(view_label._text == "CRIT", "clicking a tab switches the view, got " .. tostring(view_label._text))
-  ok(H.sounds[#H.sounds] == "sound:BOOK_PAGE_TURN", "switching a view turns a page")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("page")), "switching a view turns a page")
   ok(VerdantGraphTab3Line._hidden == false and VerdantGraphTab1Line._hidden == true, "the line follows the active tab")
 
   H.sounds = {}

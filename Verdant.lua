@@ -106,6 +106,9 @@ local function on_slash(input)
           .. "  (subcmd: start | stop | save | clear | auto)")
       end
       return
+    elseif cmd == "sound" then
+      Verdant.Sound.audition(string_match(input, "^%s*%S+%s*(.*)$"))
+      return
     elseif cmd == "flush" then
       d("[V] writing SavedVariables to disk")
       Verdant.zenimax.api.ReloadUI()

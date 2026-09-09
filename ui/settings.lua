@@ -3,10 +3,10 @@ local Verdant = Verdant
 
 Verdant.Settings = {}
 local M = Verdant.Settings
+local Sound = Verdant.Sound
 
 local api = Verdant.zenimax.api
 local zui = Verdant.zenimax.ui
-local PlaySound = zui.PlaySound
 local zc  = Verdant.zenimax.constants
 local Scene = Verdant.zenimax.scene
 local GetUIMousePosition = api.GetUIMousePosition
@@ -291,7 +291,7 @@ local function show_confirm(kind, title, msg, yes, no)
   controls.confirm_yes:SetText(GetString(yes))
   controls.confirm_no:SetText(GetString(no))
   controls.confirm:SetHidden(false)
-  PlaySound(SOUNDS.NEGATIVE_CLICK)
+  Sound.play("deny")
 end
 
 local function ask_heavy(prev_sample, prev_twindow)
@@ -395,12 +395,12 @@ function M.toggle()
     Scene.show_top_level(win)
     refresh_all_sliders()
     M.refresh_unknown_count()
-    PlaySound(SOUNDS.BOOK_OPEN)
+    Sound.play("open")
   else
     Scene.hide_top_level(win)
     controls.confirm:SetHidden(true)
     confirm.kind = nil
-    PlaySound(SOUNDS.BOOK_CLOSE)
+    Sound.play("close")
   end
 end
 
@@ -437,7 +437,7 @@ function M.on_sounds_click()
   sv.settings.sounds = now
   controls.sounds_btn:SetText(now and GetString(VERDANT_SETTINGS_SOUNDS_ON)
                                    or GetString(VERDANT_SETTINGS_SOUNDS_OFF))
-  if now then PlaySound(SOUNDS.DIALOG_ACCEPT) end
+  if now then Sound.play("confirm") end
 end
 
 function M.on_bars_click()
@@ -489,7 +489,7 @@ function M.on_autostop_click()
   local now = not Verdant.AutoRecord.get_auto_stop()
   Verdant.AutoRecord.set_auto_stop(now)
   controls.autostop_btn:SetText(autostop_label(now))
-  PlaySound(now and SOUNDS.DIALOG_ACCEPT or SOUNDS.DIALOG_DECLINE)
+  Sound.play(now and "on" or "off")
 end
 
 function M.on_gdm_click()
@@ -693,7 +693,7 @@ function M.on_confirm_yes()
   local kind = confirm.kind
   confirm.kind = nil
   controls.confirm:SetHidden(true)
-  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  Sound.play("confirm")
   if kind == "pdelete" then delete_profile_now() end
 end
 
@@ -701,7 +701,7 @@ function M.on_confirm_no()
   local kind = confirm.kind
   confirm.kind = nil
   controls.confirm:SetHidden(true)
-  PlaySound(SOUNDS.DIALOG_DECLINE)
+  Sound.play("discard")
   if kind == "heavy" then
     current_sample  = confirm.prev_sample
     current_twindow = confirm.prev_twindow
