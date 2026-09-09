@@ -1,15 +1,14 @@
 # Verdant quality guarantees
 
-Everything a release claims about its numbers, executed and reported. Two layers, one
-repository:
+Everything a release claims about its numbers, executed and reported. The Robot Framework
+suite in `qa/robot` runs the offline ESO harness, the SimLab oracle, the layout audit, the
+trace replays and the live-versus-library comparison, and produces the human-readable
+report (`log.html`, `report.html`) a release can link to. `test/gate.sh` stays the fast
+pre-merge gate; Robot wraps the same checks.
 
-| Directory | Layer | Tool | Answers |
-|---|---|---|---|
-| `qa/robot` | Execution | Robot Framework over the offline ESO harness, SimLab oracle, layout audit, trace replays | "Does the shipped code compute what the model says, on synthetic fights and on real traces?" |
-| `qa/proofs` | Model | Lean 4 + Mathlib | "Is the model itself right? What error can the library's rounding introduce?" |
-
-`test/gate.sh` stays the fast pre-merge gate. The Robot suite runs the same checks and
-produces the human-readable report (`log.html`, `report.html`) that a release can link to.
+A Lean layer for the mathematical model was tried in September 2026 and dropped: the
+guarantee users care about, that the numbers match what the game did, can only be tested
+against the game's own events, never proven from a model.
 
 ## Running the report
 
@@ -20,15 +19,12 @@ qa\gate.bat --open      (Windows; --open launches report.html when done)
 bash qa/gate.sh          (Git Bash / Linux / macOS)
 ```
 
-Both put elan's `lake` on the PATH and run the Robot suite. By hand:
+By hand:
 
 ```
 python -m pip install -r qa/robot/requirements.txt
 python -m robot --outputdir qa/robot/output qa/robot/gate.robot
 ```
-
-Open `qa/robot/output/report.html`. The proofs test is skipped until `lake` is installed
-(see `qa/proofs/README.md`); the rest runs with Lua alone.
 
 Nothing under `qa/` ships: the release workflow copies an allowlist of runtime directories
 and `qa/` is not in it.
