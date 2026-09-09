@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- The mouse wheel scrolls the CONTRIB and BUFFS lists when they do not fit; the overflow line tells how many rows sit above and below. Two new keybinds, Next Graph View and Previous Graph View, cycle the views without the mouse.
 - The graph fades in when it opens. The HUD logo breathes slowly while a recording is running, so an auto-record that started on its own is visible without opening the graph. After Stop without autosave, the status reads NOT SAVED in amber and the save icon pulses once.
 - CONTRIB view: the hovered row gets a soft band, and the bars wear the same one-pixel rim as the buff gantt.
 - BUFFS view: a thin uptime bar under each buff name, and holder concurrency in two clear levels instead of a continuous fade. The empty states of the graph and the library show the Record and Save glyphs they talk about.
