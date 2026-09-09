@@ -7,8 +7,12 @@ return function(H)
   local S  = Verdant.Settings
   local sv = Verdant.SavedVars
 
-  S.on_profile_selected("pvp")
-  eq(S.snapshot().rate_ms, 200, "pvp preset rate")
+  eq(S.snapshot().profile_id, "custom", "without built-in presets the panel starts on Custom")
+  ok(S.on_profile_selected("solo") == nil and S.snapshot().profile_id == "custom", "an old preset id is ignored")
+  sv.settings.user_profiles = sv.settings.user_profiles or {}
+  sv.settings.user_profiles["PvP Night"] = { rate = 200, heal = 3000, shield = 5000, sample = 200, twindow = 30 }
+  S.on_profile_selected("user:PvP Night")
+  eq(S.snapshot().rate_ms, 200, "a user profile applies its rate")
 
   VerdantSettingsPanelPNameBoxEdit:SetText("Raid Night")
   S.on_profile_save_click()
@@ -18,8 +22,10 @@ return function(H)
   eq(sv.settings.profile, "user:Raid Night", "profile id not persisted")
   eq(S.snapshot().profile_label, "* Raid Night", "profile label")
 
-  S.on_profile_selected("solo")
-  eq(S.snapshot().rate_ms, 1000, "solo preset rate")
+  S.on_reset_click()
+  eq(S.snapshot().rate_ms, 1000, "reset restores the default rate")
+  eq(S.snapshot().time_window_s, 60, "reset restores the default window")
+  eq(S.snapshot().profile_id, "custom", "reset lands on Custom")
 
   S.on_profile_selected("user:Raid Night")
   eq(S.snapshot().rate_ms, 200, "loading user profile must restore rate")
@@ -40,6 +46,6 @@ return function(H)
   eq(S.snapshot().profile_id, "custom", "after delete fall back to custom")
 
   S.on_profile_delete_click()
-  S.on_profile_selected("solo")
-  eq(S.snapshot().rate_ms, 1000, "builtin presets must survive the feature")
+  eq(S.snapshot().profile_id, "custom", "deleting with nothing selected keeps Custom")
+  sv.settings.user_profiles["PvP Night"] = nil
 end

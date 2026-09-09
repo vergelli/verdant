@@ -116,22 +116,14 @@ end
 
 local function profile_label_for(id)
   if is_user_profile(id) then return "* " .. user_profile_name(id) end
-  if id == "solo"     then return GetString(VERDANT_PROFILE_SOLO)     end
-  if id == "dungeons" then return GetString(VERDANT_PROFILE_DUNGEONS) end
-  if id == "trials"   then return GetString(VERDANT_PROFILE_TRIALS)   end
-  if id == "pvp"      then return GetString(VERDANT_PROFILE_PVP)      end
   if id == "custom"   then return GetString(VERDANT_PROFILE_CUSTOM)   end
   return id
 end
 
 local PROFILES = {
-  { id = "solo",     rate = 1000, heal = 5000, shield = 10000, sample = 1000, twindow = 60  },
-  { id = "dungeons", rate = 500,  heal = 5000, shield = 7000,  sample = 1000, twindow = 180 },
-  { id = "trials",   rate = 1000, heal = 5000, shield = 7000,  sample = 1000, twindow = 600 },
-  { id = "pvp",      rate = 200,  heal = 3000, shield = 5000,  sample = 200,  twindow = 30  },
-  { id = "custom"    },
+  { id = "custom" },
 }
-local PROFILE_DEFAULT = "solo"
+local PROFILE_DEFAULT = "custom"
 
 local function user_profiles()
   local sv = Verdant.SavedVars
@@ -324,15 +316,12 @@ local function mark_custom()
   end
 end
 
-local function apply_profile(id)
-  local p = profile_by_id(id)
-  if not p or not p.rate then return false end
-
-  current_rate    = p.rate
-  current_heal    = p.heal
-  current_shield  = p.shield
-  current_sample  = p.sample
-  current_twindow = p.twindow
+local function apply_values(rate, heal, shield, sample, twindow)
+  current_rate    = rate
+  current_heal    = heal
+  current_shield  = shield
+  current_sample  = sample
+  current_twindow = twindow
 
   persist("rate_ms",          current_rate)
   persist("heal_window_ms",   current_heal)
@@ -344,7 +333,12 @@ local function apply_profile(id)
   Verdant.Metrics.set_window(current_heal)
   Verdant.Metrics.set_shield_window(current_shield)
   reinit_buffer()
+end
 
+local function apply_profile(id)
+  local p = profile_by_id(id)
+  if not p or not p.rate then return false end
+  apply_values(p.rate, p.heal, p.shield, p.sample, p.twindow)
   current_profile = id
   persist_profile(id)
   log:info("profile ->", profile_label_for(id))
@@ -751,7 +745,9 @@ end
 
 function M.on_reset_click()
   log:info("reset to defaults")
-  apply_profile(PROFILE_DEFAULT)
+  apply_values(RATE_DEFAULT, HEAL_DEFAULT, SHIELD_DEFAULT, SAMPLE_DEFAULT, TWINDOW_DEFAULT)
+  current_profile = "custom"
+  persist_profile("custom")
 
   current_vpalpha = VPALPHA_DEFAULT
   persist_temporal("viewport_alpha_pct", current_vpalpha)
