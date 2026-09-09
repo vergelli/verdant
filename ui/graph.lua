@@ -101,7 +101,8 @@ local hit_top  = { cols = {}, n = 0 }
 local hit_bot  = { cols = {}, n = 0 }
 local buff_hit = { n = 0, y0 = {}, y1 = {}, rec = {}, lane_x = 0, lane_w = 0, t0 = 0, span = 0 }
 local buff_vis = {}
-local C_BUFF_FALLBACK = { r = 0.55, g = 0.92, b = 0.62, a = 0.95 }
+local C_BUFF_FALLBACK = { r = 0.60, g = 0.63, b = 0.66, a = 0.95 }
+local BUFF_FOLD = { PCT = 0.90, H = 24, ICON = 18, GAP = 3, MIN = 2, n = 0, x0 = {}, x1 = {}, rec = {}, y0 = 0, y1 = 0, on = false }
 
 local function buff_color(rec)
   if rec.group and rec.group ~= "other" then
@@ -1242,6 +1243,22 @@ local function buff_hover_poll(mx, my)
   local inside = rel_x >= 0 and rel_x <= cw and rel_y >= 0 and rel_y <= ch
 
   local rec = nil
+  if inside and BUFF_FOLD.on and rel_y >= BUFF_FOLD.y0 and rel_y <= BUFF_FOLD.y1 then
+    for k = 1, BUFF_FOLD.n do
+      if BUFF_FOLD.x0[k] and rel_x >= BUFF_FOLD.x0[k] and rel_x <= BUFF_FOLD.x1[k] then
+        rec = BUFF_FOLD.rec[k]
+        break
+      end
+    end
+    local new = rec and rec.id or nil
+    if new ~= hover_key then hover_key = new; render_current_view() end
+    if rec then
+      show_buff_card(rec, rec.uptime_ms, rec.max_conc or 0, mx, my)
+    else
+      hide_hover_ui()
+    end
+    return
+  end
   if inside then
     for i = 1, buff_hit.n do
       if rel_y >= buff_hit.y0[i] and rel_y <= buff_hit.y1[i] then
@@ -2237,15 +2254,40 @@ local function render_view4()
   local n_all = BT.count()
   local vis   = buff_vis
   local n     = 0
+  local recording = Verdant.TemporalBuffer.is_recording()
+  local sv_settings = Verdant.SavedVars and Verdant.SavedVars.settings
+  local unfolded = sv_settings and sv_settings.buffs_unfolded == true
+  local fold_dur = (not recording) and (BT.session_end() - BT.session_start()) or 0
+  local always_n = 0
+  BUFF_FOLD.n = 0
+  BUFF_FOLD.on = false
   for i = 1, n_all do
     local rec = BT.get(i)
     if not (rec.only_self and rec.desc == "" and rec.group ~= "item" and not rec.vetoed) then
-      n = n + 1
-      vis[n] = rec
+      if fold_dur > 0 and rec.uptime_ms / fold_dur >= BUFF_FOLD.PCT then
+        always_n = always_n + 1
+        BUFF_FOLD.rec[always_n] = rec
+      else
+        n = n + 1
+        vis[n] = rec
+      end
     end
   end
+  if always_n < BUFF_FOLD.MIN then
+    for k = always_n, 1, -1 do
+      table.insert(vis, 1, BUFF_FOLD.rec[k])
+      n = n + 1
+    end
+    always_n = 0
+  elseif unfolded then
+    for k = always_n, 1, -1 do
+      table.insert(vis, 1, BUFF_FOLD.rec[k])
+      n = n + 1
+    end
+  end
+  BUFF_FOLD.n = always_n
 
-  if n == 0 then
+  if n == 0 and always_n == 0 then
     controls.no_data:SetHidden(false)
     hide_grid(controls.grid_ems)
     return
@@ -2256,7 +2298,6 @@ local function render_view4()
   local cw, ch = canvas:GetWidth(), canvas:GetHeight()
   if cw <= BUFF_GUTTER_W + 40 or ch <= 4 then return end
 
-  local recording = Verdant.TemporalBuffer.is_recording()
   local t0   = BT.session_start()
   local t_hi = recording and GetGameTimeMilliseconds() or BT.session_end()
   local span = t_hi - t0
@@ -2265,7 +2306,49 @@ local function render_view4()
   Verdant.Diagnostics.bump("graph.view_buffs.renders")
   draw_grid(controls.grid_ems, canvas, 0, span)
 
-  local ch_plot = math_max(4, ch - TIME_STRIP_H - ULT_L.CHIP)
+  local strip_h = (always_n > 0) and (BUFF_FOLD.H + BUFF_ROW_GAP) or 0
+  local top = ULT_L.CHIP + strip_h
+  if always_n > 0 then
+    BUFF_FOLD.on = true
+    BUFF_FOLD.y0 = ULT_L.CHIP
+    BUFF_FOLD.y1 = ULT_L.CHIP + BUFF_FOLD.H
+    local band = controls.pool_buff_seg:AcquireObject()
+    band:ClearAnchors()
+    band:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, ULT_L.CHIP)
+    band:SetWidth(cw)
+    band:SetHeight(BUFF_FOLD.H)
+    band:SetColor(C_BUFF_LANE.r, C_BUFF_LANE.g, C_BUFF_LANE.b, unfolded and 0.03 or 0.08)
+    band:SetHidden(false)
+    local head = controls.pool_buff_lbl:AcquireObject()
+    head:ClearAnchors()
+    head:SetText(string_format(GetString(unfolded and VERDANT_BUFFS_ALWAYS_OPEN or VERDANT_BUFFS_ALWAYS), always_n))
+    head:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
+    head:SetColor(C_BUFF_MORE.r, C_BUFF_MORE.g, C_BUFF_MORE.b, C_BUFF_MORE.a)
+    head:SetDimensions(BUFF_GUTTER_W - 8, BUFF_FOLD.H)
+    head:SetAnchor(TOPLEFT, canvas, TOPLEFT, 6, ULT_L.CHIP)
+    head:SetHidden(false)
+    if not unfolded then
+      local x = BUFF_GUTTER_W
+      local iy = ULT_L.CHIP + math_floor((BUFF_FOLD.H - BUFF_FOLD.ICON) / 2)
+      for k = 1, always_n do
+        if x + BUFF_FOLD.ICON > cw then break end
+        local rec = BUFF_FOLD.rec[k]
+        local ic = controls.pool_buff_icon:AcquireObject()
+        ic:ClearAnchors()
+        ic:SetTexture(Verdant.SkillColors.ability_icon(rec.id))
+        ic:SetDimensions(BUFF_FOLD.ICON, BUFF_FOLD.ICON)
+        ic:SetColor(1, 1, 1, (hover_key ~= nil and rec.id ~= hover_key) and 0.45 or 1)
+        ic:SetAnchor(TOPLEFT, canvas, TOPLEFT, x, iy)
+        ic:SetHidden(false)
+        BUFF_FOLD.x0[k] = x
+        BUFF_FOLD.x1[k] = x + BUFF_FOLD.ICON
+        x = x + BUFF_FOLD.ICON + BUFF_FOLD.GAP
+      end
+    end
+  end
+  if n == 0 then return end
+
+  local ch_plot = math_max(4, ch - TIME_STRIP_H - top)
   local rows    = n
   local extra   = 0
   local row_h   = math_floor(ch_plot / rows) - BUFF_ROW_GAP
@@ -2296,7 +2379,7 @@ local function render_view4()
 
   for i = 1, rows do
     local rec = vis[i]
-    local y   = ULT_L.CHIP + (i - 1) * (row_h + BUFF_ROW_GAP)
+    local y   = top + (i - 1) * (row_h + BUFF_ROW_GAP)
     local c   = buff_color(rec)
     if capture then
       buff_hit.y0[i]  = y
@@ -2403,7 +2486,7 @@ local function render_view4()
     more:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     more:SetColor(C_BUFF_MORE.r, C_BUFF_MORE.g, C_BUFF_MORE.b, C_BUFF_MORE.a)
     more:SetDimensions(cw, row_h)
-    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, ULT_L.CHIP + rows * (row_h + BUFF_ROW_GAP))
+    more:SetAnchor(TOPLEFT, canvas, TOPLEFT, 0, top + rows * (row_h + BUFF_ROW_GAP))
     more:SetHidden(false)
   end
 end
@@ -3422,6 +3505,22 @@ function M.toggle_record()
   end
 end
 
+function M.toggle_buffs_fold()
+  local sv = Verdant.SavedVars
+  if not sv then return end
+  sv.settings = sv.settings or {}
+  sv.settings.buffs_unfolded = not (sv.settings.buffs_unfolded == true)
+  PlaySound(SOUNDS.DIALOG_ACCEPT)
+  hide_hover_ui(); hover_key = nil
+  release_all_pools()
+  render_current_view()
+end
+
+function M.buffs_unfolded()
+  local sv = Verdant.SavedVars
+  return sv and sv.settings and sv.settings.buffs_unfolded == true or false
+end
+
 function M.prev_view()
   local v = current_view - 1
   if v < VIEW.EMS then v = VIEW.CONTRIB end
@@ -3876,6 +3975,10 @@ function M.init()
     local mx, my = GetUIMousePosition()
     local rel_x = mx - controls.canvas:GetLeft()
     local rel_y = my - controls.canvas:GetTop()
+    if BUFF_FOLD.on and rel_y >= BUFF_FOLD.y0 and rel_y <= BUFF_FOLD.y1 and rel_x >= 0 then
+      M.toggle_buffs_fold()
+      return
+    end
     if rel_x < 0 or rel_x > 20 then return end
     for i = 1, buff_hit.n do
       if rel_y >= buff_hit.y0[i] and rel_y <= buff_hit.y1[i] then

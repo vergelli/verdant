@@ -17,6 +17,7 @@ local CASES = {
   "buff_states",
   "buffs_view",
   "buffs_hover",
+  "buffs_fold",
   "auto_record",
   "dmg_overlay",
   "death_markers",
