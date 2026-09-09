@@ -54,8 +54,18 @@ return function(H)
   for _ in pairs(alphas) do distinct = distinct + 1 end
   ok(distinct >= 2, "concurrency must modulate segment alpha (distinct=" .. distinct .. ")")
 
+  local rim1 = rawget(_G, "VerdantBuffRim1")
+  ok(rim1 and rim1._hidden == false, "every segment wears a rim")
+  local framed = false
+  for i = 1, 20 do
+    local s = rawget(_G, "VerdantBuffSeg" .. i)
+    if s and s._hidden == false and s._w == rim1._w - 2 and s._h == rim1._h - 2 then framed = true end
+  end
+  ok(framed, "the rim is one pixel larger than its segment on every side")
+  ok((rim1._a or 1) < 0.6 and rim1._r == 0, "the rim is a dark, subtle outline")
   Verdant.Graph.next_view()
   ok(seg1._hidden == true, "segments must release when leaving BUFFS view")
+  ok(rim1._hidden == true, "rims release with their segments")
 
   while view_label._text ~= "EMS" do Verdant.Graph.next_view() end
   Verdant.Graph.on_flush_click()

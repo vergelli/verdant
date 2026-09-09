@@ -395,12 +395,12 @@ function M.toggle()
     Scene.show_top_level(win)
     refresh_all_sliders()
     M.refresh_unknown_count()
-    PlaySound(SOUNDS.ARMORY_OPEN)
+    PlaySound(SOUNDS.BOOK_OPEN)
   else
     Scene.hide_top_level(win)
     controls.confirm:SetHidden(true)
     confirm.kind = nil
-    PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+    PlaySound(SOUNDS.BOOK_CLOSE)
   end
 end
 

@@ -181,6 +181,7 @@ function M.render()
   local c = ctx
   if not c then return end
   c.seg:ReleaseAllObjects()
+  if c.rim then c.rim:ReleaseAllObjects() end
   c.icon:ReleaseAllObjects()
   c.lbl:ReleaseAllObjects()
   c.hide_grid(c.grid)
