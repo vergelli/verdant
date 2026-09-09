@@ -42,6 +42,43 @@ return function(H)
   local codec = dofile(HARNESS_ROOT .. "/test/simlab/tracecodec.lua")
   local events = codec.decode_chunks(sv.trace.chunks)
   ok(#events == sv.trace.count, "decode count mismatch: " .. #events .. " vs " .. sv.trace.count)
+  ok(sv.traces and #sv.traces == 1 and sv.traces[1] == sv.trace, "a save lands in the ring and mirrors sv.trace")
+  ok(sv.trace.zone ~= nil and sv.trace.ts ~= nil, "an entry carries zone and timestamp")
+
+  local SV = Verdant.SavedVars
+  Verdant.Trace.clear(SV)
+  ok(not Verdant.Trace.auto_enabled(SV), "auto-trace is off by default")
+  Verdant.Graph.on_flush_click()
+  Verdant.Graph.on_record_click()
+  H.heal({ hit = 100 })
+  H.advance(1000)
+  Verdant.Graph.on_stop_click()
+  ok(SV.traces == nil, "with auto-trace off a recording stages nothing")
+
+  Verdant.Trace.set_auto(SV, true)
+  ok(Verdant.Trace.auto_enabled(SV) and SV.debug.auto_trace == true, "auto-trace persists in the debug block")
+  local counts = {}
+  for round = 1, 4 do
+    Verdant.Graph.on_flush_click()
+    Verdant.Graph.on_record_click()
+    for _ = 1, 10 * round do H.heal({ hit = 500 }) end
+    H.advance(1000)
+    Verdant.Graph.on_stop_click()
+    counts[round] = SV.trace.count
+  end
+  ok(#SV.traces == 3, "the ring keeps three traces, got " .. tostring(#SV.traces))
+  ok(SV.traces[3] == SV.trace, "the newest trace mirrors sv.trace")
+  ok(SV.traces[1].count == counts[2] and SV.traces[3].count == counts[4], "the oldest trace is evicted first")
+  ok(counts[4] > counts[1], "each recording stages only its own events")
+
+  H.reloads = 0
+  SLASH_COMMANDS["/verdant"]("flush")
+  ok(H.reloads == 1, "flush reloads the UI so SavedVariables reach the disk")
+  SLASH_COMMANDS["/verdant"]("trace auto")
+  ok(not Verdant.Trace.auto_enabled(SV), "the auto subcommand toggles auto-trace off")
+  Verdant.Trace.clear(SV)
+  ok(SV.trace == nil and SV.traces == nil, "clear empties the ring too")
+  Verdant.Graph.on_flush_click()
 
   local ce
   for _, e in ipairs(events) do
