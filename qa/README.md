@@ -26,5 +26,24 @@ python -m pip install -r qa/robot/requirements.txt
 python -m robot --outputdir qa/robot/output qa/robot/gate.robot
 ```
 
+## Feeding the oracle with real fights
+
+The only data that validates the measurement is a trace: the game's raw events, captured
+in game and replayed offline through the real pipeline. Capturing one is a side effect of
+recording once auto-trace is on (debug build only):
+
+```
+/verdant trace auto      once; every Record now captures, every Stop stages the trace
+... play ...
+/verdant flush           writes SavedVariables to disk (it reloads the UI)
+qa\ingest.bat --open     on the PC: pulls the staged traces into the corpus, runs the suite
+```
+
+The addon keeps the last three staged traces in SavedVariables. `qa/ingest.py` extracts
+each one into `../VerdantWorkingdir/traces/<date>_<zone>_<world>_<events>_sv.lua`, skips
+the ones already there, then runs the Robot suite, whose "Real Traces Replay Clean" test
+replays every file in that directory. `/verdant trace` shows how many are staged;
+`/verdant trace clear` empties the ring once they are ingested.
+
 Nothing under `qa/` ships: the release workflow copies an allowlist of runtime directories
 and `qa/` is not in it.

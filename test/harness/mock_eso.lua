@@ -585,6 +585,7 @@ function IsUnitDead(tag)
   local b = H.state.bosses[tag]
   return b ~= nil and b.dead == true
 end
+function ReloadUI() H.reloads = (H.reloads or 0) + 1 end
 function GetUnitZone(tag)
   return H.state.zone or "Mock Zone"
 end

@@ -11,6 +11,7 @@ M.GetAPIVersion           = GetAPIVersion
 M.GetWorldName            = GetWorldName
 
 M.GetString = GetString
+M.ReloadUI  = ReloadUI
 
 M.IsUnitGrouped           = IsUnitGrouped
 M.IsUnitInCombat          = IsUnitInCombat
