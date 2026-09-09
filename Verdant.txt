@@ -3,7 +3,7 @@
 ## Author: Federico Vergelli
 ## Version: 2.5.0
 ## AddOnVersion: 10
-## APIVersion: 101051
+## APIVersion: 101051 101050
 ## SavedVariables: VerdantSavedVars
 
 # This Add-on is not created by, affiliated with, or sponsored by ZeniMax Media Inc. or its affiliates.

@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Changed
+- The Session Library no longer takes the keyboard while open: WASD, Escape and the cursor toggle stay with the game. Delete and open remain on their buttons and the double-click; the name box still saves on Enter.
+- Manifest: APIVersion lists the current live patch as well as the PTS one, so the addon is not flagged out of date on live.
 - Settings: the built-in Solo, Dungeons, Trials and PvP presets are gone. The profile list holds only the profiles you save yourself, plus Custom for whatever the sliders say now. Reset to defaults still works, and a saved selection of an old preset simply falls back to Custom.
 
 ### Added

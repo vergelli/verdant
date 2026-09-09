@@ -130,19 +130,21 @@ return function(H)
   Verdant.Library.refresh()
   Verdant.Library.on_row_click(1)
   local keyed = SS.count()
-  VerdantLibraryLabelBoxEdit._has_focus = true
-  Verdant.Library.on_key(KEY_DELETE)
-  Verdant.Library.on_key(KEY_DELETE)
-  ok(SS.count() == keyed, "Delete does nothing while the name box has focus")
-  VerdantLibraryLabelBoxEdit._has_focus = false
-  ok(Verdant.Library.on_key(KEY_DELETE) == true, "the first Delete press arms")
-  ok(SS.count() == keyed and VerdantLibraryDeleteBtn._text == "Delete?", "the first Delete press only arms")
-  Verdant.Library.on_key(KEY_DELETE)
-  ok(SS.count() == keyed - 1, "the second Delete press deletes")
-  ok(Verdant.Library.on_key(999) == false, "other keys pass through")
+  Verdant.Library.on_delete_click()
+  ok(SS.count() == keyed and VerdantLibraryDeleteBtn._text == "Delete?", "the first Delete click only arms")
+  Verdant.Library.on_delete_click()
+  ok(SS.count() == keyed - 1, "the second Delete click deletes")
+  ok(Verdant.Library.on_key == nil, "the library no longer takes the keyboard")
   local xml = assert(io.open("ui/library.xml")):read("*a")
-  ok(xml:find('keyboardEnabled="true"', 1, true) and xml:find("<OnKeyDown>Verdant.Library.on_key(key)", 1, true),
-     "the library window listens for keys")
+  ok(not xml:find("keyboardEnabled", 1, true) and not xml:find("OnKeyDown", 1, true),
+     "the library window never captures the keyboard, WASD and Escape stay with the game")
+  for _, name in ipairs({ "ui/graph.xml", "ui/settings.xml", "ui/assign.xml", "ui/bar.xml", "ui/watch.xml", "ui/logo.xml" }) do
+    local f = io.open(name)
+    if f then
+      local body = f:read("*a"); f:close()
+      ok(not body:find("keyboardEnabled", 1, true), name .. " must not capture the keyboard")
+    end
+  end
   Verdant.Library.on_row_click(1)
   Verdant.Library.on_lock_click()
   ok(VerdantLibraryLockBtnIcon._tex == "EsoUI/Art/Miscellaneous/unlocked_up.dds", "a locked row offers the unlock icon")

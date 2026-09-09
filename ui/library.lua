@@ -431,33 +431,6 @@ local function shown_rows()
   return n
 end
 
-function M.on_key(key)
-  if controls.label_edit and controls.label_edit:HasFocus() then return false end
-  if key == zc.KEY_DELETE then
-    M.on_delete_click()
-  elseif key == zc.KEY_ENTER then
-    M.on_open_click()
-  elseif key == zc.KEY_ESCAPE then
-    M.hide()
-  elseif key == zc.KEY_UPARROW or key == zc.KEY_DOWNARROW then
-    local n = shown_rows()
-    if n == 0 then return true end
-    local step = (key == zc.KEY_UPARROW) and -1 or 1
-    local i = selected and (selected + step) or ((step < 0) and n or 1)
-    if i < 1 then
-      set_scroll(scroll_off + 1)
-      i = 1
-    elseif i > n then
-      set_scroll(scroll_off - 1)
-      i = n
-    end
-    M.on_row_click(i)
-  else
-    return false
-  end
-  return true
-end
-
 function M.on_delete_click()
   if not selected then return end
   local s = Verdant.SessionStore.get(row_session[selected])
