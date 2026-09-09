@@ -1,17 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [2.6.0] - 2026-09-10
 
 ### Added
 - While a recording is being saved, by hand or by autosave, the status line reads SAVING with a small ticking mark and the save icon dims, so the wait before SAVED is visible instead of silent.
 - Session Library: every session shows an icon for the kind of content it was recorded in: dungeon, trial, arena, Infinite Archive, battleground, competitive battleground, Alliance War, home or overland, with the veteran badge next to it where it applies. The row tooltip names the kind. Sessions saved before this update simply show no icon.
-
-### Changed
-- The Session Library no longer takes the keyboard while open: WASD, Escape and the cursor toggle stay with the game. Delete and open remain on their buttons and the double-click; the name box still saves on Enter.
-- Manifest: APIVersion lists the current live patch as well as the PTS one, so the addon is not flagged out of date on live.
-- Settings: the built-in Solo, Dungeons, Trials and PvP presets are gone. The profile list holds only the profiles you save yourself, plus Custom for whatever the sliders say now. Reset to defaults still works, and a saved selection of an old preset simply falls back to Custom.
-
-### Added
 - The mouse wheel scrolls the CONTRIB and BUFFS lists when they do not fit; the overflow line tells how many rows sit above and below. Two new keybinds, Next Graph View and Previous Graph View, cycle the views without the mouse.
 - The graph fades in when it opens. The HUD logo breathes slowly while a recording is running, so an auto-record that started on its own is visible without opening the graph. After Stop without autosave, the status reads NOT SAVED in amber and the save icon pulses once.
 - CONTRIB view: the hovered row gets a soft band, and the bars wear the same one-pixel rim as the buff gantt.
@@ -28,6 +21,11 @@
 - A manual save leaves that session selected in the library with the name box ready, without taking the keyboard. Manually saved sessions carry a small save glyph in their row, distinct from the lock.
 - CONTRIB view: a skill whose components reach the game as separate ability ids (a HoT's ticks and its burst, for example) shows as one row; hover tells how many parts were merged.
 - CONTRIB view: skills ranked by what they contributed over the active window. Each row shows the skill icon and name, whether it healed or shielded, and the amount with a bar proportional to the top row, coloured by skill line. Hover a row for its share. Works live, on a stopped recording and on library sessions; values are estimated from the sampled rates.
+
+### Changed
+- The Session Library no longer takes the keyboard while open: WASD, Escape and the cursor toggle stay with the game. Delete and open remain on their buttons and the double-click; the name box still saves on Enter.
+- Manifest: APIVersion lists the current live patch as well as the PTS one, so the addon is not flagged out of date on live.
+- Settings: the built-in Solo, Dungeons, Trials and PvP presets are gone. The profile list holds only the profiles you save yourself, plus Custom for whatever the sliders say now. Reset to defaults still works, and a saved selection of an old preset simply falls back to Custom.
 
 ## [2.5.0] - 2026-09-04
 
