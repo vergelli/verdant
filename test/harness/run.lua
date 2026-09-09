@@ -20,6 +20,7 @@ local CASES = {
   "buffs_fold",
   "polish_love",
   "scroll_views",
+  "content_kind",
   "auto_record",
   "dmg_overlay",
   "death_markers",

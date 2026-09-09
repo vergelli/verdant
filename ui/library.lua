@@ -123,10 +123,16 @@ local function make_row(i)
   pip:SetDimensions(3, ROW_H - 12)
   pip:SetAnchor(LEFT, row, LEFT, 4, 0)
 
+  local kind = WM:CreateControl(nm .. "Kind", row, CT_TEXTURE)
+  kind:SetDimensions(16, 16)
+  kind:SetAnchor(LEFT, row, LEFT, 9, 0)
+  kind:SetColor(0.85, 0.90, 0.86, 0.95)
+  kind:SetHidden(true)
+
   local vet = WM:CreateControl(nm .. "Vet", row, CT_TEXTURE)
   vet:SetTexture(VET_ICON)
-  vet:SetDimensions(16, 16)
-  vet:SetAnchor(LEFT, row, LEFT, 10, 0)
+  vet:SetDimensions(12, 12)
+  vet:SetAnchor(LEFT, row, LEFT, 27, 0)
   vet:SetColor(0.95, 0.80, 0.35, 1)
   vet:SetHidden(true)
 
@@ -134,8 +140,8 @@ local function make_row(i)
   name:SetFont("ZoFontGameSmall")
   name:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
   name:SetVerticalAlignment(TEXT_ALIGN_CENTER)
-  name:SetDimensions(110, ROW_H)
-  name:SetAnchor(LEFT, row, LEFT, 30, 0)
+  name:SetDimensions(100, ROW_H)
+  name:SetAnchor(LEFT, row, LEFT, 42, 0)
   name:SetMaxLineCount(1)
   name:SetWrapMode(TEXT_WRAP_MODE_ELLIPSIS)
 
@@ -160,7 +166,7 @@ local function make_row(i)
   star:SetColor(C_STAR.r, C_STAR.g, C_STAR.b, 0.95)
   star:SetHidden(true)
 
-  return { root = row, bg = bg, sel = sel, hov = hov, pip = pip, vet = vet,
+  return { root = row, bg = bg, sel = sel, hov = hov, pip = pip, vet = vet, kind = kind,
            name = name, stats = stats, when = when, star = star }
 end
 
@@ -246,6 +252,9 @@ function M.refresh()
       (pc == C_PIP_LOST) and "f26b56" or "8cea9e",
       sum.saves or 0, denom))
     row.stats:SetColor(1, 1, 1, 1)
+    local kind_icon = Verdant.ContentKind.icon(h.kind)
+    if kind_icon then row.kind:SetTexture(kind_icon) end
+    row.kind:SetHidden(kind_icon == nil)
     row.vet:SetHidden((h.difficulty or 0) ~= Verdant.zenimax.constants.DUNGEON_DIFFICULTY_VETERAN)
     row.when:SetText((h.manual and HAND_GLYPH or "") .. fmt_dur(h.dur_ms) .. "  " .. fmt_ago(h.ts))
     row.when:SetColor(C_DIM.r, C_DIM.g, C_DIM.b, 1)
@@ -276,8 +285,10 @@ function M.on_row_enter(i)
   local zc  = Verdant.zenimax.constants
   local when = (api.GetDateStringFromTimestamp and h.ts and api.GetDateStringFromTimestamp(h.ts)) or fmt_ago(h.ts)
   local diff = ""
-  if (h.difficulty or 0) == zc.DUNGEON_DIFFICULTY_VETERAN then diff = "  ·  " .. GetString(VERDANT_LIB_VETERAN)
-  elseif (h.difficulty or 0) == zc.DUNGEON_DIFFICULTY_NORMAL then diff = "  ·  " .. GetString(VERDANT_LIB_NORMAL) end
+  local kind_label = Verdant.ContentKind.label(h.kind)
+  if kind_label then diff = "  ·  " .. kind_label end
+  if (h.difficulty or 0) == zc.DUNGEON_DIFFICULTY_VETERAN then diff = diff .. "  ·  " .. GetString(VERDANT_LIB_VETERAN)
+  elseif (h.difficulty or 0) == zc.DUNGEON_DIFFICULTY_NORMAL then diff = diff .. "  ·  " .. GetString(VERDANT_LIB_NORMAL) end
   local text = string_format(GetString(VERDANT_LIB_ROW_HEAD),
     when, h.zone or "?", diff, h.group_size or 0, fmt_dur(h.dur_ms))
   text = text .. "\n" .. string_format(GetString(VERDANT_LIB_ROW_TIP),

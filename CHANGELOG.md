@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- Session Library: every session shows an icon for the kind of content it was recorded in: dungeon, trial, arena, Infinite Archive, battleground, competitive battleground, Alliance War, home or overland, with the veteran badge next to it where it applies. The row tooltip names the kind. Sessions saved before this update simply show no icon.
+
 ### Changed
 - The Session Library no longer takes the keyboard while open: WASD, Escape and the cursor toggle stay with the game. Delete and open remain on their buttons and the double-click; the name box still saves on Enter.
 - Manifest: APIVersion lists the current live patch as well as the PTS one, so the addon is not flagged out of date on live.

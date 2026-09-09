@@ -534,6 +534,18 @@ end
 DUNGEON_DIFFICULTY_NONE = 0 DUNGEON_DIFFICULTY_NORMAL = 1 DUNGEON_DIFFICULTY_VETERAN = 2
 function GetUIGlobalScale() return H.state.ui_scale or 1 end
 function GetCurrentZoneDungeonDifficulty() return H.state.difficulty or 0 end
+MAP_CONTENT_NONE = 0 MAP_CONTENT_DUNGEON = 1 MAP_CONTENT_AVA = 2 MAP_CONTENT_BATTLEGROUND = 3
+function GetMapContentType() return H.state.map_content or MAP_CONTENT_NONE end
+function IsActiveWorldBattleground() return H.state.in_bg == true end
+function GetCurrentBattlegroundId() return H.state.bg_id or 0 end
+function GetBattlegroundTeamSize(id) return H.state.bg_team_size or 8 end
+function IsPlayerInRaid() return H.state.in_raid == true end
+function IsPlayerInEndlessDungeon() return H.state.in_archive == true end
+function IsInCyrodiil() return H.state.in_cyrodiil == true end
+function IsInImperialCity() return H.state.in_ic == true end
+function GetCurrentZoneHouseId() return H.state.house_id or 0 end
+function GetZoneId(idx) return H.state.zone_id or 0 end
+function GetUnitZoneIndex(tag) return 1 end
 function GetDateStringFromTimestamp(ts) return "2026-09-03" end
 function GetActiveHotbarCategory()
   return H.state.active_bar or HOTBAR_CATEGORY_PRIMARY
