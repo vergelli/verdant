@@ -44,6 +44,8 @@ return function(H)
   ok(#events == sv.trace.count, "decode count mismatch: " .. #events .. " vs " .. sv.trace.count)
   ok(sv.traces and #sv.traces == 1 and sv.traces[1] == sv.trace, "a save lands in the ring and mirrors sv.trace")
   ok(sv.trace.zone ~= nil and sv.trace.ts ~= nil, "an entry carries zone and timestamp")
+  ok(sv.trace.settings and sv.trace.settings.time_window_s and sv.trace.settings.sample_rate_ms,
+     "an entry carries the window and rate it was recorded with")
 
   local SV = Verdant.SavedVars
   Verdant.Trace.clear(SV)

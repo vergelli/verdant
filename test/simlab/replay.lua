@@ -4,8 +4,13 @@ HARNESS_DEBUG = true
 
 local sv_path = arg[2]
 local want_svg = false
+local force_window, force_rate = nil, nil
 for i = 3, #arg do
   if arg[i] == "--svg" then want_svg = true end
+  local w = arg[i]:match("^%-%-window=(%d+)$")
+  if w then force_window = tonumber(w) end
+  local r = arg[i]:match("^%-%-rate=(%d+)$")
+  if r then force_rate = tonumber(r) end
 end
 if not sv_path then
   print("usage: lua test/simlab/replay.lua <root> <path/to/SavedVariables/Verdant.lua> [--svg]")
@@ -73,6 +78,25 @@ local orig_fire = H.fire
 H.fire = function(code, ...)
   O.on_fire(code, ...)
   return orig_fire(code, ...)
+end
+
+do
+  local ts = trace.settings or {}
+  local window = force_window or ts.time_window_s
+  local rate   = force_rate or ts.sample_rate_ms
+  if window or rate then
+    local sv = Verdant.SavedVars
+    sv.temporal = sv.temporal or {}
+    sv.temporal.time_window_s  = window or sv.temporal.time_window_s or 60
+    sv.temporal.sample_rate_ms = rate or sv.temporal.sample_rate_ms or 1000
+    local hz = math.floor(1000 / sv.temporal.sample_rate_ms)
+    Verdant.TemporalBuffer.init(sv.temporal.time_window_s * hz)
+    print(string.format("settings: window=%ds  rate=%dms  (%s)",
+      sv.temporal.time_window_s, sv.temporal.sample_rate_ms,
+      (force_window or force_rate) and "from arguments" or "recorded with the trace"))
+  else
+    print("settings: window=60s  rate=1000ms  (trace carries none, harness defaults)")
+  end
 end
 
 if svg then Verdant.Visibility.set("graph", true) end
