@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- While a recording is being saved, by hand or by autosave, the status line reads SAVING with a small ticking mark and the save icon dims, so the wait before SAVED is visible instead of silent.
 - Session Library: every session shows an icon for the kind of content it was recorded in: dungeon, trial, arena, Infinite Archive, battleground, competitive battleground, Alliance War, home or overland, with the veteran badge next to it where it applies. The row tooltip names the kind. Sessions saved before this update simply show no icon.
 
 ### Changed

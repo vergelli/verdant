@@ -316,6 +316,7 @@ local manual_pending = false
 local function autosave_finish(session)
   Verdant.zenimax.events.unregister_update("VerdantAutosave")
   autosave_co = nil
+  if M.on_save_end then M.on_save_end(session ~= nil) end
   if session then
     if manual_pending then session.head.manual = true end
     manual_pending = false
@@ -348,6 +349,7 @@ local function begin_capture()
   autosave_frames = 0
   autosave_co = coroutine.create(function() return M.capture(true) end)
   Verdant.zenimax.events.register_update("VerdantAutosave", 1, autosave_step)
+  if M.on_save_begin then M.on_save_begin() end
 end
 
 function M.on_session_stop()

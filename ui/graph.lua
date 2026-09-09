@@ -3869,6 +3869,26 @@ function M.init()
   layout_tabs()
   style_tabs()
 
+  controls.saving_frames = { "SAVING", "SAVING ·", "SAVING · ·", "SAVING · · ·" }
+  Verdant.SessionStore.on_save_begin = function()
+    controls.saving_t = 0
+    controls.status:SetText(controls.saving_frames[1])
+    controls.status:SetColor(0.65, 0.65, 0.65, 1)
+    if controls.btn_save then controls.btn_save:SetAlpha(0.45) end
+    zev.register_update("VerdantSavingSpin", 150, function()
+      local t = controls.saving_t + 1
+      controls.saving_t = t
+      controls.status:SetText(controls.saving_frames[(t % 4) + 1])
+    end)
+  end
+  Verdant.SessionStore.on_save_end = function(stored)
+    zev.unregister_update("VerdantSavingSpin")
+    if controls.btn_save then controls.btn_save:SetAlpha(1) end
+    if not stored then
+      controls.status:SetText(GetString(VERDANT_SAVE_STATUS_UNSAVED))
+      controls.status:SetColor(0.93, 0.72, 0.36, 1)
+    end
+  end
   Verdant.SessionStore.on_saved = function(session)
     d("[V] " .. string_format(GetString(VERDANT_LIB_SAVED),
       session.head.zone or "?", fmt_secs(session.head.dur_ms or 0)))
