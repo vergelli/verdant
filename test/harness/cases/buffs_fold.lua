@@ -50,6 +50,14 @@ return function(H)
   Verdant.Graph.on_stop_click()
 
   goto_buffs()
+  local SC = Verdant.SkillColors
+  ok(SC.buff_family("Major Sorcery") == "offense" and SC.buff_family("Minor Resolve") == "defense"
+     and SC.buff_family("Major Intellect") == "sustain" and SC.buff_family("Major Expedition") == "mobility",
+     "named buffs map to their family")
+  ok(SC.buff_family("Short Burst") == nil and SC.buff_family("") == nil and SC.buff_family(nil) == nil,
+     "anything else has no family")
+  local off = SC.buff_family_color("Major Sorcery")
+  ok(off and off.r > 0.9 and off.b < 0.5, "offense wears the warm colour")
   local texts = visible_texts()
   ok(texts["[+] 3 always on"] == 1, "three permanent buffs fold into the strip, texts: " .. tostring(next(texts)))
   ok(texts["Short Burst"] == 1, "the situational buff keeps its lane")
@@ -65,6 +73,12 @@ return function(H)
   H.advance(200)
   ok(VerdantHoverCardName._text == "Major Sorcery", "hovering a strip icon names the buff, got " .. tostring(VerdantHoverCardName._text))
   ok(VerdantHoverCardStat._text and VerdantHoverCardStat._text:find("100%%"), "the card shows its uptime, got " .. tostring(VerdantHoverCardStat._text))
+  ok(VerdantHoverCardName._r and VerdantHoverCardName._r > 0.9, "the card name wears the family colour")
+  local fam_row = false
+  for _, c in ipairs(H.controls) do
+    if c._hidden == false and c._text == "Offense: damage and healing done" then fam_row = true end
+  end
+  ok(fam_row, "the card names the family")
 
   H.state.mouse_x = canvas:GetLeft() + 40
   H.sounds = {}
