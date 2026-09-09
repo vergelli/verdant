@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Added
+- BUFFS view: named buffs with no skill line of their own, Major and Minor Sorcery, Resolve, Intellect and the rest, are coloured by family: warm for offense, blue for defense, mint for sustain, lavender for mobility. The buff card names the family.
+- Sounds: the library opens and closes like a book, and switching views turns a page.
 - BUFFS view: buffs that stayed up 90% of the session or more fold into one "always on" strip at the top, as a row of icons, so the lanes below show what actually varied. Hover an icon for its card, click the strip to unfold them into lanes and again to fold; the choice is remembered. Buffs with no known skill line are grey now, not the healing green.
 - Settings, RECORDING: an Auto-stop toggle next to Autosave. With it on, a recording you started by hand stops on its own a few seconds after combat ends, with the same five-second grace the auto-record uses, and cancels if you re-engage. Off by default. The Autosave button reads "Autosave" now, both sit on one row.
 - Save icon on the graph window, next to the library icon, plus a "Save Recording to Library" keybind. Press it on a stopped recording to keep it, whether or not Session Autosave is on. It refuses while recording, when there is nothing to record, and when the recording is already in the library, and it goes grey once the recording is saved. The status line reads SAVED with the zone, and a sound confirms it.

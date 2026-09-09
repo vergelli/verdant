@@ -508,13 +508,13 @@ function M.show()
   select_pending()
   sync_label_box()
   Scene.show_top_level(controls.window)
-  PlaySound(SOUNDS.ARMORY_OPEN)
+  PlaySound(SOUNDS.BOOK_OPEN)
 end
 
 function M.hide()
   M.on_thumb_up()
   if controls.window:IsHidden() then return end
-  PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+  PlaySound(SOUNDS.BOOK_CLOSE)
   Scene.hide_top_level(controls.window)
 end
 

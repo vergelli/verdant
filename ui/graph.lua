@@ -105,10 +105,11 @@ local C_BUFF_FALLBACK = { r = 0.60, g = 0.63, b = 0.66, a = 0.95 }
 local BUFF_FOLD = { PCT = 0.90, H = 24, ICON = 18, GAP = 3, MIN = 2, n = 0, x0 = {}, x1 = {}, rec = {}, y0 = 0, y1 = 0, on = false }
 
 local function buff_color(rec)
+  local SC = Verdant.SkillColors
   if rec.group and rec.group ~= "other" then
-    return Verdant.SkillColors.group_color(rec.group)
+    return SC.group_color(rec.group)
   end
-  return C_BUFF_FALLBACK
+  return SC.buff_family_color(rec.name) or C_BUFF_FALLBACK
 end
 
 local function buff_description(rec)
@@ -1198,6 +1199,7 @@ local function show_buff_card(rec, t_at, conc_at, mx, my)
   card.time:SetText(string_format("t  %s  ·  %d %s", fmt_secs(t_at), conc_at, GetString(VERDANT_BUFFH_HOLDERS)))
 
   clear_card_rows(card)
+  local fam = Verdant.SkillColors.buff_family(rec.name)
   local rows = {
     { GetString(VERDANT_BUFFH_PLAYERS), tostring(rec.unique_units) },
     { GetString(VERDANT_BUFFH_MAXC),    tostring(rec.max_conc) },
@@ -1205,6 +1207,9 @@ local function show_buff_card(rec, t_at, conc_at, mx, my)
     { GetString(VERDANT_BUFFH_APPS),    tostring(rec.applications) },
     { GetString(VERDANT_BUFFH_GAP),     fmt_secs(rec.longest_gap_ms) },
   }
+  if fam then
+    rows[#rows + 1] = { GetString(VERDANT_BUFFH_FAMILY), GetString(rawget(_G, "VERDANT_BUFF_FAM_" .. fam:upper())) }
+  end
   for i = 1, #rows do
     local row = card.rows[i]
     row.icon:SetHidden(true)
@@ -3746,7 +3751,7 @@ function M.init()
   end)
   controls.view_label:SetHandler("OnMouseUp", function(_, button, upInside)
     if upInside == false then return end
-    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    PlaySound(SOUNDS.BOOK_PAGE_TURN)
     if button == zc.MOUSE_BUTTON_INDEX_RIGHT then M.prev_view() else M.next_view() end
   end)
 
@@ -3774,7 +3779,7 @@ function M.init()
     local view = v
     hit:SetHandler("OnMouseUp", function(_, _, upInside)
       if upInside == false or view == current_view then return end
-      PlaySound(SOUNDS.DIALOG_ACCEPT)
+      PlaySound(SOUNDS.BOOK_PAGE_TURN)
       release_all_pools()
       set_view(view)
     end)
