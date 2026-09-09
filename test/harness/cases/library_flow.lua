@@ -58,7 +58,7 @@ return function(H)
   H.sounds = {}
   VerdantLibraryLabelBoxEdit:SetText("  Sunday HM run  ")
   Verdant.Library.on_label_save()
-  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "naming confirms with the accept sound")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("confirm")), "naming confirms with the accept sound")
   ok(SS.get(1).head.label == "Sunday HM run", "the label is trimmed and persisted on the session head")
   ok(VerdantLibraryRow1Name._text == "Sunday HM run", "the row shows the name instead of the zone")
   VerdantLibraryLabelBoxEdit:SetText("")

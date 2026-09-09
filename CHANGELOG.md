@@ -4,7 +4,7 @@
 
 ### Added
 - BUFFS view: named buffs with no skill line of their own, Major and Minor Sorcery, Resolve, Intellect and the rest, are coloured by family: warm for offense, blue for defense, mint for sustain, lavender for mobility. The buff card names the family.
-- Sounds: the graph, the library and the settings open and close like a book, and switching views turns a page.
+- Sounds: one vocabulary for the whole addon. Windows open and close like a book, views, bar metrics and library sessions turn a page, settings toggles click softly on and off, refusals keep the negative click, Record and Stop have their own cues. Every sound honours the Sounds setting.
 - BUFFS view: every gantt segment wears a one-pixel dark rim so adjacent segments and lanes read apart.
 - BUFFS view: buffs that stayed up 90% of the session or more fold into one "always on" strip at the top, as a row of icons, so the lanes below show what actually varied. Hover an icon for its card, click the strip to unfold them into lanes and again to fold; the choice is remembered. Buffs with no known skill line are grey now, not the healing green.
 - Settings, RECORDING: an Auto-stop toggle next to Autosave. With it on, a recording you started by hand stops on its own a few seconds after combat ends, with the same five-second grace the auto-record uses, and cancels if you re-engage. Off by default. The Autosave button reads "Autosave" now, both sit on one row.

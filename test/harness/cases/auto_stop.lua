@@ -30,7 +30,7 @@ return function(H)
   Verdant.Settings.on_autostop_click()
   ok(AR.get_auto_stop() == true and sv.settings.auto_stop == true, "the button turns auto-stop on and persists it")
   ok(btn._text == "Auto-stop: On", "the button reads On, got " .. tostring(btn._text))
-  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "turning it on confirms with the accept sound")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("on")), "turning it on confirms with the accept sound")
   ok(H.update_registered("VerdantAutoRecTick"), "auto-stop alone registers the tick")
 
   Verdant.Graph.on_record_click()

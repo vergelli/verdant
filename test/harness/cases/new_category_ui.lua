@@ -19,7 +19,7 @@ return function(H)
   H.sounds = {}
   VerdantAssignPanelNewCatNameBoxEdit:SetText("   ")
   A.on_newcat_create()
-  ok(H.sounds[#H.sounds] == "sound:NEGATIVE_CLICK", "an empty name refuses with the negative click")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("deny")), "an empty name refuses with the negative click")
   ok(VerdantAssignPanelNewCat._hidden == false, "the panel stays open after a refusal")
 
   A.on_newcat_swatch(5)
@@ -27,7 +27,7 @@ return function(H)
   VerdantAssignPanelNewCatNameBoxEdit:SetText("Pets")
   H.sounds = {}
   A.on_newcat_create()
-  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "creating confirms with the accept sound")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("confirm")), "creating confirms with the accept sound")
   ok(VerdantAssignPanelNewCat._hidden == true, "the panel closes after creating")
   ok(SC.is_group("custom_pets") and SC.group_label("custom_pets") == "Pets", "the group exists with its label")
   local col = SC.group_color("custom_pets")

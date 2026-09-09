@@ -86,7 +86,7 @@ return function(H)
   H.state.mouse_x = canvas:GetLeft() + 120
   H.state.mouse_y = canvas:GetTop() + chip_h + 44 + 3 * 14 + 7
   hit._onOnMouseUp(hit, nil, true)
-  ok(H.sounds[#H.sounds] == "sound:DIALOG_ACCEPT", "switching the legend filter must confirm with a sound")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("click")), "switching the legend filter must confirm with a sound")
   seen = visible_texts()
   ok(seen["Ally3"] ~= nil, "missed list must show Ally3")
   ok(seen["Ally2"] == nil, "missed list must not show Ally2")

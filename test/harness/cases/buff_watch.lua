@@ -22,7 +22,7 @@ return function(H)
   H.advance(5000)
   ok(not VerdantWatchOverlay:IsHidden(), "4s remaining must raise the banner")
   local soon = 0
-  for _, snd in ipairs(H.sounds) do if snd == "sound:NEW_TIMED_NOTIFICATION" then soon = soon + 1 end end
+  for _, snd in ipairs(H.sounds) do if snd == ("sound:" .. Verdant.Sound.name("alert_timer")) then soon = soon + 1 end end
   ok(soon == 1, "entering the warning window chimes exactly once, got " .. soon)
   H.sounds = {}
   H.advance(1000)

@@ -3,6 +3,7 @@ local Verdant = Verdant
 
 Verdant.Library = {}
 local M = Verdant.Library
+local Sound = Verdant.Sound
 
 local string_format = string.format
 local math_floor    = math.floor
@@ -12,7 +13,6 @@ local zui           = Verdant.zenimax.ui
 local zc            = Verdant.zenimax.constants
 local zev           = Verdant.zenimax.events
 local Scene         = Verdant.zenimax.scene
-local PlaySound     = zui.PlaySound
 
 local ROW_H   = 30
 local ROW_GAP = 2
@@ -333,13 +333,13 @@ end
 
 function M.on_label_save()
   if not selected then
-    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    Sound.play("deny")
     return
   end
   local idx = row_session[selected]
   local text = controls.label_edit:GetText() or ""
   if Verdant.SessionStore.set_label(idx, text) then
-    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    Sound.play("confirm")
     local keep = selected
     M.refresh()
     selected = keep
@@ -353,7 +353,7 @@ function M.on_open_click()
   if not selected then return end
   local sess = Verdant.SessionStore.get(row_session[selected])
   if sess and Verdant.Graph.load_session(sess) then
-    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    Sound.play("page")
     M.hide()
   end
 end
@@ -364,7 +364,7 @@ function M.on_lock_click()
   local s = Verdant.SessionStore.get(idx)
   if s then
     Verdant.SessionStore.set_locked(idx, not s.head.locked)
-    PlaySound(SOUNDS.DIALOG_ACCEPT)
+    Sound.play("confirm")
     M.refresh()
   end
 end
@@ -464,12 +464,12 @@ function M.on_delete_click()
   if s and s.head.locked then return end
   if not delete_armed then
     arm_delete()
-    PlaySound(SOUNDS.NEGATIVE_CLICK)
+    Sound.play("deny")
     set_buttons()
     return
   end
   disarm_delete()
-  PlaySound(SOUNDS.DIALOG_DECLINE)
+  Sound.play("discard")
   Verdant.SessionStore.delete(row_session[selected])
   selected = nil
   M.refresh()
@@ -508,13 +508,13 @@ function M.show()
   select_pending()
   sync_label_box()
   Scene.show_top_level(controls.window)
-  PlaySound(SOUNDS.BOOK_OPEN)
+  Sound.play("open")
 end
 
 function M.hide()
   M.on_thumb_up()
   if controls.window:IsHidden() then return end
-  PlaySound(SOUNDS.BOOK_CLOSE)
+  Sound.play("close")
   Scene.hide_top_level(controls.window)
 end
 

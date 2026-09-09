@@ -39,7 +39,7 @@ return function(H)
   local moved = false
   for name in pairs(after) do if not before[name] then moved = true end end
   ok(moved, "scrolling down reveals a hidden skill")
-  ok(H.sounds[#H.sounds] == "sound:DEFAULT_CLICK", "scrolling clicks")
+  ok(H.sounds[#H.sounds] == ("sound:" .. Verdant.Sound.name("click")), "scrolling clicks")
 
   for _ = 1, 40 do A.on_scroll(-1) end
   local bottom = VerdantAssignPanelHelpLabel._text or ""
