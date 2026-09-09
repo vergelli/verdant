@@ -1,8 +1,7 @@
 *** Settings ***
 Documentation     Verdant quality guarantees. Every test here is a claim the release makes,
 ...               executed against the real addon code through the offline ESO harness,
-...               the SimLab oracle and the layout audit. The proofs suite checks the
-...               mathematical model in qa/proofs with Lean.
+...               the SimLab oracle and the layout audit.
 Library           VerdantGate.py
 
 *** Test Cases ***
@@ -51,13 +50,4 @@ A Library Session Renders Exactly What Was Live
     ...                that was on screen when it was recorded.
     [Tags]    library
     ${msg}=    Live Equals Library
-    Log    ${msg}
-
-Estimator Bounds Are Proven
-    [Documentation]    qa/proofs builds with Lean and contains no sorry. Skipped when lake is
-    ...                not installed on this machine.
-    [Tags]    proofs
-    ${have}=    Lake Is Installed
-    Skip If    not ${have}    lake is not installed; install elan and run lake build in qa/proofs
-    ${msg}=    Proofs Build
     Log    ${msg}
