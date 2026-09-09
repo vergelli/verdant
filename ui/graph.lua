@@ -2230,7 +2230,7 @@ local C_BUFF_LANE   = { r = 0.62, g = 1.00, b = 0.74, a = 0.05 }
 
 local function seg_alpha(conc, max_conc)
   if max_conc <= 1 then return 0.90 end
-  return 0.40 + 0.55 * (conc / max_conc)
+  return (conc / max_conc > 0.5) and 0.92 or 0.50
 end
 
 local function buff_seg(canvas, x0, x1, y, row_h, conc, rec, c, dim)
@@ -2446,9 +2446,31 @@ local function render_view4()
     else
       lbl:SetColor(C_BUFF_NAME.r, C_BUFF_NAME.g, C_BUFF_NAME.b, C_BUFF_NAME.a)
     end
-    lbl:SetDimensions(name_w, row_h)
+    local bar_room = capture and dur > 0 and row_h >= 18
+    lbl:SetDimensions(name_w, bar_room and (row_h - 6) or row_h)
     lbl:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 20, y)
     lbl:SetHidden(false)
+
+    if bar_room then
+      local frac = rec.uptime_ms / dur
+      if frac > 1 then frac = 1 end
+      local track = controls.pool_buff_seg:AcquireObject()
+      track:ClearAnchors()
+      track:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 20, y + row_h - 5)
+      track:SetWidth(name_w)
+      track:SetHeight(3)
+      track:SetDrawLevel(3)
+      track:SetColor(1, 1, 1, dim and 0.03 or 0.07)
+      track:SetHidden(false)
+      local fill = controls.pool_buff_seg:AcquireObject()
+      fill:ClearAnchors()
+      fill:SetAnchor(TOPLEFT, canvas, TOPLEFT, isz + 20, y + row_h - 5)
+      fill:SetWidth(math_max(1, math_floor(name_w * frac + 0.5)))
+      fill:SetHeight(3)
+      fill:SetDrawLevel(4)
+      fill:SetColor(c.r, c.g, c.b, dim and 0.25 or 0.80)
+      fill:SetHidden(false)
+    end
 
     if capture and dur > 0 then
       local pct = controls.pool_buff_lbl:AcquireObject()
@@ -3097,20 +3119,31 @@ function M.save_available()
   return not (controls.saved_start == recording_start_ms and controls.saved_count == n)
 end
 
-function M.pulse_lib()
-  local btn = controls.btn_lib
+function M.pulse(btn, name)
   if not btn then return end
-  controls.lib_pulse_t = 0
-  zev.register_update("VerdantLibPulse", 16, function()
-    local t = controls.lib_pulse_t + 16
-    controls.lib_pulse_t = t
+  controls.pulse_t = controls.pulse_t or {}
+  controls.pulse_t[name] = 0
+  zev.register_update(name, 16, function()
+    local t = controls.pulse_t[name] + 16
+    controls.pulse_t[name] = t
     if t >= 720 then
       btn:SetAlpha(1)
-      zev.unregister_update("VerdantLibPulse")
+      zev.unregister_update(name)
       return
     end
     btn:SetAlpha(0.35 + 0.65 * math.abs(math.cos((t % 360) / 360 * math.pi)))
   end)
+end
+
+function M.pulse_lib() M.pulse(controls.btn_lib, "VerdantLibPulse") end
+
+function M.on_shown()
+  if not controls.window or light.active then return end
+  local f = controls.win_fader
+  if not f then return end
+  f.visible = false
+  controls.window:SetAlpha(0)
+  fade_in(f)
 end
 
 local function refresh_button_colors()
@@ -3257,6 +3290,7 @@ function M.on_record_click()
   zev.register_update(Verdant.Constants.TEMPORAL.UPDATE_NAME, interval, on_sample_update)
   refresh_button_colors()
   controls.status:SetText("0:00")
+  controls.status:SetColor(0.65, 0.65, 0.65, 1)
   if light.enabled() then light.enter() end
 end
 
@@ -3275,6 +3309,8 @@ function M.on_stop_click()
   Verdant.SessionStore.on_session_stop()
   if not Verdant.SessionStore.autosave_pending() then
     controls.status:SetText(GetString(VERDANT_SAVE_STATUS_UNSAVED))
+    controls.status:SetColor(0.93, 0.72, 0.36, 1)
+    M.pulse(controls.btn_save, "VerdantSavePulse")
   end
   report.hot, report.direct = Verdant.Metrics.overheal_split()
   summary_text = build_summary_text()
@@ -3386,6 +3422,7 @@ function M.load_session(sess)
   report.hot, report.direct = hs.oh_hot or 0, hs.oh_direct or 0
   controls.status:SetText(string_format(GetString(VERDANT_LIB_LOADED),
     sess.head.zone or "?"))
+  controls.status:SetColor(0.65, 0.65, 0.65, 1)
   controls.save_locked = true
   Verdant.Visibility.set("graph", true)
   refresh_button_colors()
@@ -3412,6 +3449,7 @@ function M.on_flush_click()
   hide_all_grids()
   refresh_button_colors()
   controls.status:SetText("")
+  controls.status:SetColor(0.65, 0.65, 0.65, 1)
   controls.no_data:SetHidden(false)
 end
 
@@ -3757,6 +3795,7 @@ function M.init()
     show_card = show_moment_card,
     hide_card = function() fade_out(card_fader) end,
     hit_reset = function() hit_begin(hit_main, 0) end,
+    rerender = function() render_current_view() end,
   })
 
   controls.title:SetText(GetString(VERDANT_GRAPH_TITLE))
@@ -3821,6 +3860,7 @@ function M.init()
       session.head.zone or "?", fmt_secs(session.head.dur_ms or 0)))
     controls.saved_start, controls.saved_count = recording_start_ms, Verdant.TemporalBuffer.count()
     controls.status:SetText(string_format(GetString(VERDANT_SAVE_STATUS), session.head.zone or "?"))
+    controls.status:SetColor(0.65, 0.65, 0.65, 1)
     if session.head.manual then Sound.play("save") end
     refresh_button_colors()
     M.pulse_lib()
@@ -3929,6 +3969,8 @@ function M.init()
 
   build_hover_card()
   card_fader = make_fader(controls.card.root)
+  controls.win_fader = make_fader(controls.window)
+  controls.win_fader.visible = true
 
   local crosshair = WINDOW_MANAGER:CreateControl("VerdantGraphCrosshair", controls.window, CT_TEXTURE)
   crosshair:SetTexture(FILL_TEXTURE)
