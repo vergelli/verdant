@@ -26,6 +26,8 @@ local hit = { n = 0, y0 = {}, y1 = {}, e = {} }
 local totals = { heal = 0, shield = 0, span = 0 }
 local more = { n = -1, text = "" }
 local hover_row = nil
+local scroll = 0
+local max_scroll = 0
 local C_BAND = { r = 0.78, g = 1.00, b = 0.86, a = 0.10 }
 local str = nil
 
@@ -38,6 +40,7 @@ local function strings()
     heal    = GetString(VERDANT_CONTRIB_TYPE_HEAL),
     shield  = GetString(VERDANT_CONTRIB_TYPE_SHIELD),
     more    = GetString(VERDANT_CONTRIB_MORE),
+    scrolled = GetString(VERDANT_CONTRIB_SCROLLED),
     est     = GetString(VERDANT_CONTRIB_TIP_EST),
     parts   = GetString(VERDANT_CONTRIB_PARTS),
   }
@@ -221,14 +224,19 @@ function M.render()
   if n > rows_avail then
     show = rows_avail - 1
     if show < 1 then show = 1 end
-    rest = n - show
+    max_scroll = n - show
+  else
+    max_scroll = 0
   end
+  if scroll > max_scroll then scroll = max_scroll end
+  if scroll < 0 then scroll = 0 end
+  rest = n - show - scroll
   local vmax = order[1].v
   local y = top + L.HEADER_H
   local hovered_seen = false
 
   for i = 1, show do
-    local e = order[i]
+    local e = order[i + scroll]
     if e == hover_row then
       hovered_seen = true
       local band = seg(c, 0, y - 1, cw, L.ROW_H + 2, C_BAND.r, C_BAND.g, C_BAND.b, C_BAND.a)
@@ -279,10 +287,11 @@ function M.render()
   end
 
   if not hovered_seen then hover_row = nil end
-  if rest > 0 then
-    if more.n ~= rest then
-      more.n = rest
-      more.text = string_format(S.more, rest)
+  if rest > 0 or scroll > 0 then
+    local key = scroll * 100000 + rest
+    if more.n ~= key then
+      more.n = key
+      more.text = (scroll > 0) and string_format(S.scrolled, scroll, rest) or string_format(S.more, rest)
     end
     label(c, more.text, x_name, y, name_w, L.ROW_H, C_MORE, TEXT_ALIGN_LEFT)
   end
@@ -326,6 +335,18 @@ function M.hover(mx, my)
 end
 
 function M.hovered() return hover_row end
+
+function M.scroll(dir)
+  local next_off = scroll + ((dir or 1) < 0 and -1 or 1)
+  if next_off < 0 then next_off = 0 end
+  if next_off > max_scroll then next_off = max_scroll end
+  if next_off == scroll then return false end
+  scroll = next_off
+  return true
+end
+
+function M.reset_scroll() scroll = 0 end
+function M.scroll_state() return scroll, max_scroll end
 
 function M.rows() return order, order.n end
 function M.totals() return totals end

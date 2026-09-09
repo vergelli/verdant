@@ -102,7 +102,7 @@ local hit_bot  = { cols = {}, n = 0 }
 local buff_hit = { n = 0, y0 = {}, y1 = {}, rec = {}, lane_x = 0, lane_w = 0, t0 = 0, span = 0 }
 local buff_vis = {}
 local C_BUFF_FALLBACK = { r = 0.60, g = 0.63, b = 0.66, a = 0.95 }
-local BUFF_FOLD = { PCT = 0.90, H = 24, ICON = 18, GAP = 3, MIN = 2, n = 0, x0 = {}, x1 = {}, rec = {}, y0 = 0, y1 = 0, on = false }
+local BUFF_FOLD = { PCT = 0.90, H = 24, ICON = 18, GAP = 3, MIN = 2, n = 0, x0 = {}, x1 = {}, rec = {}, y0 = 0, y1 = 0, on = false, scroll = 0, max_scroll = 0 }
 
 local function buff_color(rec)
   local SC = Verdant.SkillColors
@@ -2377,6 +2377,11 @@ local function render_view4()
     row_h = BUFF_MAX_ROW_H
   end
   if n > rows then Verdant.Diagnostics.bump("graph.view_buffs.overflow") end
+  local max_scroll = (n > rows) and (n - rows) or 0
+  if BUFF_FOLD.scroll > max_scroll then BUFF_FOLD.scroll = max_scroll end
+  if BUFF_FOLD.scroll < 0 then BUFF_FOLD.scroll = 0 end
+  BUFF_FOLD.max_scroll = max_scroll
+  local off = BUFF_FOLD.scroll
 
   local SC     = Verdant.SkillColors
   local lane_x = BUFF_GUTTER_W
@@ -2393,7 +2398,7 @@ local function render_view4()
   local dur = capture and (BT.session_end() - BT.session_start()) or 0
 
   for i = 1, rows do
-    local rec = vis[i]
+    local rec = vis[i + off]
     local y   = top + (i - 1) * (row_h + BUFF_ROW_GAP)
     local c   = buff_color(rec)
     if capture then
@@ -2519,7 +2524,7 @@ local function render_view4()
   if n > rows then
     local more = controls.pool_buff_lbl:AcquireObject()
     more:ClearAnchors()
-    more:SetText(string_format(GetString(VERDANT_BUFFS_MORE), n - rows))
+    more:SetText(string_format(GetString(VERDANT_BUFFS_SCROLLED), off, n - rows - off))
     more:SetHorizontalAlignment(TEXT_ALIGN_LEFT)
     more:SetColor(C_BUFF_MORE.r, C_BUFF_MORE.g, C_BUFF_MORE.b, C_BUFF_MORE.a)
     more:SetDimensions(cw, row_h)
@@ -3198,6 +3203,8 @@ local function set_view(v)
   controls.view_label:SetText(VIEW_LABELS[v])
   style_tabs()
   hover_key = nil
+  BUFF_FOLD.scroll = 0
+  Verdant.ContribView.reset_scroll()
   if controls.oh_legend then
     controls.oh_legend:SetHidden(v ~= VIEW.OVERHEAL or Verdant.TemporalBuffer.count() == 0)
   end
@@ -3573,6 +3580,13 @@ end
 function M.buffs_unfolded()
   local sv = Verdant.SavedVars
   return sv and sv.settings and sv.settings.buffs_unfolded == true or false
+end
+
+function M.step_view(dir)
+  if not controls.window or controls.window:IsHidden() then return false end
+  Sound.play("page")
+  if dir and dir < 0 then M.prev_view() else M.next_view() end
+  return true
 end
 
 function M.prev_view()
@@ -4004,8 +4018,26 @@ function M.init()
   controls.hit_bot  = make_hit("VerdantGraphHitBot",  controls.mps_canvas)
 
   controls.hit_main:SetHandler("OnMouseWheel", function(_, delta)
-    if current_view ~= VIEW.TRIAGE then return end
     local dir = (delta and delta < 0) and 1 or -1
+    if current_view == VIEW.BUFFS then
+      local next_off = BUFF_FOLD.scroll + dir
+      if next_off < 0 then next_off = 0 end
+      if next_off > BUFF_FOLD.max_scroll then next_off = BUFF_FOLD.max_scroll end
+      if next_off ~= BUFF_FOLD.scroll then
+        BUFF_FOLD.scroll = next_off
+        hide_hover_ui(); hover_key = nil
+        render_current_view()
+      end
+      return
+    end
+    if current_view == VIEW.CONTRIB then
+      if Verdant.ContribView.scroll(dir) then
+        hide_hover_ui()
+        render_current_view()
+      end
+      return
+    end
+    if current_view ~= VIEW.TRIAGE then return end
     local max_scroll = tri_hit.matches - tri_hit.fit
     if max_scroll < 0 then max_scroll = 0 end
     local next_off = tri_hit.scroll + dir

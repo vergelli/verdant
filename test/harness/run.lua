@@ -19,6 +19,7 @@ local CASES = {
   "buffs_hover",
   "buffs_fold",
   "polish_love",
+  "scroll_views",
   "auto_record",
   "dmg_overlay",
   "death_markers",
