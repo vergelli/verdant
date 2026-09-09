@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Settings: the built-in Solo, Dungeons, Trials and PvP presets are gone. The profile list holds only the profiles you save yourself, plus Custom for whatever the sliders say now. Reset to defaults still works, and a saved selection of an old preset simply falls back to Custom.
+
 ### Added
 - The mouse wheel scrolls the CONTRIB and BUFFS lists when they do not fit; the overflow line tells how many rows sit above and below. Two new keybinds, Next Graph View and Previous Graph View, cycle the views without the mouse.
 - The graph fades in when it opens. The HUD logo breathes slowly while a recording is running, so an auto-record that started on its own is visible without opening the graph. After Stop without autosave, the status reads NOT SAVED in amber and the save icon pulses once.

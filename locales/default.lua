@@ -72,10 +72,6 @@ ZO_CreateStringId("VERDANT_TIP_CONFIRM_YES",      "Assign for good")
 ZO_CreateStringId("VERDANT_TIP_CONFIRM_NO",       "Keep the picks unsaved")
 
 -- Profile preset names
-ZO_CreateStringId("VERDANT_PROFILE_SOLO",            "Solo PvE")
-ZO_CreateStringId("VERDANT_PROFILE_DUNGEONS",        "Group Dungeons")
-ZO_CreateStringId("VERDANT_PROFILE_TRIALS",          "Trials")
-ZO_CreateStringId("VERDANT_PROFILE_PVP",             "PvP")
 ZO_CreateStringId("VERDANT_PROFILE_CUSTOM",          "Custom")
 ZO_CreateStringId("VERDANT_SETTINGS_SAVE_PROFILE",   "Save")
 ZO_CreateStringId("VERDANT_SETTINGS_DELETE_PROFILE", "Delete")
