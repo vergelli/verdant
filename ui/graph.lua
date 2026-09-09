@@ -362,6 +362,7 @@ local function release_all_pools()
   end
   if controls.pool_buff_seg then
     controls.pool_buff_seg:ReleaseAllObjects()
+    controls.pool_buff_rim:ReleaseAllObjects()
     controls.pool_buff_icon:ReleaseAllObjects()
     controls.pool_buff_lbl:ReleaseAllObjects()
   end
@@ -2233,11 +2234,19 @@ local function seg_alpha(conc, max_conc)
 end
 
 local function buff_seg(canvas, x0, x1, y, row_h, conc, rec, c, dim)
+  local rim = controls.pool_buff_rim:AcquireObject()
+  rim:ClearAnchors()
+  rim:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0 - 1, y - 1)
+  rim:SetWidth(math_max(1, x1 - x0) + 2)
+  rim:SetHeight(row_h + 2)
+  rim:SetColor(0, 0, 0, dim and 0.20 or 0.50)
+  rim:SetHidden(false)
   local seg = controls.pool_buff_seg:AcquireObject()
   seg:ClearAnchors()
   seg:SetAnchor(TOPLEFT, canvas, TOPLEFT, x0, y)
   seg:SetWidth(math_max(1, x1 - x0))
   seg:SetHeight(row_h)
+  seg:SetDrawLevel(4)
   if dim then
     seg:SetColor(c.r * 0.30 + C_DIM_BIAS, c.g * 0.30 + C_DIM_BIAS,
                  c.b * 0.30 + C_DIM_BIAS, 0.25)
@@ -2252,6 +2261,7 @@ end
 
 local function render_view4()
   controls.pool_buff_seg:ReleaseAllObjects()
+  controls.pool_buff_rim:ReleaseAllObjects()
   controls.pool_buff_icon:ReleaseAllObjects()
   controls.pool_buff_lbl:ReleaseAllObjects()
 
@@ -2498,6 +2508,7 @@ end
 
 local function render_view5()
   controls.pool_buff_seg:ReleaseAllObjects()
+  controls.pool_buff_rim:ReleaseAllObjects()
   controls.pool_buff_icon:ReleaseAllObjects()
   controls.pool_buff_lbl:ReleaseAllObjects()
   hide_grid(controls.grid_ems)
@@ -3430,7 +3441,7 @@ function M.on_save_click()
 end
 
 function M.on_close_click()
-  PlaySound(SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+  PlaySound(SOUNDS.BOOK_CLOSE)
   light.exit()
   Verdant.Visibility.set("graph", false)
   stop_hover_poll(); hide_hover_ui(); hover_key = nil
@@ -3581,7 +3592,7 @@ function M.toggle()
   local now_visible = not Verdant.Visibility.get("graph")
   log:info("toggle ->", now_visible and "show" or "hide")
   Verdant.Visibility.set("graph", now_visible)
-  PlaySound(now_visible and SOUNDS.ARMORY_OPEN or SOUNDS.ADVENTURE_ZONE_OVERVIEW_CLOSED)
+  PlaySound(now_visible and SOUNDS.BOOK_OPEN or SOUNDS.BOOK_CLOSE)
   if now_visible then
     local sv = Verdant.SavedVars
     if controls.welcome and not (sv.settings and sv.settings.welcomed) then
@@ -3719,7 +3730,16 @@ function M.init()
     end,
     function(c) c:SetHidden(true) end)
 
-  controls.pool_buff_seg = make_fill_pool("VerdantBuffSeg")
+  controls.pool_buff_seg = Pool.new("VerdantBuffSeg", controls.canvas, CT_TEXTURE,
+    function(c)
+      fill_factory(c)
+      c:SetDrawLevel(2)
+    end,
+    function(c)
+      c:SetHidden(true)
+      c:SetDrawLevel(2)
+    end)
+  controls.pool_buff_rim = make_fill_pool("VerdantBuffRim", 3)
   controls.pool_buff_icon = Pool.new("VerdantBuffIcon", controls.canvas, CT_TEXTURE,
     function(c) c:SetPixelRoundingEnabled(false) end,
     function(c) c:SetHidden(true) end)
@@ -3732,7 +3752,7 @@ function M.init()
     function(c) c:SetHidden(true) end)
   Verdant.ContribView.attach({
     canvas = controls.canvas, grid = controls.grid_ems, no_data = controls.no_data,
-    seg = controls.pool_buff_seg, icon = controls.pool_buff_icon, lbl = controls.pool_buff_lbl,
+    seg = controls.pool_buff_seg, rim = controls.pool_buff_rim, icon = controls.pool_buff_icon, lbl = controls.pool_buff_lbl,
     layout = ULT_L, fmt_val = fmt_val, hexc = hexc, hide_grid = hide_grid,
     show_card = show_moment_card,
     hide_card = function() fade_out(card_fader) end,
