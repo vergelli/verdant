@@ -7,6 +7,8 @@ Verdant.Constants = {
   BUILD         = "2.4.0",
   SLASH_COMMAND = "/verdant",
 
+  DEV           = false,
+  MODE          = "",
   DEBUG         = false,
   PIXEL_GRID    = true,
   GRAPH_DEFAULT_W = 420,
@@ -79,3 +81,5 @@ Verdant.Constants = {
     ["graph.sample_tick"]                = 15.0,
   },
 }
+
+Verdant.Constants.DEBUG = (Verdant.Constants.DEV == true and Verdant.Constants.MODE == "DEBUG")
