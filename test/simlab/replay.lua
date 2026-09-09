@@ -153,6 +153,88 @@ print(string.format(
   O.checks, O.fails, O.max_rel_err, wall))
 for _, line in ipairs(O.fail_lines) do print("  " .. line) end
 
+local numeric_fail = {}
+do
+  local TB = Verdant.TemporalBuffer
+  local n = TB.count()
+  local grouped = H.state.grouped and (H.state.group_size or 0) > 1
+  local function in_m(e)
+    if not grouped then return true end
+    return e.tt == COMBAT_UNIT_TYPE_PLAYER or e.tt == COMBAT_UNIT_TYPE_GROUP
+        or e.tt == COMBAT_UNIT_TYPE_PLAYER_PET
+  end
+  local times = {}
+  for i = 1, n do times[i] = TB.at(i).t end
+  local function integral_expected(list, W_ms)
+    local raw, expected = 0, 0
+    for _, e in ipairs(list) do
+      if in_m(e) then
+        raw = raw + e.amount
+        local w = 0
+        for i = 2, n do
+          local ti = times[i]
+          if ti - W_ms < e.t and e.t <= ti then
+            w = w + (ti - times[i - 1]) / W_ms
+          end
+        end
+        expected = expected + e.amount * w
+      end
+    end
+    return raw, expected
+  end
+  local W  = Verdant.Metrics.window_seconds() * 1000
+  local WS = Verdant.Metrics.shield_window_seconds() * 1000
+  local heal_raw, heal_exp = integral_expected(O.heals, W)
+  local sh_raw, sh_exp = integral_expected(O.shields, WS)
+  local function rel(got, want)
+    local denom = (math.abs(want) > 1) and math.abs(want) or 1
+    return math.abs(got - want) / denom
+  end
+  local heal_rel = rel(s.total_heal, heal_exp)
+  local sh_rel = rel(s.total_shield, sh_exp)
+  if heal_rel > 1e-6 then numeric_fail[#numeric_fail + 1] = string.format("heal integral off by %.2e", heal_rel) end
+  if sh_rel > 1e-6 then numeric_fail[#numeric_fail + 1] = string.format("shield integral off by %.2e", sh_rel) end
+
+  local shares_bad, ticks_bad, id0 = 0, 0, 0
+  local function check_shares(list)
+    local sum = 0
+    for k = 1, (list.count or 0) do
+      local ab = list[k]
+      sum = sum + (ab.share or 0)
+      if ab.id == 0 then id0 = id0 + 1 end
+    end
+    return math.abs(sum - 1) < 1e-6
+  end
+  for i = 1, n do
+    local smp = TB.at(i)
+    if smp.eHPS > 0 then
+      if not check_shares(smp.ehps_abilities) or not check_shares(smp.ehps_groups) then shares_bad = shares_bad + 1 end
+    end
+    if smp.MPS > 0 then
+      if not check_shares(smp.mps_abilities) or not check_shares(smp.mps_groups) then shares_bad = shares_bad + 1 end
+    end
+    if i > 1 then
+      local dt = smp.t - times[i - 1]
+      local rate = Verdant.SavedVars.temporal and Verdant.SavedVars.temporal.sample_rate_ms or 1000
+      if dt <= 0 or dt < rate * 0.5 or dt > rate * 1.5 then ticks_bad = ticks_bad + 1 end
+    end
+  end
+  if shares_bad > 0 then numeric_fail[#numeric_fail + 1] = shares_bad .. " ticks whose shares do not sum to one" end
+  if ticks_bad > 0 then numeric_fail[#numeric_fail + 1] = ticks_bad .. " ticks off the sample rate" end
+  local unmatched = Verdant.Triage and Verdant.Triage.power_stats().unmatched or 0
+  if unmatched > 0 then numeric_fail[#numeric_fail + 1] = unmatched .. " heals the triage could not match" end
+
+  print(string.format(
+    "numeric: heal events=%.0f expected=%.0f integral=%.0f rel=%.1e | shield events=%.0f expected=%.0f integral=%.0f rel=%.1e | shares_bad=%d ticks_bad=%d id0=%d unmatched=%d",
+    heal_raw, heal_exp, s.total_heal, heal_rel, sh_raw, sh_exp, s.total_shield, sh_rel,
+    shares_bad, ticks_bad, id0, unmatched))
+  if #numeric_fail == 0 then
+    print("NUMERIC: ok")
+  else
+    print("NUMERIC: FAIL " .. table.concat(numeric_fail, "; "))
+  end
+end
+
 if svg then
   for _ = 1, 7 do
     local view = tostring(VerdantGraphWindowViewLabel._text or "view"):lower()
@@ -163,4 +245,4 @@ if svg then
   end
 end
 
-os.exit(O.fails == 0 and 0 or 1)
+os.exit((O.fails == 0 and #numeric_fail == 0) and 0 or 1)

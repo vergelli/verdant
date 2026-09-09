@@ -84,6 +84,36 @@ class VerdantGate:
             replayed += 1
         return "%d traces replayed and audited clean" % replayed
 
+    def traces_add_up(self, traces_dir=None):
+        traces = traces_dir or os.path.join(self.root, "..", "VerdantWorkingdir", "traces")
+        traces = os.path.abspath(traces)
+        if not os.path.isdir(traces):
+            return "no traces directory at %s, nothing checked" % traces
+        worst = 0.0
+        lines = []
+        failures = []
+        n = 0
+        for f in sorted(os.listdir(traces)):
+            if not f.endswith(".lua"):
+                continue
+            code, out = self._run([self.lua, "test/simlab/replay.lua", ".", os.path.join(traces, f)])
+            numeric = [l for l in out.splitlines() if l.startswith("numeric:")]
+            verdict = [l for l in out.splitlines() if l.startswith("NUMERIC:")]
+            if not verdict:
+                failures.append("%s: no numeric verdict printed\n%s" % (f, out[-1500:]))
+                continue
+            n += 1
+            lines.append("%s -> %s" % (f, numeric[0] if numeric else verdict[0]))
+            if not verdict[0].startswith("NUMERIC: ok"):
+                failures.append("%s: %s" % (f, verdict[0]))
+            for m in re.finditer(r"rel=([0-9.]+e[-+]?\d+)", numeric[0] if numeric else ""):
+                worst = max(worst, float(m.group(1)))
+        for l in lines:
+            print(l)
+        if failures:
+            raise AssertionError("\n".join(failures))
+        return "%d traces add up, worst relative error %.1e" % (n, worst)
+
     def live_equals_library(self):
         code, out = self._run([self.lua, "test/simlab/reina.lua", "."])
         diffs = [l for l in out.splitlines() if "FAIL" in l]
