@@ -75,10 +75,13 @@ local start_zone  = ""
 local start_group = 0
 local start_diff  = 0
 
+local start_kind = nil
+
 function M.on_session_start()
   start_zone  = api.GetUnitZone("player") or ""
   start_group = api.GetGroupSize() or 0
   start_diff  = api.GetCurrentZoneDungeonDifficulty and api.GetCurrentZoneDungeonDifficulty() or 0
+  start_kind  = Verdant.ContentKind and Verdant.ContentKind.detect() or nil
 end
 
 local function lib_root()
@@ -252,6 +255,7 @@ function M.capture(cooperative)
       api = api.GetAPIVersion(),
       locked = false,
       difficulty = start_diff or 0,
+      kind = start_kind,
       player_slot = T.player_slot(),
       sum = {
         avg = math_floor(tb_sum.avg_ems + 0.5),
