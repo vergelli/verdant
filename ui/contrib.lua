@@ -25,6 +25,8 @@ local order = { n = 0 }
 local hit = { n = 0, y0 = {}, y1 = {}, e = {} }
 local totals = { heal = 0, shield = 0, span = 0 }
 local more = { n = -1, text = "" }
+local hover_row = nil
+local C_BAND = { r = 0.78, g = 1.00, b = 0.86, a = 0.10 }
 local str = nil
 
 local function strings()
@@ -223,9 +225,15 @@ function M.render()
   end
   local vmax = order[1].v
   local y = top + L.HEADER_H
+  local hovered_seen = false
 
   for i = 1, show do
     local e = order[i]
+    if e == hover_row then
+      hovered_seen = true
+      local band = seg(c, 0, y - 1, cw, L.ROW_H + 2, C_BAND.r, C_BAND.g, C_BAND.b, C_BAND.a)
+      band:SetDrawLevel(1)
+    end
     local ic = c.icon:AcquireObject()
     ic:ClearAnchors()
     ic:SetTexture(e.icon)
@@ -247,10 +255,21 @@ function M.render()
     label(c, e.text, x_val, y, L.VAL_W - L.PAD, L.ROW_H, C_VAL, TEXT_ALIGN_RIGHT)
 
     local by = y + L.NAME_H + 3
-    seg(c, x_name, by, name_w, L.BAR_H, C_TRACK.r, C_TRACK.g, C_TRACK.b, C_TRACK.a)
+    local track = seg(c, x_name, by, name_w, L.BAR_H, C_TRACK.r, C_TRACK.g, C_TRACK.b, C_TRACK.a)
+    track:SetDrawLevel(2)
     local bw = math_floor(name_w * e.v / vmax + 0.5)
     if bw < 1 then bw = 1 end
-    seg(c, x_name, by, bw, L.BAR_H, e.r, e.g, e.b, 0.92)
+    if c.rim then
+      local rim = c.rim:AcquireObject()
+      rim:ClearAnchors()
+      rim:SetAnchor(TOPLEFT, c.canvas, TOPLEFT, x_name - 1, by - 1)
+      rim:SetWidth(bw + 2)
+      rim:SetHeight(L.BAR_H + 2)
+      rim:SetColor(0, 0, 0, 0.50)
+      rim:SetHidden(false)
+    end
+    local fill = seg(c, x_name, by, bw, L.BAR_H, e.r, e.g, e.b, 0.92)
+    fill:SetDrawLevel(4)
 
     hit.n = hit.n + 1
     hit.y0[hit.n] = y
@@ -259,6 +278,7 @@ function M.render()
     y = y + step
   end
 
+  if not hovered_seen then hover_row = nil end
   if rest > 0 then
     if more.n ~= rest then
       more.n = rest
@@ -278,6 +298,10 @@ function M.hover(mx, my)
     for i = 1, hit.n do
       if rel_y >= hit.y0[i] and rel_y <= hit.y1[i] then
         local e = hit.e[i]
+        if hover_row ~= e then
+          hover_row = e
+          if c.rerender then c.rerender() end
+        end
         local S = strings()
         local heal = (e.ch == CH_HEAL)
         local tot = heal and totals.heal or totals.shield
@@ -294,8 +318,14 @@ function M.hover(mx, my)
       end
     end
   end
+  if hover_row ~= nil then
+    hover_row = nil
+    if c.rerender then c.rerender() end
+  end
   c.hide_card()
 end
+
+function M.hovered() return hover_row end
 
 function M.rows() return order, order.n end
 function M.totals() return totals end

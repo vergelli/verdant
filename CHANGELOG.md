@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- The graph fades in when it opens. The HUD logo breathes slowly while a recording is running, so an auto-record that started on its own is visible without opening the graph. After Stop without autosave, the status reads NOT SAVED in amber and the save icon pulses once.
+- CONTRIB view: the hovered row gets a soft band, and the bars wear the same one-pixel rim as the buff gantt.
+- BUFFS view: a thin uptime bar under each buff name, and holder concurrency in two clear levels instead of a continuous fade. The empty states of the graph and the library show the Record and Save glyphs they talk about.
 - BUFFS view: named buffs with no skill line of their own, Major and Minor Sorcery, Resolve, Intellect and the rest, are coloured by family: warm for offense, blue for defense, mint for sustain, lavender for mobility. The buff card names the family.
 - Sounds: one vocabulary for the whole addon. Windows open and close like a book, views, bar metrics and library sessions turn a page, settings toggles click softly on and off, refusals keep the negative click, Record and Stop have their own cues. Every sound honours the Sounds setting.
 - BUFFS view: every gantt segment wears a one-pixel dark rim so adjacent segments and lanes read apart.
