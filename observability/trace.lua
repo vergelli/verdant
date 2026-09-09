@@ -138,9 +138,14 @@ function M.save(sv)
   for _, k in ipairs(CONST_NAMES) do
     consts[k] = rawget(_G, k)
   end
+  local temporal = sv.temporal or {}
   local entry = {
     version   = 2,
     build     = Verdant.Constants.VERSION,
+    settings  = {
+      sample_rate_ms = temporal.sample_rate_ms or Verdant.Constants.TEMPORAL.SAMPLE_RATE_DEFAULT,
+      time_window_s  = temporal.time_window_s or Verdant.Constants.TEMPORAL.TIME_WINDOW_DEFAULT,
+    },
     world     = api.GetWorldName(),
     zone      = api.GetUnitZone("player") or "",
     ts        = api.GetTimeStamp() or 0,
