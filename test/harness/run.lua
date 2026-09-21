@@ -62,6 +62,7 @@ local CASES = {
   "auto_stop",
   "zero_alloc",
   "clarity",
+  "exact_totals",
 }
 
 local passed, failed = 0, 0

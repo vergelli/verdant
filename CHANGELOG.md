@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Session totals (healing, shielding, overheal, and the shield share and wasted percentages built on them) are now the exact sum of the events. They used to be integrated from the moving-window rates sampled for the graph, which under-counted whatever happened inside the last window before the recording stopped: with the 30-second shield window and the 5-second auto-stop grace, the final 25 seconds of shielding in every fight counted only in part. The moving windows still drive the live bar and the graph, where they belong. Sessions saved earlier keep the totals they were saved with.
+
 ## [2.6.0] - 2026-09-10
 
 ### Added

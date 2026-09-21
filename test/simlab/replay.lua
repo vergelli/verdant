@@ -190,10 +190,15 @@ do
     local denom = (math.abs(want) > 1) and math.abs(want) or 1
     return math.abs(got - want) / denom
   end
-  local heal_rel = rel(s.total_heal, heal_exp)
-  local sh_rel = rel(s.total_shield, sh_exp)
+  local heal_rel = rel(s.integral_heal, heal_exp)
+  local sh_rel = rel(s.integral_shield, sh_exp)
   if heal_rel > 1e-6 then numeric_fail[#numeric_fail + 1] = string.format("heal integral off by %.2e", heal_rel) end
   if sh_rel > 1e-6 then numeric_fail[#numeric_fail + 1] = string.format("shield integral off by %.2e", sh_rel) end
+  local heal_tot_rel = rel(s.total_heal, heal_raw)
+  local sh_tot_rel = rel(s.total_shield, sh_raw)
+  if heal_tot_rel > 1e-9 then numeric_fail[#numeric_fail + 1] = string.format("heal total off the event sum by %.2e", heal_tot_rel) end
+  if sh_tot_rel > 1e-9 then numeric_fail[#numeric_fail + 1] = string.format("shield total off the event sum by %.2e", sh_tot_rel) end
+  if s.totals_from ~= "events" then numeric_fail[#numeric_fail + 1] = "live totals not taken from events: " .. tostring(s.totals_from) end
 
   local shares_bad, ticks_bad, id0 = 0, 0, 0
   local function check_shares(list)
@@ -225,8 +230,8 @@ do
   if unmatched > 0 then numeric_fail[#numeric_fail + 1] = unmatched .. " heals the triage could not match" end
 
   print(string.format(
-    "numeric: heal events=%.0f expected=%.0f integral=%.0f rel=%.1e | shield events=%.0f expected=%.0f integral=%.0f rel=%.1e | shares_bad=%d ticks_bad=%d id0=%d unmatched=%d",
-    heal_raw, heal_exp, s.total_heal, heal_rel, sh_raw, sh_exp, s.total_shield, sh_rel,
+    "numeric: heal events=%.0f total=%.0f expected=%.0f integral=%.0f rel=%.1e | shield events=%.0f total=%.0f expected=%.0f integral=%.0f rel=%.1e | shares_bad=%d ticks_bad=%d id0=%d unmatched=%d",
+    heal_raw, s.total_heal, heal_exp, s.integral_heal, heal_rel, sh_raw, s.total_shield, sh_exp, s.integral_shield, sh_rel,
     shares_bad, ticks_bad, id0, unmatched))
   if #numeric_fail == 0 then
     print("NUMERIC: ok")

@@ -80,15 +80,17 @@ end
 function M.window_seconds() return W_MS / 1000 end
 function M.shield_window_seconds() return W_SHIELD_MS / 1000 end
 
+local oh_hot, oh_direct = 0, 0
+local tot_heal, tot_shield, tot_overheal = 0, 0, 0
+
 function M.ingest_heal(ev)
   if ev.amount > 0 then
+    if in_M(ev) then tot_heal = tot_heal + ev.amount end
     heal_buf:push(ev)
   else
     event_pool:release(ev)
   end
 end
-
-local oh_hot, oh_direct = 0, 0
 
 function M.ingest_overheal(ev)
   if ev.amount > 0 then
@@ -99,6 +101,7 @@ function M.ingest_overheal(ev)
     else
       oh_direct = oh_direct + ev.amount
     end
+    if in_M(ev) then tot_overheal = tot_overheal + ev.amount end
     overheal_buf:push(ev)
   else
     event_pool:release(ev)
@@ -107,10 +110,15 @@ end
 
 function M.ingest_shield(ev)
   if ev.amount > 0 then
+    if in_M(ev) then tot_shield = tot_shield + ev.amount end
     shield_buf:push(ev)
   else
     event_pool:release(ev)
   end
+end
+
+function M.totals()
+  return tot_heal, tot_shield, tot_overheal
 end
 
 function M.ingest_damage_group(ev)
@@ -232,6 +240,7 @@ end
 
 function M.session_mark()
   oh_hot, oh_direct = 0, 0
+  tot_heal, tot_shield, tot_overheal = 0, 0, 0
 end
 
 function M.overheal_split()

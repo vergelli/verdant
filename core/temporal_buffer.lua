@@ -11,6 +11,7 @@ local state = {
   write     = 1,
   count     = 0,
   recording = false,
+  totals    = nil,
 }
 
 function M.init(capacity)
@@ -134,14 +135,25 @@ end
 local summary_scratch = {
   count = 0, dur_ms = 0, avg_ems = 0, peak_ems = 0, peak_t_off = 0,
   crit_pct = 0, active_pct = 0, total_heal = 0, total_shield = 0,
+  total_overheal = 0, wasted_pct = 0, totals_from = "",
+  integral_heal = 0, integral_shield = 0, integral_overheal = 0,
 }
+
+function M.set_totals(heal, shield, overheal)
+  if heal == nil then
+    state.totals = false
+  else
+    state.totals = { heal = heal or 0, shield = shield or 0, overheal = overheal or 0 }
+  end
+end
 
 function M.summary()
   local s = summary_scratch
   s.count = state.count
   s.dur_ms = 0; s.avg_ems = 0; s.peak_ems = 0; s.peak_t_off = 0
   s.crit_pct = 0; s.active_pct = 0; s.total_heal = 0; s.total_shield = 0
-  s.total_overheal = 0; s.wasted_pct = 0
+  s.total_overheal = 0; s.wasted_pct = 0; s.totals_from = ""
+  s.integral_heal = 0; s.integral_shield = 0; s.integral_overheal = 0
   if state.count == 0 then return s end
 
   local t0, t_prev = 0, 0
@@ -159,12 +171,24 @@ function M.summary()
     if i == 1 then t0 = sample.t end
     if i > 1 then
       local dt = (sample.t - t_prev) / 1000
-      s.total_heal   = s.total_heal   + sample.eHPS * dt
-      s.total_shield = s.total_shield + sample.MPS  * dt
-      s.total_overheal = s.total_overheal + (sample.o or 0) * dt
+      s.integral_heal     = s.integral_heal     + sample.eHPS * dt
+      s.integral_shield   = s.integral_shield   + sample.MPS  * dt
+      s.integral_overheal = s.integral_overheal + (sample.o or 0) * dt
     end
     t_prev = sample.t
   end)
+
+  local saved = state.totals
+  if saved then
+    s.total_heal, s.total_shield, s.total_overheal = saved.heal, saved.shield, saved.overheal
+    s.totals_from = "saved"
+  elseif saved == nil and Verdant.Metrics and Verdant.Metrics.totals then
+    s.total_heal, s.total_shield, s.total_overheal = Verdant.Metrics.totals()
+    s.totals_from = "events"
+  else
+    s.total_heal, s.total_shield, s.total_overheal = s.integral_heal, s.integral_shield, s.integral_overheal
+    s.totals_from = "integral"
+  end
 
   s.dur_ms     = t_prev - t0
   s.avg_ems    = sum_ems / state.count
@@ -180,8 +204,13 @@ end
 
 local EMPTY_SHARES = { count = 0 }
 
-function M.load_session(samples, marker_list)
+function M.load_session(samples, marker_list, totals)
   M.clear()
+  if totals then
+    M.set_totals(totals.heal, totals.shield, totals.overheal)
+  else
+    M.set_totals(nil)
+  end
   for i = 1, #samples do
     local s = samples[i]
     M.push(s.t, s.eHPS, s.MPS, s.crit, s.noncrit,
@@ -200,6 +229,7 @@ function M.clear()
   log:info("clear: discarding", state.count, "samples")
   state.write = 1
   state.count = 0
+  state.totals = nil
   markers.n = 0
   group_marker_n = 0
 end
