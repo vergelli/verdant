@@ -46,10 +46,12 @@ Real Traces Replay Clean
     Log    ${msg}
 
 Real Traces Add Up
-    [Documentation]    On every recorded trace: the healing and shielding integrated from the
-    ...                sampled rates equal the event amounts weighted by their window coverage
-    ...                (an exact identity, checked to 1e-6); every tick's ability and skill-line
-    ...                shares sum to one; ticks follow the sample rate; the triage matched every heal.
+    [Documentation]    On every recorded trace: the session totals equal the plain sum of the
+    ...                events (checked to 1e-9) and come from the events, not from the samples;
+    ...                the healing and shielding integrated from the sampled rates equal the event
+    ...                amounts weighted by their window coverage (an exact identity, checked to 1e-6);
+    ...                every tick's ability and skill-line shares sum to one; ticks follow the
+    ...                sample rate; the triage matched every heal.
     [Tags]    numeric
     ${msg}=    Traces Add Up
     Log    ${msg}

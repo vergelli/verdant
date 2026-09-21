@@ -63,6 +63,7 @@ local CASES = {
   "zero_alloc",
   "clarity",
   "devtools",
+  "exact_totals",
 }
 
 local passed, failed = 0, 0

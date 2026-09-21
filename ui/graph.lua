@@ -3410,7 +3410,11 @@ function M.load_session(sess)
       who = (m.who > 0) and ("group" .. m.who) or nil,
     }
   end
-  Verdant.TemporalBuffer.load_session(series, markers)
+  local saved_sum = sess.head.sum
+  local saved_totals = (saved_sum and saved_sum.total_heal ~= nil) and {
+    heal = saved_sum.total_heal, shield = saved_sum.total_shield or 0, overheal = saved_sum.total_overheal or 0,
+  } or nil
+  Verdant.TemporalBuffer.load_session(series, markers, saved_totals)
   Verdant.BuffTracker.load_session(sess.buffs or {}, steps, 0, sess.head.dur_ms or 0)
   if sess.streams.ult and sess.desc.ult then
     local ult_steps = vsf.unpack(sess.streams.ult, sess.desc.ult)
