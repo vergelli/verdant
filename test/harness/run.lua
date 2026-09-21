@@ -62,6 +62,7 @@ local CASES = {
   "auto_stop",
   "zero_alloc",
   "clarity",
+  "devtools",
   "exact_totals",
 }
 

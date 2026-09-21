@@ -35,6 +35,8 @@ lib/plot/pool.lua
 lib/plot/donut.lua
 lib/plot/plot_stacked_bar.lua
 observability/copybox.lua
+observability/encounter_log.lua
+observability/devtools.lua
 observability/log.lua
 observability/profiler.lua
 observability/validation.lua
