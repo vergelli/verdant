@@ -604,6 +604,9 @@ end
 function GetTimeStamp()
   return 1755900000
 end
+function SetEncounterLogEnabled(on) H.state.elog = on and true or false end
+function IsEncounterLogEnabled() return H.state.elog == true end
+function GetEncounterLogVersion() return 15 end
 function GetLatency()
   return H.state.latency or 66
 end

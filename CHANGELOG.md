@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Developer panel (debug builds only): every diagnostic command becomes a clickable row, grouped by purpose, with the command it runs shown beside it. `/verdant dev` opens it, as does the DEV button next to the version in Settings.
+- The game's own encounter log can be switched from the addon: `/verdant elog [on|off|status]` and the matching panel row, which shows whether the engine is writing `Documents\Elder Scrolls Online\live\Logs\Encounter.log` right now.
+- Traces stamp the wall-clock epoch when they start (`EP` line) and `/verdant mark [label]` writes a labelled `MK` line, so a trace can be aligned event by event with the encounter log recorded during the same fight.
+
 ## [2.6.0] - 2026-09-10
 
 ### Added
