@@ -164,6 +164,21 @@ local function on_slash(input)
       Verdant.Bar.reset_peaks()
       d("[V] " .. GetString(VERDANT_BUFFER_CLEARED))
       return
+    elseif cmd == "dev" then
+      Verdant.DevTools.toggle() ; return
+    elseif cmd == "elog" then
+      local sub = string_match(string_lower(input), "^%s*%S+%s+(%S+)") or ""
+      local EL = Verdant.EncounterLog
+      if sub == "on" then EL.set_enabled(true)
+      elseif sub == "off" then EL.set_enabled(false)
+      elseif sub ~= "status" then EL.toggle() end
+      d("[V] " .. EL.status_line())
+      Verdant.DevTools.refresh()
+      return
+    elseif cmd == "mark" then
+      local label = string_match(input, "^%s*%S+%s+(.-)%s*$") or ""
+      d("[V] " .. Verdant.Trace.mark(label))
+      return
     end
   end
 
@@ -199,7 +214,7 @@ local function on_slash(input)
     d(GetString(VERDANT_HELP_TOGGLE))
     d(GetString(VERDANT_HELP_GRAPH))
     d(GetString(VERDANT_HELP_LIB))
-    d(GetString(VERDANT_HELP_HITCH))
+    d(GetString(VERDANT_HELP_HITCH))
     d(GetString(VERDANT_HELP_GRID))
     d(GetString(VERDANT_HELP_CARD))
     d(GetString(VERDANT_HELP_HELP))
@@ -236,6 +251,7 @@ local function on_addon_loaded()
   Verdant.Bar.init()
   Verdant.Logo.init()
   Verdant.Settings.init()
+  Verdant.DevTools.init()
   Verdant.Graph.init()
   Verdant.Watch.init()
   Verdant.BuffWatch.init()
@@ -244,6 +260,7 @@ local function on_addon_loaded()
   Verdant.Library.init()
   Verdant.Visibility.init()
 
+  Verdant.slash = on_slash
   SLASH_COMMANDS[C.SLASH_COMMAND] = on_slash
 
   Log:info("loaded v" .. C.VERSION, "DEBUG=" .. tostring(C.DEBUG))
