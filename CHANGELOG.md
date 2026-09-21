@@ -8,6 +8,7 @@
 - Traces stamp the wall-clock epoch when they start (`EP` line) and `/verdant mark [label]` writes a labelled `MK` line, so a trace can be aligned event by event with the encounter log recorded during the same fight.
 
 ### Fixed
+- Debug traces that hit their 40 000-event capacity were thrown away when the recording stopped; a long battleground lost its whole trace that way. The capture still stops at the cap, but what was captured is kept and saved, and the status line says it was capped.
 - Session totals (healing, shielding, overheal, and the shield share and wasted percentages built on them) are now the exact sum of the events. They used to be integrated from the moving-window rates sampled for the graph, which under-counted whatever happened inside the last window before the recording stopped: with the 30-second shield window and the 5-second auto-stop grace, the final 25 seconds of shielding in every fight counted only in part. The moving windows still drive the live bar and the graph, where they belong. Sessions saved earlier keep the totals they were saved with.
 
 ## [2.6.0] - 2026-09-10

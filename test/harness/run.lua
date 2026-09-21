@@ -64,6 +64,7 @@ local CASES = {
   "clarity",
   "devtools",
   "exact_totals",
+  "trace_cap",
 }
 
 local passed, failed = 0, 0
